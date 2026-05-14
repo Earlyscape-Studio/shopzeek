@@ -4,10 +4,10 @@
 import Link from "next/link"
 import Image from "next/image"
 // import logo from "./zeek1.svg"
-import { useState } from "react"
-import { Search, User, ShoppingCart, Heart, Menu } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, User, Heart, Menu } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { useCartStore } from "@/store/cart.store"
+import {CartNavIcon} from "@/components/shared/shop/navCartIcon"
 import { useAuthModal } from "@/store/auth-modal.store"
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet"
 import {Button} from "@/components/ui/button"
@@ -19,9 +19,11 @@ const navLinks = [
     { href: "/contact", label: "Contact" },
 ];
 
+
+
+
 export function Nav() {
     const [mobileOpen, setMobileOpen] = useState(false)
-    const itemCount = useCartStore((s) => s.items.reduce((acc, i) => acc + i.quantity, 0))
     const openAuthModal = useAuthModal((s) => s.open)
 
 
@@ -58,14 +60,7 @@ export function Nav() {
                         <span className="text-sm">Log In / Sign Up</span>
                     </Button>
 
-                    <Link href="/cart" className="relative p-2">
-                        <ShoppingCart className="h-5 w-5 text-gray-600" />
-                        {itemCount > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                                {itemCount}
-                            </span>
-                        )}
-                    </Link>
+              <CartNavIcon />
 
                     <Link href="/wishlist" className="p-2">
                         <Heart className="h-5 w-5 text-gray-600" />
