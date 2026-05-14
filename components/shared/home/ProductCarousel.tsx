@@ -64,17 +64,17 @@ export function ProductCarousel({
           </div>
         ) : (
           <Carousel
-            opts={{ align: "start", dragFree: true }}
+            // Changed from "start" to "center" to tell the carousel logic to center things
+            opts={{ align: "center", dragFree: true }}
             className="w-full relative"
           >
-            <CarouselContent className="-ml-4 md:-ml-6 py-2">
+            {/* THE FIX: Added justify-center right here to force the track to the middle */}
+            <CarouselContent className="-ml-4 md:-ml-6 py-2 justify-center">
               {products.map((p) => (
                 <CarouselItem 
                   key={p.id} 
-                  
                   className="pl-4 md:pl-6 basis-full sm:basis-1/2 lg:basis-1/4 flex justify-center"
                 >
-                  
                   <div className="w-full max-w-[260px]">
                     <ProductCard product={p} />
                   </div>
