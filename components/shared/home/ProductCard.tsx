@@ -25,7 +25,7 @@ export function ProductCard({ product }: Props) {
 
   return (
     // The wrapper link needs h-full so it stretches evenly in carousels/grids
-    <Link href={`/products/${product.slug}`} className="group block h-full focus:outline-none">
+    <Link href={`/shop/${product.slug}`} className="group block h-full focus:outline-none">
       <Card className="h-full bg-white hover:bg-[#FFDFD2] transition-all duration-300 border border-transparent hover:border-orange-100 shadow-sm hover:shadow-md rounded-2xl overflow-hidden">
         {/* We use CardContent with padding so the hover background creates a nice frame */}
         <CardContent className="p-4 flex flex-col h-full">

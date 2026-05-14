@@ -1,7 +1,6 @@
-// components/shared/home/BestDealsSection.tsx
 import Link from "next/link";
-import { ProductCard } from "@/components/shared/home/ProductCard"; // Adjust import path as needed
-import { CountdownTimer } from "@/components/shared/home/countdownTimer"; // Adjust import path as needed
+import { ProductCard } from "@/components/shared/home/ProductCard"; 
+import { CountdownTimer } from "@/components/shared/home/countdownTimer"; 
 import {
   Carousel,
   CarouselContent,
@@ -11,7 +10,7 @@ import {
 } from "@/components/ui/carousel";
 import type { Product } from "@/types/database";
 
-// 1. ADD THE MISSING PROPS HERE
+
 type Props = {
   products: Product[];
   bgClass?: string;
