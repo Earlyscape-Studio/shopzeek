@@ -3,13 +3,21 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Star } from "lucide-react";
+import { Star, ShoppingCart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCartStore } from "@/store/cart.store";
+import { useAuthModal } from "@/store/auth-modal.store";
+import { createClient } from "@/utils/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Product } from "@/types/database";
 
 type Props = { product: Product };
 
 export function ProductCard({ product }: Props) {
+  const addItem = useCartStore((state) => state.addItem);
+  const openAuthModal = useAuthModal((s) => s.open);
+  const supabase = createClient();
+
   const isOnDeal =
     product.deal_price &&
     product.deal_ends_at &&
@@ -23,15 +31,33 @@ export function ProductCard({ product }: Props) {
     ? Math.round(((product.price - product.deal_price!) / product.price) * 100) 
     : 0;
 
+  const handleQuickAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const {data: {session}} = await supabase.auth.getSession()
+    if(!session){
+      openAuthModal("signin")
+      return
+    }
+
+    addItem({
+      product_id: product.id,
+      name: product.name ?? "Unknown Product",
+      price: product.price ?? 0,
+      image_url: product.image_urls?.[0] ?? "/placeholder.png",
+      quantity: 1,
+      slug: product.slug ?? "" //fallback if slug is missing
+    })
+  }
+
   return (
-    // The wrapper link needs h-full so it stretches evenly in carousels/grids
-    <Link href={`/shop/${product.slug}`} className="group block h-full focus:outline-none">
+    <Link href={`/shop/${product.slug ?? ""}`} className="group block h-full focus:outline-none">
       <Card className="h-full bg-white hover:bg-[#FFDFD2] transition-all duration-300 border border-transparent hover:border-orange-100 shadow-sm hover:shadow-md rounded-2xl overflow-hidden">
-        {/* We use CardContent with padding so the hover background creates a nice frame */}
         <CardContent className="p-4 flex flex-col h-full">
           
-          {/* Image Container */}
-          <div className={`${imageBgColor} rounded-xl relative h-56 w-full mb-4 overflow-hidden shrink-0`}>
+          {/* Image Container - Added 'group' here so the button knows when to appear */}
+          <div className={`${imageBgColor} rounded-xl relative h-56 w-full mb-4 overflow-hidden shrink-0 group/image`}>
             {isOnDeal && percentOff > 0 && (
               <div className="absolute top-3 right-3 bg-[#E53935] text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm z-10">
                 {percentOff}% OFF
@@ -39,16 +65,27 @@ export function ProductCard({ product }: Props) {
             )}
             <Image
               src={product.image_urls?.[0] ?? "/placeholder.png"}
-              alt={product.name}
+              alt={product.name ?? "Product"}
               fill
-              className="object-contain p-4 group-hover:scale-105 transition-transform duration-500 mix-blend-multiply"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-contain p-4 group-hover/image:scale-105 transition-transform duration-500 mix-blend-multiply"
             />
+            
+            {/* The Hover 'Add to Cart' Button */}
+            <div className="absolute bottom-4 left-0 right-0 px-4 opacity-0 translate-y-4 group-hover/image:opacity-100 group-hover/image:translate-y-0 transition-all duration-300 z-20">
+              <Button 
+                onClick={handleQuickAddToCart}
+                className="w-full bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest text-xs h-10 rounded-sm shadow-lg flex items-center justify-center gap-2"
+              >
+                <ShoppingCart size={14} /> Add to Cart
+              </Button>
+            </div>
           </div>
 
-          {/* Content Container (flex-1 pushes price/stars to the bottom if names vary in height) */}
+          {/* Content Container */}
           <div className="space-y-1 flex-1 flex flex-col">
             <h3 className="text-sm font-medium text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2 mb-2">
-              {product.name}
+              {product.name ?? "Unnamed Product"}
             </h3>
 
             <div className="mt-auto">

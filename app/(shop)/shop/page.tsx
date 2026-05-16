@@ -15,6 +15,7 @@ import {
 import type { Product } from "@/types/database";
 
 type SearchParams = Promise<{
+  search?: string; // <-- 1. Added search to types
   category?: string;
   brand?: string;
   minPrice?: string;
@@ -40,6 +41,11 @@ export default async function ShopPage(props: {
     .from("products")
     .select("*", { count: "exact" })
     .eq("is_published", true);
+
+  // 2. Added Search Logic (Checks Name OR Description)
+  if (searchParams.search) {
+    query = query.or(`name.ilike.%${searchParams.search}%,description.ilike.%${searchParams.search}%`);
+  }
 
   if (searchParams.category) query = query.eq("category", searchParams.category);
   if (searchParams.brand) {
@@ -106,6 +112,17 @@ export default async function ShopPage(props: {
         
         {/* Left Column: Products */}
         <div className="flex-1 flex flex-col min-h-screen order-2 md:order-1">
+          
+          {/* 3. Added Conditional Search Results Header */}
+          {searchParams.search && (
+             <div className="mb-6">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Search results for "{searchParams.search}"
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">Found {count || 0} items</p>
+             </div>
+          )}
+
           {/* Sort By Dropdown */}
           <div className="flex items-center gap-3 mb-8">
             <span className="text-sm font-medium text-gray-700">Sort by:</span>
@@ -177,7 +194,7 @@ export default async function ShopPage(props: {
           ) : (
              <div className="flex flex-col items-center justify-center py-20 text-gray-400 m-auto">
               <p className="text-lg font-medium">No products found</p>
-              <p className="text-sm">Try adjusting your filters</p>
+              <p className="text-sm">Try adjusting your search or filters</p>
             </div>
           )}
         </div>

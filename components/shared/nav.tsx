@@ -2,13 +2,17 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, User, Heart, Menu } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { CartNavIcon } from "@/components/shared/shop/navCartIcon"
 import { useAuthModal } from "@/store/auth-modal.store"
+import { useCartStore } from "@/store/cart.store"
+import {useWishlistStore} from "@/store/wishlist.store"
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 const navLinks = [
     { href: "/", label: "Home" },
@@ -19,11 +23,38 @@ const navLinks = [
 
 export function Nav() {
     const [mobileOpen, setMobileOpen] = useState(false)
+    const [searchQuery, setSearchQuery] = useState("")
     const openAuthModal = useAuthModal((s) => s.open)
+    const syncWithDB = useCartStore((s) => s.syncWithDB);
+    const syncWishlistWithDB = useWishlistStore((s) => s.syncWithDB)
+
+    const router = useRouter();
+    const supabase = createClient();
+
+    useEffect(() => {
+        syncWithDB(); 
+        syncWishlistWithDB()
+  }, [syncWithDB, syncWishlistWithDB]);
+
+    const handleWishlistClick = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            openAuthModal("signin");
+        } else {
+            router.push("/wishlist");
+        }
+    };
+
+    const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter" && searchQuery.trim()) {
+            // Route to the shop page with the search query
+            router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
+        }
+    }
 
     return (
         <header className="bg-white border-b border-gray-100 sticky top-0 z-40 flex flex-col">
-            
+
             {/* 1. NEW: The missing orange announcement bar from your design */}
             {/* <div className="bg-[#FF5A00] text-white text-xs font-medium py-2 w-full flex items-center justify-center gap-2">
                 <span className="bg-white text-black px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide">Special</span>
@@ -44,8 +75,11 @@ export function Nav() {
                 <div className="relative flex-1 max-w-xl hidden sm:block">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
-                        placeholder="Search Brands, Products & Categories..."
-                        className="pl-10 rounded-full bg-gray-50 border-gray-200"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleSearch}
+                        placeholder="Search Brands, Products & Categories... (Press Enter)"
+                        className="pl-10 rounded-full bg-gray-50 border-gray-200 focus-visible:ring-[#FF5A00]"
                     />
                 </div>
 
@@ -64,9 +98,9 @@ export function Nav() {
                     {/* The Cart Icon Component handles its own state/badge! */}
                     <CartNavIcon />
 
-                    <Link href="/wishlist" className="p-2 hover:opacity-80 transition-opacity">
+                    <button onClick={handleWishlistClick} className="p-2 hover:opacity-80 transition-opacity">
                         <Heart className="h-5 w-5 text-gray-900" />
-                    </Link>
+                    </button>
 
                     {/* Mobile menu */}
                     <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>

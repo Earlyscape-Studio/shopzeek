@@ -30,12 +30,12 @@ export function Footer() {
               Get latest beauty tips when you subscribe
             </p>
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex gap-2 p-8 sm:w-auto">
             <Input
               placeholder="Enter your email address"
-              className="bg-white rounded-full max-w-xs"
+              className="bg-white rounded-full w-lg max-w-lg p-5"
             />
-            <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-6">
+            <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-6 py-5">
               SUBSCRIBE
             </Button>
           </div>
@@ -80,7 +80,7 @@ export function Footer() {
       </div>
 
       <div className="bg-white border-t border-gray-100 py-4 text-center text-xs text-gray-400">
-        ShopZeek © 2026.
+        Zeek © 2026.
       </div>
     </footer>
   );

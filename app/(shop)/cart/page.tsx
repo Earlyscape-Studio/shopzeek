@@ -32,7 +32,7 @@ import {
 
 export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
-  const { items, removeItem, updateQuantity } = useCartStore();
+  const { items, removeItem, updateQuantity, clearCart } = useCartStore();
 
   useEffect(() => {
     setIsMounted(true);
@@ -82,14 +82,14 @@ export default function CartPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Left Column: Shadcn Table */}
           <div className="lg:col-span-2">
             <div className="border border-gray-200 rounded-sm bg-white overflow-hidden">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-bold text-gray-900">Shopping Cart</h2>
               </div>
-              
+
               <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow className="hover:bg-gray-50">
@@ -104,7 +104,7 @@ export default function CartPage() {
                     <TableRow key={item.product_id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-4">
-                          <button 
+                          <button
                             onClick={() => removeItem(item.product_id)}
                             className="text-red-500 hover:bg-red-50 border border-red-200 rounded-full p-1 transition-colors shrink-0"
                           >
@@ -129,7 +129,7 @@ export default function CartPage() {
                       <TableCell>
                         <div className="flex justify-center">
                           <div className="flex items-center border border-gray-200 rounded-sm w-[100px] h-10">
-                            <button 
+                            <button
                               onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))}
                               className="flex-1 flex items-center justify-center hover:bg-gray-50 text-gray-500 transition-colors"
                             >
@@ -138,7 +138,7 @@ export default function CartPage() {
                             <span className="w-10 text-center text-sm font-medium">
                               {item.quantity.toString().padStart(2, '0')}
                             </span>
-                            <button 
+                            <button
                               onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
                               className="flex-1 flex items-center justify-center hover:bg-gray-50 text-gray-500 transition-colors"
                             >
@@ -155,10 +155,10 @@ export default function CartPage() {
                 </TableBody>
               </Table>
 
-              {/* Action Buttons */}
+              {/* CLEANED UP Action Buttons */}
               <div className="p-6 flex items-center justify-between border-t border-gray-200">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="border-[#FF5A00] text-[#FF5A00] hover:bg-orange-50 font-bold uppercase tracking-widest text-xs h-12 px-6 gap-2"
                   asChild
                 >
@@ -166,11 +166,13 @@ export default function CartPage() {
                     <ArrowLeft size={16} /> Return to Shop
                   </Link>
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="border-[#FF5A00] text-[#FF5A00] hover:bg-orange-50 font-bold uppercase tracking-widest text-xs h-12 px-6"
+
+                <Button
+                  variant="outline"
+                  onClick={clearCart}
+                  className="border-red-200 text-red-500 hover:bg-red-50 font-bold uppercase tracking-widest text-xs h-12 px-6"
                 >
-                  Update Cart
+                  Clear Cart
                 </Button>
               </div>
             </div>
@@ -178,7 +180,7 @@ export default function CartPage() {
 
           {/* Right Column: Shadcn Cards */}
           <div className="lg:col-span-1 space-y-6">
-            
+
             {/* Cart Totals Card */}
             <Card className="bg-[#FFEFE8] border-orange-50 rounded-sm shadow-none">
               <CardHeader className="pb-4">
@@ -207,8 +209,13 @@ export default function CartPage() {
                   <span className="font-bold text-gray-900">Total</span>
                   <span className="text-xl font-bold text-[#FF5A00]">₦{total.toLocaleString()} NGN</span>
                 </div>
-                <Button className="w-full bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest h-14 rounded-sm flex items-center justify-center gap-2">
-                  Proceed to Checkout <ArrowRight size={18} />
+                <Button
+                  asChild
+                  className="w-full bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest h-14 rounded-sm"
+                >
+                  <Link href="/checkout" className="flex items-center justify-center gap-2">
+                    Proceed to Checkout <ArrowRight size={18} />
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
@@ -219,9 +226,9 @@ export default function CartPage() {
                 <CardTitle className="text-lg font-bold text-gray-900">Coupon Code</CardTitle>
               </CardHeader>
               <CardContent>
-                <Input 
-                  type="text" 
-                  placeholder="Email address" 
+                <Input
+                  type="text"
+                  placeholder="Email address"
                   className="bg-white border-gray-200 rounded-sm h-12 px-4 mb-4 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-0"
                 />
                 <Button className="bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest h-12 px-8 rounded-sm">

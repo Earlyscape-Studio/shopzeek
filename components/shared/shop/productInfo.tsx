@@ -1,31 +1,73 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"
 import { Star, Heart, Minus, Plus, ShoppingCart, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart.store"
+import { useWishlistStore } from "@/store/wishlist.store"
+import { useAuthModal } from "@/store/auth-modal.store";
+import { createClient } from "@/utils/supabase/client";
+
+
 
 export function ProductInfo({ product, avgRating, totalReviews }: any) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
-  
-  // Bring in the addItem function from your existing store
-  const addItem = useCartStore((state) => state.addItem);
 
-  const handleAddToCart = () => {
-    // Pass the payload matching your CartItem type
+
+  const addItem = useCartStore((state) => state.addItem);
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore()
+  const isWishlisted = isInWishlist(product.id);
+  const openAuthModal = useAuthModal((s) => s.open);
+  const supabase = createClient();
+  const router = useRouter()
+
+  const handleAddToCart = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      openAuthModal("signin");
+      return;
+    }
+
     addItem({
       product_id: product.id,
       name: product.name,
       price: product.price ?? 0,
-      image_url: product.image_urls?.[0] ?? "/placeholder.png", 
+      image_url: product.image_urls?.[0] ?? "/placeholder.png",
       quantity: quantity,
-      slug: product.slug, // <--- Add this missing property!
+      slug: product.slug,
     });
 
     // Show brief success state on the button
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+
+  const handleBuyNow = () => {
+    addItem({
+      product_id: product.id,
+      name: product.name,
+      price: product.price ?? 0,
+      image_url: product.image_urls?.[0] ?? "/placeholder.png",
+      quantity: quantity,
+      slug: product.slug,
+    });
+
+    router.push("/checkout");
+  };
+
+  const handleAddToWishlist = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      openAuthModal("signin");
+      return;
+    }
+    if (isWishlisted) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
+    }
   };
 
   return (
@@ -104,11 +146,18 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
             <>ADD TO CART <ShoppingCart size={18} /></>
           )}
         </Button>
-        <Button variant="outline" className="flex-1 border-gray-200 text-[#FF5A00] hover:text-orange-600 h-14 text-sm font-bold uppercase tracking-widest rounded-md">
+        <Button
+          onClick={handleBuyNow}
+          variant="outline" className="flex-1 border-gray-200 text-[#FF5A00] hover:text-orange-600 h-14 text-sm font-bold uppercase tracking-widest rounded-md">
           BUY NOW
         </Button>
-        <Button variant="outline" className="h-14 w-14 border-[#FF5A00] bg-[#FF5A00] text-white hover:bg-orange-600 rounded-md shrink-0 p-0">
-          <Heart size={24} fill="currentColor" />
+        <Button
+          onClick={handleAddToWishlist}
+          variant="outline"
+          className={`h-14 w-14 border-[#FF5A00] rounded-md shrink-0 p-0 transition-colors ${isWishlisted ? "bg-[#FF5A00] text-white hover:bg-orange-600" : "bg-white text-[#FF5A00] hover:bg-orange-50"
+            }`}
+        >
+          <Heart size={24} fill={isWishlisted ? "currentColor" : "none"} />
         </Button>
       </div>
     </div>
