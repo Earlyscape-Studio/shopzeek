@@ -88,6 +88,11 @@ export function Nav() {
         }
     }
 
+    const handleSignOut = async () => {
+        await supabase.auth.signOut()
+        router.refresh()
+    }
+
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && searchQuery.trim()) {
             router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
@@ -180,7 +185,7 @@ export function Nav() {
 
                             <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem asChild>
-                                    <Link href="/orders" className="flex items-center gap-2">
+                                    <Link href="/cart" className="flex items-center gap-2">
                                         <ShoppingBag className="h-4 w-4 text-gray-400" />
                                         My Orders
                                     </Link>
@@ -200,6 +205,7 @@ export function Nav() {
                                         <DropdownMenuItem asChild>
                                             <Link
                                                 href="/admin"
+                                                prefetch={false}
                                                 className="flex items-center gap-2 text-orange-600 font-medium"
                                             >
                                                 <LayoutDashboard className="h-4 w-4" />
@@ -212,15 +218,14 @@ export function Nav() {
                                 <DropdownMenuSeparator />
 
                                 <DropdownMenuItem asChild>
-                                    <form action={signOut} className="w-full">
                                         <button
+                                            onClick={handleSignOut}
                                             type="submit"
                                             className="flex items-center gap-2 w-full text-red-500 hover:text-red-600"
                                         >
                                             <LogOut className="h-4 w-4" />
                                             Sign out
                                         </button>
-                                    </form>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

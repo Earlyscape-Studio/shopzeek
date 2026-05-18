@@ -58,11 +58,11 @@ export function ProductCard({ product }: Props) {
           
           {/* Image Container - Added 'group' here so the button knows when to appear */}
           <div className={`${imageBgColor} rounded-xl relative h-56 w-full mb-4 overflow-hidden shrink-0 group/image`}>
-            {isOnDeal && percentOff > 0 && (
+            {/* {isOnDeal && percentOff > 0 && (
               <div className="absolute top-3 right-3 bg-[#E53935] text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm z-10">
                 {percentOff}% OFF
               </div>
-            )}
+            )} */}
             <Image
               src={product.image_urls?.[0] ?? "/placeholder.png"}
               alt={product.name ?? "Product"}
@@ -100,7 +100,7 @@ export function ProductCard({ product }: Props) {
                 )}
               </div>
 
-              <div className="flex items-center gap-1 pt-1 mb-2">
+              {/* <div className="flex items-center gap-1 pt-1 mb-2">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
                     key={i}
@@ -109,11 +109,11 @@ export function ProductCard({ product }: Props) {
                     }`}
                   />
                 ))}
-              </div>
+              </div> */}
 
-              <p className="text-xs text-gray-500 font-medium">
+              {/* <p className="text-xs text-gray-500 font-medium">
                 1,286 Purchases
-              </p>
+              </p> */}
             </div>
           </div>
         </CardContent>

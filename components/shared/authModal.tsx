@@ -1,10 +1,9 @@
 
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState, useActionState } from "react"
 import { useAuthModal } from "@/store/auth-modal.store"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useActionState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -16,6 +15,8 @@ import {
     DialogTitle,
     DialogDescription
 } from "@/components/ui/dialog";
+import { createClient } from "@/utils/supabase/client";
+import {toast} from "sonner"
 // import {signInWithEmail, signUpWithEmail} from "@/app/actions/auth.actions"
 
 
@@ -23,10 +24,42 @@ export function AuthModal() {
     const { isOpen, defaultTab, redirectTo, open, close } = useAuthModal()
     const searchParams = useSearchParams()
     const router = useRouter()
+    // const [showSuccess, setShowSuccess] = useState(false)
 
-    const [signInState, signInAction, signInPending] = useActionState(signIn, undefined)
+    const [signInState, signInAction, signInPending] = useActionState(signIn, {error: "", success: false})
 
-    const [signUpState, signUpAction, signUpPending] = useActionState(signUp, undefined)
+    const [signUpState, signUpAction, signUpPending] = useActionState(signUp, {error: "", success: false})
+
+    useEffect(() => {
+        if (signUpState?.success) {
+            const syncAndClose = async () => {
+                const supabase = createClient();
+                // 1. Force the browser client to read the new server cookie
+                await supabase.auth.getUser(); 
+                
+                // 2. Fire the UI updates
+                toast.success("Account created successfully!");
+                router.refresh();
+                close();
+            };
+            syncAndClose()
+        }
+
+        if (signInState?.success) {
+            const syncAndClose = async () => {
+                const supabase = createClient();
+                // 1. Force the browser client to read the new server cookie
+                await supabase.auth.getUser(); 
+                
+                // 2. Fire the UI updates
+                toast.success("Welcome back! You are signed in.");
+                router.refresh();
+                close();
+            };
+
+            syncAndClose()
+        }
+    }, [signInState?.success, signUpState?.success, close, router]);
 
     const handleClose = () => {
         close()

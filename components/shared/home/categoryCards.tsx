@@ -5,26 +5,31 @@ import Image from "next/image";
 const categories = [
   {
     title: "Get Radiant\nSkin!",
-    desc: "Experience the ultimate skincare transformation with our quality skincare products.",
+    desc: "glow like never before with our best selling skincare products.",
     href: "/shop?category=Skin+Care",
     bg: "bg-[#F4F6F8]",
     image: "/skin_img.png",
   },
   {
     title: "Enhance Your\nBeauty",
-    desc: "Experience the ultimate skincare transformation with our quality skincare products.",
+    desc: "Discover you hair's potential with our best selling haircare products",
     href: "/shop?category=Hair+Care",
     bg: "bg-[#FFF0E6]",
     image: "/beauty_img.png",
   },
   {
     title: "Get Great\nFragrances",
-    desc: "Experience the ultimate skincare transformation with our quality skincare products.",
+    desc: "Discover your signature scent with our best selling fragrances",
     href: "/shop?category=Fragrances",
     bg: "bg-[#FDECEE]",
     image: "/fragrance_img.jpg",
   },
 ];
+
+
+//TODO: there should be shop now buttons that take us to the shop section with it's category selected
+
+//TODO: Also need to work on categories dropdown.
 
 export function CategoryCards() {
   return (

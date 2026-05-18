@@ -32,40 +32,43 @@ export async function proxy(request: NextRequest) {
 
   const { pathname, searchParams } = request.nextUrl;
 
-  const protectedCustomerRoutes = ["/checkout", "/wishlist"]
+  const protectedCustomerRoutes = ["/checkout", "/wishlist"];
 
-  // Redirect unauthenticated users away from protected routes
+  // Redirect unauthenticated users away from protected routes and trigger modal
+  if (!user && protectedCustomerRoutes.some((r) => pathname.startsWith(r))) {
+    const redirectUrl = new URL("/", request.url);
+    redirectUrl.searchParams.set("auth", "required");
+    redirectUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Redirect unauthenticated users away from admin and trigger modal
   if (!user && pathname.startsWith("/admin")) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const redirectUrl = new URL("/", request.url);
+    redirectUrl.searchParams.set("auth", "required");
+    return NextResponse.redirect(redirectUrl);
   }
 
-  // Redirect authenticated users away from auth pages
-  if (user && (pathname === "/login" || pathname === "/signup")) {
+  // Order result pages reference params to block direct access
+  const orderResultRoutes = ["/order/success", "/order/failed"];
+  if (orderResultRoutes.some((r) => pathname.startsWith(r)) && !searchParams.get("reference")) {
     return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  if (!user && protectedCustomerRoutes.some((r) => pathname.startsWith(r))){
-    const redirectUrl = new URL("/", request.url)
-    redirectUrl.searchParams.set("auth", "required")
-    redirectUrl.searchParams.set("next", pathname)
-    return NextResponse.redirect(redirectUrl)
-  }
-
-  //order result pages reference params to block direct access
-  const orderResultRoutes = ["/order/success", "/order/failed"]
-  if (orderResultRoutes.some((r) => pathname.startsWith(r)) && !searchParams.get("reference")){
-    return NextResponse.redirect(new URL("/", request.url))
   }
 
   // Check admin role for /admin routes
   if (user && pathname.startsWith("/admin")) {
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
 
+    if (error) {
+      console.error("Supabase Profile Error (Check RLS):", error.message);
+    }
+
     if (!profile || profile.role !== "admin") {
+      // Redirect unauthorized but logged-in users to home
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
@@ -75,6 +78,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/zenithpay/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Updated to match your globalpay api structure from the tree
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/globalpay/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

@@ -44,7 +44,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                         </Avatar>
                     </div>
                 </header>
-                <div className="flex-1 p-6 bg-gray-500">
+                <div className="flex-1 p-6 bg-orange-200">
                     {children}
                 </div>
             </main>

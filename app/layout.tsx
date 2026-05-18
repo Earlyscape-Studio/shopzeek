@@ -30,7 +30,7 @@ export default function RootLayout({
     >
       <body className={soraSans.className}>
         {children}
-        <Toaster richColors position="top-right" />
+        <Toaster richColors position="top-center" />
       </body>
     </html>
   );
