@@ -109,18 +109,18 @@ export default async function ShopPage(props: {
 
       {/* Main Content Layout */}
       <div className="max-w-7xl mx-auto px-4 py-12 flex flex-col md:flex-row gap-12">
-        
+
         {/* Left Column: Products */}
         <div className="flex-1 flex flex-col min-h-screen order-2 md:order-1">
-          
+
           {/* 3. Added Conditional Search Results Header */}
           {searchParams.search && (
-             <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Search results for "{searchParams.search}"
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">Found {count || 0} items</p>
-             </div>
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-900">
+                Search results for "{searchParams.search}"
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">Found {count || 0} items</p>
+            </div>
           )}
 
           {/* Sort By Dropdown */}
@@ -150,15 +150,17 @@ export default async function ShopPage(props: {
                 <div className="mt-auto pt-16 pb-8 flex justify-center">
                   <Pagination>
                     <PaginationContent className="gap-2">
+
+                      {/* Previous Button */}
                       <PaginationItem>
                         <PaginationPrevious
                           href={page > 1 ? createPageURL(page - 1) : "#"}
-                          className={`rounded-full h-10 w-10 p-0 border border-orange-500 text-orange-500 hover:bg-orange-50 ${
-                            page <= 1 ? "pointer-events-none opacity-50" : ""
-                          }`}
+                          className={`rounded-full h-10 w-10 border border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center p-0 [&>span]:hidden ${page <= 1 ? "pointer-events-none opacity-50" : ""
+                            }`}
                         />
                       </PaginationItem>
 
+                      {/* Page Numbers */}
                       {Array.from({ length: totalPages }).map((_, i) => {
                         const p = i + 1;
                         return (
@@ -166,11 +168,10 @@ export default async function ShopPage(props: {
                             <PaginationLink
                               href={createPageURL(p)}
                               isActive={page === p}
-                              className={`rounded-full h-10 w-10 border ${
-                                page === p
+                              className={`rounded-full h-10 w-10 border flex items-center justify-center font-mono text-sm ${page === p
                                   ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white"
                                   : "border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500"
-                              }`}
+                                }`}
                             >
                               {String(p).padStart(2, "0")}
                             </PaginationLink>
@@ -178,21 +179,22 @@ export default async function ShopPage(props: {
                         );
                       })}
 
+                      {/* Next Button */}
                       <PaginationItem>
                         <PaginationNext
                           href={page < totalPages ? createPageURL(page + 1) : "#"}
-                          className={`rounded-full h-10 w-10 p-0 border border-orange-500 text-orange-500 hover:bg-orange-50 ${
-                            page >= totalPages ? "pointer-events-none opacity-50" : ""
-                          }`}
+                          className={`rounded-full h-10 w-10 border border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center p-0 [&>span]:hidden ${page >= totalPages ? "pointer-events-none opacity-50" : ""
+                            }`}
                         />
                       </PaginationItem>
+
                     </PaginationContent>
                   </Pagination>
                 </div>
               )}
             </>
           ) : (
-             <div className="flex flex-col items-center justify-center py-20 text-gray-400 m-auto">
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 m-auto">
               <p className="text-lg font-medium">No products found</p>
               <p className="text-sm">Try adjusting your search or filters</p>
             </div>
