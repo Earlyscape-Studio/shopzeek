@@ -218,14 +218,14 @@ export function Nav() {
                                 <DropdownMenuSeparator />
 
                                 <DropdownMenuItem asChild>
-                                        <button
-                                            onClick={handleSignOut}
-                                            type="submit"
-                                            className="flex items-center gap-2 w-full text-red-500 hover:text-red-600"
-                                        >
-                                            <LogOut className="h-4 w-4" />
-                                            Sign out
-                                        </button>
+                                    <button
+                                        onClick={handleSignOut}
+                                        type="submit"
+                                        className="flex items-center gap-2 w-full text-red-500 hover:text-red-600"
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                        Sign out
+                                    </button>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

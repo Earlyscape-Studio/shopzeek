@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function SignupPage() {
-  const [state, action, pending] = useActionState(signUp, { error: "" });
+  const [state, action, pending] = useActionState(signUp, { error: "" , success: false});
 
   return (
     <div className="flex min-h-screen items-center justify-center">

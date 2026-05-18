@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function UpdatePasswordPage() {
-    const [state, action, pending] = useActionState(updatePassword, { error: "" });
+    const [state, action, pending] = useActionState(updatePassword, { error: "", success: false });
 
     return (
         <div className="flex min-h-[70vh] items-center justify-center px-4">
@@ -28,6 +28,12 @@ export default function UpdatePasswordPage() {
 
                     {state?.error && (
                         <p className="text-sm text-red-500 font-medium">{state.error}</p>
+                    )}
+
+                    {state?.success && (
+                        <p className="text-sm text-green-500 font-medium">
+                            Password updated successfully!
+                        </p>
                     )}
 
                     <Button type="submit" className="w-full bg-[#FF5A00] hover:bg-orange-600 text-white" disabled={pending}>

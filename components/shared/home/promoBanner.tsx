@@ -11,7 +11,7 @@ export function PromoBanner() {
         {/* Left: Products Image Placeholder */}
         <div className="w-full md:w-5/12 h-48 md:h-64 relative flex-shrink-0 bg-white/10">
            <Image 
-             src="https://placehold.co/600x400/transparent/white?text=Products" 
+             src="/productbannerimage.png" 
              alt="Free Samples" 
              fill
              className="object-cover"

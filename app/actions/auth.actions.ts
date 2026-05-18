@@ -95,20 +95,22 @@ export async function sendResetLink(
 
 export async function updatePassword(
   prevState: AuthState | undefined,
-  formData: FormData,
-) {
+  formData: FormData
+): Promise<AuthState> { // 1. Set the strict return type here
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
   const password = formData.get("password") as string;
 
-  // updateUser automatically updates the currently authenticated user
   const { error } = await supabase.auth.updateUser({
     password: password,
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    // 2. Add success: false to the error return
+    return { error: error.message, success: false };
+  }
 
-  // Once updated, redirect them safely to the home page
-  redirect("/");
+  // 3. Add success: true to the success return
+  return { error: "", success: true };
 }
