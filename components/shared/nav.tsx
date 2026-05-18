@@ -3,14 +3,22 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Search, User, Heart, Menu, LayoutDashboard, LogOut, ShoppingBag } from "lucide-react"
+import { Search, User, Heart, Menu, LayoutDashboard, LogOut, ShoppingBag, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { CartNavIcon } from "@/components/shared/shop/navCartIcon"
 import { useAuthModal } from "@/store/auth-modal.store"
 import { useCartStore } from "@/store/cart.store"
 import { useWishlistStore } from "@/store/wishlist.store"
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet"
+import { CategoriesDropdown } from "@/components/shared/shop/categoriesDropdown"
 import { Button } from "@/components/ui/button"
+import {
+    Drawer,
+    DrawerContent,
+    DrawerTrigger,
+    DrawerClose,
+    DrawerTitle
+} from "@/components/ui/drawer"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -42,8 +50,6 @@ export function Nav() {
     const syncWishlistWithDB = useWishlistStore((s) => s.syncWithDB)
 
     const router = useRouter()
-
-    // Single supabase client instance for the whole component
     const supabase = createClient()
 
     useEffect(() => {
@@ -56,13 +62,11 @@ export function Nav() {
             setProfile(data)
         }
 
-        // Get current session on mount
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null)
             if (session?.user) fetchProfile(session.user.id)
         })
 
-        // Listen for auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 setUser(session?.user ?? null)
@@ -95,6 +99,14 @@ export function Nav() {
 
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && searchQuery.trim()) {
+            router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
+        }
+    }
+
+    // Mobile search handler — closes drawer and navigates
+    const handleMobileSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter" && searchQuery.trim()) {
+            setMobileOpen(false)
             router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
         }
     }
@@ -198,7 +210,6 @@ export function Nav() {
                                     </Link>
                                 </DropdownMenuItem>
 
-                                {/* Admin link — only shown to admins */}
                                 {isAdmin && (
                                     <>
                                         <DropdownMenuSeparator />
@@ -241,68 +252,145 @@ export function Nav() {
                         <Heart className="h-5 w-5 text-gray-900" />
                     </button>
 
-                    {/* Mobile menu */}
-                    <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-                        <SheetTrigger asChild>
+                    {/* ============================================
+                        MOBILE MENU — replaced Sheet with Drawer
+                        Everything above this line is unchanged
+                    ============================================ */}
+                    <Drawer open={mobileOpen} onOpenChange={setMobileOpen} direction="right">
+                        <DrawerTrigger asChild>
                             <Button variant="ghost" size="icon" className="sm:hidden text-gray-900">
                                 <Menu className="h-5 w-5" />
                             </Button>
-                        </SheetTrigger>
-                        <SheetContent side="right">
-                            <nav className="flex flex-col gap-4 mt-8">
-                                {navLinks.map(({ href, label }) => (
-                                    <Link
-                                        key={href}
-                                        href={href}
-                                        className="text-lg font-medium text-gray-700 hover:text-orange-500"
-                                        onClick={() => setMobileOpen(false)}
+                        </DrawerTrigger>
+
+                        <DrawerContent className="max-h-[90dvh]">
+                            {/* Drawer header */}
+                            <VisuallyHidden>
+                                <DrawerTitle>Navigation Menu</DrawerTitle>
+                            </VisuallyHidden>
+                            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
+                                <Image
+                                    src="/zeek2.svg"
+                                    alt="Zeek Logo"
+                                    width={40}
+                                    height={16}
+                                    className="object-cover"
+                                />
+                                <DrawerClose asChild>
+                                    <button
+                                        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                                        aria-label="Close menu"
                                     >
-                                        {label}
-                                    </Link>
+                                        <X className="h-5 w-5 text-gray-500" />
+                                    </button>
+                                </DrawerClose>
+                            </div>
+
+                            {/* Search — visible in drawer since it's hidden in the main navbar on mobile */}
+                            <div className="px-5 py-4 border-b border-gray-100">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onKeyDown={handleMobileSearch}
+                                        placeholder="Search products..."
+                                        className="pl-10 rounded-full bg-gray-50 border-gray-200 focus-visible:ring-[#FF5A00]"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Nav links */}
+                            <nav className="flex flex-col px-5 py-3 overflow-y-auto">
+                                {navLinks.map(({ href, label }) => (
+                                    <DrawerClose asChild key={href}>
+                                        <Link
+                                            href={href}
+                                            className="flex items-center h-14 text-base font-medium text-gray-700 border-b border-gray-50 hover:text-[#FF5A00] transition-colors"
+                                        >
+                                            {label}
+                                        </Link>
+                                    </DrawerClose>
                                 ))}
 
-                                {/* Mobile auth links */}
+                                {/* Auth section */}
                                 {!user ? (
                                     <button
-                                        className="text-lg font-medium text-orange-500 text-left"
+                                        className="flex items-center h-14 text-base font-medium text-[#FF5A00] border-b border-gray-50 text-left gap-2"
                                         onClick={() => {
                                             setMobileOpen(false)
                                             openAuthModal("signin")
                                         }}
                                     >
+                                        <User className="h-4 w-4" />
                                         Log In / Sign Up
                                     </button>
                                 ) : (
                                     <>
-                                        <Link
-                                            href="/orders"
-                                            className="text-lg font-medium text-gray-700 hover:text-orange-500"
-                                            onClick={() => setMobileOpen(false)}
-                                        >
-                                            My Orders
-                                        </Link>
-                                        {isAdmin && (
+                                        {/* User info strip */}
+                                        <div className="flex items-center gap-3 py-4 border-b border-gray-100">
+                                            <Avatar className="h-9 w-9">
+                                                <AvatarFallback className="bg-orange-100 text-orange-600 text-xs font-semibold">
+                                                    {initials}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="text-sm font-semibold text-gray-800">
+                                                    {profile?.full_name ?? "Account"}
+                                                </p>
+                                                <p className="text-xs text-gray-400">
+                                                    {isAdmin ? "Administrator" : "Customer"}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <DrawerClose asChild>
                                             <Link
-                                                href="/admin"
-                                                className="text-lg font-medium text-orange-500"
-                                                onClick={() => setMobileOpen(false)}
+                                                href="/orders"
+                                                className="flex items-center gap-3 h-14 text-base font-medium text-gray-700 border-b border-gray-50 hover:text-[#FF5A00] transition-colors"
                                             >
-                                                Admin Panel
+                                                <ShoppingBag className="h-4 w-4 text-gray-400" />
+                                                My Orders
                                             </Link>
-                                        )}
-                                        <form action={signOut}>
-                                            <button
-                                                type="submit"
-                                                className="text-lg font-medium text-red-500 text-left"
+                                        </DrawerClose>
+
+                                        <DrawerClose asChild>
+                                            <Link
+                                                href="/wishlist"
+                                                className="flex items-center gap-3 h-14 text-base font-medium text-gray-700 border-b border-gray-50 hover:text-[#FF5A00] transition-colors"
                                             >
-                                                Sign out
-                                            </button>
-                                        </form>
+                                                <Heart className="h-4 w-4 text-gray-400" />
+                                                Wishlist
+                                            </Link>
+                                        </DrawerClose>
+
+                                        {isAdmin && (
+                                            <DrawerClose asChild>
+                                                <Link
+                                                    href="/admin"
+                                                    className="flex items-center gap-3 h-14 text-base font-medium text-[#FF5A00] border-b border-gray-50"
+                                                >
+                                                    <LayoutDashboard className="h-4 w-4" />
+                                                    Admin Panel
+                                                </Link>
+                                            </DrawerClose>
+                                        )}
+
+                                        <button
+                                            onClick={() => {
+                                                setMobileOpen(false)
+                                                handleSignOut()
+                                            }}
+                                            className="flex items-center gap-3 h-14 text-base font-medium text-red-500 text-left"
+                                        >
+                                            <LogOut className="h-4 w-4" />
+                                            Sign out
+                                        </button>
                                     </>
                                 )}
                             </nav>
-                        </SheetContent>
-                    </Sheet>
+                        </DrawerContent>
+                    </Drawer>
                 </div>
             </div>
 
@@ -310,10 +398,7 @@ export function Nav() {
             <div className="border-t border-gray-100 hidden sm:block w-full">
                 <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-10">
                     <div className="flex items-center gap-6">
-                        <button className="flex items-center gap-1 text-sm font-semibold text-[#FF5A00]">
-                            <Menu className="h-4 w-4" />
-                            Categories
-                        </button>
+                        <CategoriesDropdown />
                         {navLinks.map(({ href, label }) => (
                             <Link
                                 key={href}

@@ -44,10 +44,10 @@ export default async function HomePage() {
       <CategoryCards />
       
       {/* Replaced with the new dedicated component */}
-      <BestDealsSection
+      {/* <BestDealsSection
         products={deals ?? []}
         bgClass="bg-[#FFF5F0]" 
-      />
+      /> */}
       
       <ProductCarousel
         title="Featured Products"

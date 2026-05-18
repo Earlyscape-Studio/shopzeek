@@ -1,4 +1,3 @@
-// components/storefront/ProductCard.tsx
 "use client";
 
 import Link from "next/link";
@@ -32,13 +31,13 @@ export function ProductCard({ product }: Props) {
     : 0;
 
   const handleQuickAddToCart = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
-    const {data: {session}} = await supabase.auth.getSession()
-    if(!session){
-      openAuthModal("signin")
-      return
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      openAuthModal("signin");
+      return;
     }
 
     addItem({
@@ -47,37 +46,36 @@ export function ProductCard({ product }: Props) {
       price: product.price ?? 0,
       image_url: product.image_urls?.[0] ?? "/placeholder.png",
       quantity: 1,
-      slug: product.slug ?? "" //fallback if slug is missing
-    })
-  }
+      slug: product.slug ?? "" 
+    });
+  };
 
   return (
     <Link href={`/shop/${product.slug ?? ""}`} className="group block h-full focus:outline-none">
       <Card className="h-full bg-white hover:bg-[#FFDFD2] transition-all duration-300 border border-transparent hover:border-orange-100 shadow-sm hover:shadow-md rounded-2xl overflow-hidden">
         <CardContent className="p-4 flex flex-col h-full">
           
-          {/* Image Container - Added 'group' here so the button knows when to appear */}
+          {/* Image Container */}
           <div className={`${imageBgColor} rounded-xl relative h-56 w-full mb-4 overflow-hidden shrink-0 group/image`}>
-            {/* {isOnDeal && percentOff > 0 && (
-              <div className="absolute top-3 right-3 bg-[#E53935] text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm z-10">
-                {percentOff}% OFF
-              </div>
-            )} */}
             <Image
               src={product.image_urls?.[0] ?? "/placeholder.png"}
               alt={product.name ?? "Product"}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-contain p-4 group-hover/image:scale-105 transition-transform duration-500 mix-blend-multiply"
+              priority={false}
             />
             
-            {/* The Hover 'Add to Cart' Button */}
-            <div className="absolute bottom-4 left-0 right-0 px-4 opacity-0 translate-y-4 group-hover/image:opacity-100 group-hover/image:translate-y-0 transition-all duration-300 z-20">
+            {/* MODIFIED: Mobile-first visibility wrapper 
+              - Mobile: opacity-100, positioned cleanly at the bottom
+              - Desktop (md:): Hidden by default (opacity-0, translate-y-4), reveals seamlessly on image hover
+            */}
+            <div className="absolute bottom-4 left-0 right-0 px-4 z-20 transition-all duration-300 opacity-100 translate-y-0 md:opacity-0 md:translate-y-4 md:group-hover/image:opacity-100 md:group-hover/image:translate-y-0">
               <Button 
                 onClick={handleQuickAddToCart}
-                className="w-full bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest text-xs h-10 rounded-sm shadow-lg flex items-center justify-center gap-2"
+                className="w-full bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest text-xs h-10 rounded-sm shadow-lg px-16 flex items-center justify-center gap-2"
               >
-                <ShoppingCart size={14} /> Add to Cart
+                <ShoppingCart size={12} /> Add to Cart
               </Button>
             </div>
           </div>
@@ -99,21 +97,6 @@ export function ProductCard({ product }: Props) {
                   </span>
                 )}
               </div>
-
-              {/* <div className="flex items-center gap-1 pt-1 mb-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-3.5 w-3.5 ${
-                      i < 4 ? "fill-[#FF5A00] text-[#FF5A00]" : "fill-gray-200 text-gray-200"
-                    }`}
-                  />
-                ))}
-              </div> */}
-
-              {/* <p className="text-xs text-gray-500 font-medium">
-                1,286 Purchases
-              </p> */}
             </div>
           </div>
         </CardContent>

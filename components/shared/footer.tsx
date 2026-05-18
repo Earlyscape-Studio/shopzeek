@@ -1,4 +1,3 @@
-// components/storefront/Footer.tsx
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,8 +20,9 @@ export function Footer() {
     <footer>
       {/* Newsletter */}
       <div className="bg-orange-500 py-10 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
+          {/* Text block centers on mobile, left-aligns on large screens */}
+          <div className="text-center lg:text-left space-y-1">
             <p className="text-white text-xl font-bold">
               Subscribe & Get 10% OFF for first order
             </p>
@@ -30,12 +30,15 @@ export function Footer() {
               Get latest beauty tips when you subscribe
             </p>
           </div>
-          <div className="flex gap-2 p-8 sm:w-auto">
+          
+          {/* Input block handles width fluidly across mobile views */}
+          <div className="flex items-center gap-2 w-full max-w-md lg:w-auto">
             <Input
+              type="email"
               placeholder="Enter your email address"
-              className="bg-white rounded-full w-lg max-w-lg p-5"
+              className="bg-white rounded-full w-full lg:w-80 h-12 px-5 text-black focus-visible:ring-0 focus-visible:ring-offset-0 border-none placeholder:text-gray-400"
             />
-            <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-6 py-5">
+            <Button className="bg-black text-white hover:bg-gray-800 rounded-full h-12 px-6 font-semibold tracking-wide shrink-0 transition-colors">
               SUBSCRIBE
             </Button>
           </div>

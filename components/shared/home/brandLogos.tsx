@@ -3,10 +3,10 @@ import Image from "next/image";
 const brands = [
   { name: "The Cosmetic Republic", logo: "/cosmetic_img.png" },
   { name: "ORS", logo: "/ors_img.jpg" },
+  { name: "Bio Oil", logo: "/biooillogo.jpg" },
   { name: "The Cosmetic Republic 2", logo: "/cosmetic_img.png" },
   { name: "ORS 2", logo: "/ors_img.jpg" },
-  { name: "The Cosmetic Republic 3", logo: "/cosmetic_img.png" },
-  { name: "ORS 3", logo: "/ors_img.jpg" },
+  { name: "Bio Oil 2", logo: "/biooillogo.jpg" },
 ];
 
 export function BrandLogos() {
@@ -23,7 +23,7 @@ export function BrandLogos() {
                 src={brand.logo}
                 alt={brand.name}
                 fill
-                className="object-cover"
+                className="object-contain"
               />
             </div>
           ))}
