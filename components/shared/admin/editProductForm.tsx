@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, UploadCloud, Loader2 } from "lucide-react";
+import { useRouter } from "next/router";
 import { createClient } from "@/utils/supabase/client";
 import { updateProduct } from "@/app/actions/product.actions";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 
 export default function EditProductForm({ product }: { product: any }) {
+  const router = useRouter()
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -63,12 +65,14 @@ export default function EditProductForm({ product }: { product: any }) {
 
     formData.append("image_url", finalImageUrl);
 
-    try {
+    const result = await updateProduct(product.id, formData)
+
+     if (result.success) {
       // Pass the product ID to the server action
-      await updateProduct(product.id, formData);
       toast.success("Product updated successfully!");
-    } catch (error: any) {
-      toast.error("Failed to update product: " + error.message);
+      router.push("/admin/products")
+    } else{
+      toast.error(`Failed to update product: ${result.error}`);
       setIsSubmitting(false);
     }
   };

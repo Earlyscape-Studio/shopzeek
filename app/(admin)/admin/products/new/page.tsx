@@ -4,13 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, UploadCloud, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/router";
 import { createProduct } from "@/app/actions/product.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 
 export default function AddProductPage() {
+    const router = useRouter()
     const [isUploading, setIsUploading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -35,7 +38,7 @@ export default function AddProductPage() {
         const formData = new FormData(e.currentTarget);
         let finalImageUrl = "";
 
-        // 1. Upload Image to Supabase Storage (if selected)
+        
         if (imageFile) {
             setIsUploading(true);
             const fileExt = imageFile.name.split(".").pop();
@@ -61,13 +64,16 @@ export default function AddProductPage() {
             finalImageUrl = publicUrlData.publicUrl;
         }
 
-        // 2. Append the final image URL to the form data and send to Server Action
+    
         formData.append("image_url", finalImageUrl);
 
-        try {
-            await createProduct(formData);
-        } catch (error: any) {
-            alert("Failed to create product: " + error.message);
+        const result = await createProduct(formData)
+
+        if(result.success){
+            toast.success("Product created successfully!")
+            router.push("/admin/products")
+        }else{
+            toast.error(`Failed to create product: {result.error}`);
             setIsSubmitting(false);
         }
     };

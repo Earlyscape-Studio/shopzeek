@@ -73,6 +73,7 @@ export function HeroBanner() {
               <Image 
                 src="/biooilbanner.jpg" 
                 alt="Bio-Oil Campaign Banner" 
+                loading="eager"
                 fill 
                 className="object-cover object-center" 
               />
@@ -85,6 +86,7 @@ export function HeroBanner() {
               <Image 
                 src="/Orsoilbanner.png" 
                 alt="ORS Oil Campaign Banner" 
+                loading="eager"
                 fill 
                 className="object-cover object-center" 
               />

@@ -1,4 +1,3 @@
-// components/storefront/home/ProductCarousel.tsx
 import Link from "next/link";
 import { ProductCard } from "@/components/shared/home/ProductCard";
 import {
@@ -28,6 +27,8 @@ export function ProductCarousel({
   linkText = "View All Product",
 }: Props) {
   if (!products || products.length === 0) return null;
+
+  // console.log("products" , products)
 
   return (
     <section className={`py-14 relative ${bgClass}`}>

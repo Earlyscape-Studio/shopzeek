@@ -1,10 +1,9 @@
-// app/(shop)/page.tsx
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { HeroBanner } from "@/components/shared/home/heroBanner";
 import { BrandLogos } from "@/components/shared/home/brandLogos";
 import { CategoryCards } from "@/components/shared/home/categoryCards";
-import { BestDealsSection } from "@/components/shared/home/bestDealsCarousel"; 
+// import { BestDealsSection } from "@/components/shared/home/bestDealsCarousel"; 
 import { ProductCarousel } from "@/components/shared/home/ProductCarousel";
 import { PromoBanner } from "@/components/shared/home/promoBanner";
 
