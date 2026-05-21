@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, UploadCloud, Loader2 } from "lucide-react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { updateProduct } from "@/app/actions/product.actions";
 import { Button } from "@/components/ui/button";

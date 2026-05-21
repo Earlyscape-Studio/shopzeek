@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, UploadCloud, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { createProduct } from "@/app/actions/product.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
