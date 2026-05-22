@@ -8,6 +8,7 @@ type Props = {
   items: CartItem[];
   subTotal: number;
   tax: number;
+  processingFee: number
   total: number;
   isProcessing: boolean;
 };
@@ -16,6 +17,7 @@ export function CheckoutOrderSummary({
   items,
   subTotal,
   tax,
+  processingFee,
   total,
   isProcessing,
 }: Props) {
@@ -69,6 +71,20 @@ export function CheckoutOrderSummary({
           <span>Discount</span>
           <span className="font-semibold text-gray-800">₦0.00</span>
         </div>
+        {processingFee > 0 && (
+          <div className="flex justify-between text-gray-500">
+            <span>Processing Fee</span>
+            <span className="font-semibold text-gray-800">
+              ₦{processingFee.toLocaleString()}
+            </span>
+          </div>
+        )}
+
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>Delivery</span>
+          <span className="font-medium text-gray-900">Free</span>
+        </div>
+        
         <div className="flex justify-between text-gray-500">
           <span>Tax</span>
           <span className="font-semibold text-gray-800">
@@ -101,7 +117,7 @@ export function CheckoutOrderSummary({
 
       <p className="text-xs text-center text-gray-400 mt-4">
         Secured by{" "}
-        <span className="font-semibold text-gray-500">GlobalPay</span>
+        <span className="font-semibold text-[#F5A623]">Flutterwave</span>
       </p>
     </div>
   );

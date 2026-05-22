@@ -25,7 +25,7 @@ export async function createOrderAndInitPayment(
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
-        customer_email: email,
+        email: email,
         customer_name: `${firstName} ${lastName}`,
         total_amount: totalAmount,
         status: "pending_payment",
@@ -34,52 +34,83 @@ export async function createOrderAndInitPayment(
       .select()
       .single();
 
-    if (orderError) throw new Error("Failed to create order");
+    if (orderError){
+      console.error("Supabase Order Error", orderError)
+      throw new Error(`Database Error: ${orderError.message} (Details: ${orderError.details})`)
+    };
 
     // 2. Insert order items
     const orderItems = cartItems.map((item) => ({
       order_id: order.id,
       product_id: item.product_id,
       quantity: item.quantity,
-      price: item.price,
+      unit_price: item.price,
     }));
 
     const { error: itemsError } = await supabase
       .from("order_items")
       .insert(orderItems);
-    if (itemsError) throw new Error("Failed to insert order items");
+
+
+    if (itemsError) {
+      console.error("🔥 SUPABASE ITEMS ERROR:", itemsError);
+      throw new Error(`Items Database Error: ${itemsError.message}`);
+    }
+
+    
+
+    let finalChargeAmount = totalAmount
+    let paymentFee = 0
+
+    if (totalAmount >= 140857.14) {
+      paymentFee = 2000
+      finalChargeAmount = totalAmount + paymentFee
+    }else {
+      finalChargeAmount = Math.ceil(totalAmount / 0.986)
+      paymentFee = finalChargeAmount - totalAmount
+    }
 
     // 3. Generate GlobalPay Transaction Reference
-    const transactionRef = `ZEEK-${order.id}-${Date.now()}`;
+    const transactionRef = `FW-${order.id}-${Date.now()}`;
 
     // 4. Initialize payment with GlobalPay
     const payload = {
-      email,
-      amount: totalAmount * 100, // convert to kobo (if currency NGN)
+      tx_ref: transactionRef,
+      amount: finalChargeAmount, 
       currency: "NGN",
-      reference: transactionRef,
-      callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback`, // adjust if your callback route is different
-      metadata: {
-        orderId: order.id, // important for webhook
+      redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback`, 
+      payment_options: "card, banktransfer",
+      customer: {
+        email: email,
+        phonenumber: phone,
+        name: `${firstName} ${lastName}`,
+      },
+      meta: {
+        orderId: order.id, // Important for your webhook/callback to identify the order
+      },
+      customizations: {
+        title: "zeekstore",
+        description: "Payment for order items",
+        logo: "",
       },
     };
 
     const response = await fetch(
-      "https://api.globalpay.ng/v1/transaction/initialize",
+      "https://api.flutterwave.com/v3/payments",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.GLOBALPAY_SECRET_KEY}`,
+          Authorization: `Bearer ${process.env.FLW_SECRET_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       },
     );
 
-    const gpData = await response.json();
+    const flwData = await response.json();
 
-    if (!response.ok || !gpData.status) {
-      throw new Error(gpData.message || "Payment initialization failed");
+    if (!flwData.data || !flwData.data.link) {
+      throw new Error(flwData.message || "Flutterwave payment initialization failed");
     }
 
     // Optionally store the reference on the order for later reconciliation
@@ -93,7 +124,7 @@ export async function createOrderAndInitPayment(
       success: true,
       orderId: order.id,
       transactionRef,
-      authorization_url: gpData.data.authorization_url,
+      authorization_url: flwData.data.link,
       amount: totalAmount,
       currency: "NGN",
       customerEmail: email,

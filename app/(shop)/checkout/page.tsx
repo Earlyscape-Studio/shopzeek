@@ -18,19 +18,18 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { BillingFields } from "@/components/shared/checkout/BillingFields";
-import { PaymentOptions } from "@/components/shared/checkout/PaymentOptions";
 import { CheckoutOrderSummary } from "@/components/shared/checkout/CheckoutOrderSummary";
 
 export default function CheckoutPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const { items } = useCartStore();
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  
 
   useEffect(() => {
-    setIsMounted(true);
+    const timer = setTimeout(() => setIsMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
-
   if (!isMounted) return <div className="min-h-screen" />;
 
   const subTotal = items.reduce(
@@ -39,7 +38,19 @@ export default function CheckoutPage() {
   );
   const shipping = 0;
   const tax = 0;
-  const total = subTotal + shipping + tax;
+  const baseAmount = subTotal + shipping + tax;
+
+  let processingFee = 0;
+  if (baseAmount > 0) {
+    if (baseAmount >= 140857.14) {
+      processingFee = 2000;
+    } else {
+      const grossAmount = Math.ceil(baseAmount / 0.986);
+      processingFee = grossAmount - baseAmount;
+    }
+  }
+
+  const displayTotal = baseAmount + processingFee;
 
   const handlePlaceOrder = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -47,13 +58,13 @@ export default function CheckoutPage() {
 
     try {
       const formData = new FormData(e.currentTarget);
-      const gpConfig = await createOrderAndInitPayment(formData, items, total);
+      const result = await createOrderAndInitPayment(formData, items, baseAmount);
 
-      if (gpConfig.success) {
-        window.location.href = gpConfig.authorization_url;
+      if (result.success && result.authorization_url) {
+        window.location.href = result.authorization_url;
       } else {
-        console.error("Order/payment initialization failed", gpConfig.error);
-        alert("Could not start payment. Please try again.");
+        console.error("Order/payment initialization failed", result.error);
+        alert(`Could not start payment: ${result.error}`);
       }
     } catch (error) {
       console.error("Checkout failed:", error);
@@ -97,7 +108,7 @@ export default function CheckoutPage() {
             {/* Billing Information */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 md:p-8">
               <h2 className="text-lg font-bold text-gray-900 mb-6 pb-4 border-b border-gray-100">
-                Billing Information
+                Billing & Shipping Information
               </h2>
               <BillingFields />
               <div className="flex items-center gap-2.5 mt-6 pt-6 border-t border-gray-100">
@@ -114,16 +125,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Payment Options */}
-            <div className="bg-white rounded-xl border border-gray-100 p-6 md:p-8">
-              <h2 className="text-lg font-bold text-gray-900 mb-6 pb-4 border-b border-gray-100">
-                Payment Method
-              </h2>
-              <PaymentOptions
-                paymentMethod={paymentMethod}
-                onPaymentMethodChange={setPaymentMethod}
-              />
-            </div>
+            {/* ❌ Removed the PaymentOptions Card entirely */}
 
             {/* Additional Information */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 md:p-8">
@@ -150,7 +152,8 @@ export default function CheckoutPage() {
               items={items}
               subTotal={subTotal}
               tax={tax}
-              total={total}
+              processingFee={processingFee}
+              total={displayTotal}
               isProcessing={isProcessing}
             />
           </div>
