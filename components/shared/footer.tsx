@@ -55,9 +55,12 @@ export function Footer() {
               HOTLINE 24/7
             </p>
             <p className="text-sm font-bold">(+234) 911 049 7316</p>
-            <p className="text-sm text-gray-500 mt-2">
-              257 Thatcher Road St, Brooklyn, Manhattan, NY 10092
-            </p>
+            <div className="text-sm text-gray-500 mt-2">
+              <p>Landmark House</p> 
+              <p>No. 52-54 Isaac John Street</p> 
+              <p>Ikeja GRA </p>
+              <p>Lagos</p>
+            </div>
             <p className="text-sm text-gray-500">contactcenter@shopzeek.com</p>
           </div>
 

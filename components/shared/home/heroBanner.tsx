@@ -30,74 +30,108 @@ export function HeroBanner() {
         plugins={plugins}
         className="w-full"
         opts={{
-          loop: true, 
+          loop: true,
         }}
       >
         <CarouselContent>
 
-          {/* --- SLIDE 1: Split Content Layout --- */}
+          {/* --- SLIDE 1: Discover Your Beauty --- */}
           <CarouselItem>
-            <div className="bg-gradient-to-r from-[#FFB89E] to-[#FF8C66] rounded-3xl relative overflow-hidden flex flex-col md:flex-row items-center min-h-[450px]">
-              {/* Left: Image */}
-              <div className="w-full md:w-1/2 h-[300px] md:h-[450px] relative flex-shrink-0">
+            <div className="bg-gradient-to-r from-[#FFB89E] to-[#FF8C66] rounded-3xl relative overflow-hidden flex flex-col md:flex-row h-[450px]">
+              <div className="w-full md:w-1/2 relative flex-shrink-0">
                 <Image
                   src="/hero.png"
                   alt="Discover Your Beauty"
                   fill
-                  priority 
+                  priority
                   className="object-cover object-center"
                 />
               </div>
-
-              {/* Right: Text */}
-              <div className="w-full md:w-1/2 p-10 md:p-16 z-10 flex flex-col justify-center items-start">
+              <div className="w-full md:w-1/2 p-8 md:p-16 z-10 flex flex-col justify-center items-start">
                 <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-4 drop-shadow-md">
                   Discover<br />Your Beauty
                 </h1>
                 <p className="text-white text-lg mb-8 font-medium">
                   Shop the Best Beauty products Online.
                 </p>
-                <Button
-                  asChild
-                  className="bg-[#FF5A00] hover:bg-orange-600 text-white rounded-md px-10 py-6 text-lg font-bold shadow-lg"
-                >
+                <Button asChild className="bg-[#FF5A00] hover:bg-orange-600 text-white rounded-md px-10 py-6 text-lg font-bold shadow-lg">
                   <Link href="/shop">SHOP NOW</Link>
                 </Button>
               </div>
             </div>
           </CarouselItem>
 
-          {/* --- SLIDE 2: Pure Full-Bleed Image --- */}
+          {/* --- SLIDE 2: Bio-Oil Campaign --- */}
           <CarouselItem>
-            <div className="w-full h-[300px] md:h-[450px] relative rounded-3xl overflow-hidden">
-              <Image 
-                src="/biooilbanner.jpg" 
-                alt="Bio-Oil Campaign Banner" 
-                loading="eager"
-                fill 
-                className="object-cover object-center" 
-              />
+            <div className="bg-[#FFFDFB] rounded-3xl relative overflow-hidden flex flex-col md:flex-row h-[450px]">
+              <div className="w-full md:w-1/2 relative flex-shrink-0">
+                <Image
+                  src="/biooilpeodukt.png"
+                  alt="Bio-Oil Campaign Banner"
+                  loading="eager"
+                  fill
+                  className="object-cover object-center"
+                />
+              </div>
+              <div className="w-full md:w-1/2 p-8 md:p-16 z-10 flex flex-col justify-center items-start">
+                <Image
+                  src="/biooillogo.jpg"
+                  alt="Bio-Oil logo"
+                  width={150}
+                  height={50}
+                  className="mb-4 object-contain"
+                />
+                <h1 className="text-3xl md:text-5xl font-bold text-[#E65C2C] leading-tight mb-3">
+                  Shop your original<br />Bio-Oil products
+                </h1>
+                <p className="text-[#E65C2C] text-lg mb-6 font-medium">
+                  Get the products at the best price.
+                </p>
+                <Button asChild className="bg-[#E65C2C] hover:bg-orange-700 text-white rounded-md px-10 py-6 text-lg font-bold shadow-lg">
+                  <Link href="/shop?category=Skin%20Care">SHOP NOW</Link>
+                </Button>
+              </div>
             </div>
           </CarouselItem>
 
-          {/* --- SLIDE 3: Pure Full-Bleed Image --- */}
+          {/* --- SLIDE 3: ORS Campaign --- */}
           <CarouselItem>
-            <div className="w-full h-[300px] md:h-[450px] relative rounded-3xl overflow-hidden">
-              <Image 
-                src="/Orsoilbanner.png" 
-                alt="ORS Oil Campaign Banner" 
-                loading="eager"
-                fill 
-                className="object-cover object-center" 
-              />
+            <div className="bg-[#EBF1E6] rounded-3xl relative overflow-hidden flex flex-col md:flex-row h-[450px]">
+              <div className="w-full md:w-1/2 relative flex-shrink-0">
+                <Image
+                  src="/orsprdct.png"
+                  alt="ORS Oil Campaign Banner"
+                  loading="eager"
+                  fill
+                  className="object-cover object-center"
+                />
+              </div>
+              <div className="w-full md:w-1/2 p-8 md:p-16 z-10 flex flex-col justify-center items-start">
+                <Image
+                  src="/ors_img.jpg"
+                  alt="ORS logo"
+                  width={120}
+                  height={60}
+                  className="mb-4 object-contain"
+                />
+                <h1 className="text-3xl md:text-5xl font-bold text-[#4B793D] leading-tight mb-3">
+                  Shop the original<br />ORS Olive Oil
+                </h1>
+                <p className="text-[#8D2533] text-lg mb-6 font-bold tracking-wide">
+                  Trusted. True. The Original.
+                </p>
+                <Button asChild className="bg-[#8D2533] hover:bg-[#6b1b26] text-white rounded-md px-10 py-6 text-lg font-bold shadow-lg">
+                  <Link href="/shop?category=Hair%20Care">SHOP NOW</Link>
+                </Button>
+              </div>
             </div>
           </CarouselItem>
 
         </CarouselContent>
 
-        {/* --- Navigation Arrows --- */}
-        <CarouselPrevious className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 transition-opacity border-none bg-white/80 hover:bg-white text-gray-800 h-12 w-12" />
-        <CarouselNext className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 transition-opacity border-none bg-white/80 hover:bg-white text-gray-800 h-12 w-12" />
+      
+        <CarouselPrevious className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 transition-opacity border-none bg-white/80 hover:bg-white text-gray-800 h-12 w-12 z-50" />
+        <CarouselNext className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/carousel:opacity-100 transition-opacity border-none bg-white/80 hover:bg-white text-gray-800 h-12 w-12 z-50" />
 
       </Carousel>
     </div>

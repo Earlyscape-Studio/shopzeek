@@ -44,6 +44,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Missing Order ID" }, { status: 400 });
       }
 
+      const isLive = process.env.NODE_ENV === "production"
+      console.log(`[${isLive ? "LIVE" : "TEST"} MODE] Processing webhook for Order ${orderId}`)
+
       // ✅ Use the imported supabaseAdmin client (no cookies, service_role)
       const { error } = await supabaseAdmin
         .from("orders")
