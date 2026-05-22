@@ -19,22 +19,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  typescript: {
-    // Skip type checking during dev (do it in CI or on demand)
-    ignoreBuildErrors: true,
-  },
-  // Reduce webpack workers
-  experimental: {
-    workerThreads: false,
-    cpus: 1,
-  },
-  webpack: (config) => {
-    config.watchOptions = {
-      poll: false,
-      ignored: /node_modules/,
-    };
-    return config;
-  },
 };
 
 export default nextConfig;
