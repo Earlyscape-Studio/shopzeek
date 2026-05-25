@@ -17,7 +17,16 @@ const nigerianStates = [
   "Sokoto", "Taraba", "Yobe", "Zamfara",
 ];
 
-export function BillingFields() {
+
+interface Props {
+  state: string
+  lga: string
+  onStateChange: (value: string) => void
+  onLgaChange: (value: string) => void
+}
+
+
+export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props) {
   return (
     <div className="space-y-5">
       {/* Name row */}
@@ -74,16 +83,14 @@ export function BillingFields() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ng">Nigeria</SelectItem>
-              <SelectItem value="us">United States</SelectItem>
-              <SelectItem value="uk">United Kingdom</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-gray-700">State</label>
-          <Select name="state">
-            <SelectTrigger className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
+          <Select name="state" value={state} onValueChange={onStateChange}>
+            <SelectTrigger id="state" className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
               <SelectValue placeholder="Select state" />
             </SelectTrigger>
             <SelectContent>
@@ -94,6 +101,19 @@ export function BillingFields() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-gray-700">LGA</label>
+          <Input
+            id="lga"
+            name="lga"
+            value={lga}
+            onChange={(e) => onLgaChange(e.target.value)}
+            className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
+            required
+            placeholder="e.g. Ikeja"
+          />
         </div>
 
         <div className="space-y-1.5">

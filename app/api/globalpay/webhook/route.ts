@@ -1,4 +1,4 @@
-// app/api/globalpay/webhook/route.ts
+
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/utils/supabase/admin"; 
 import crypto from "crypto";
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       }
 
       const isLive = process.env.NODE_ENV === "production"
-      console.log(`[${isLive ? "LIVE" : "TEST"} MODE] Processing webhook for Order ${orderId}`)
+      // console.log(`[${isLive ? "LIVE" : "TEST"} MODE] Processing webhook for Order ${orderId}`)
 
       // ✅ Use the imported supabaseAdmin client (no cookies, service_role)
       const { error } = await supabaseAdmin
@@ -61,9 +61,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Database update failed" }, { status: 500 });
       }
 
-      console.log(`Order ${orderId} marked as PAID (ref: ${transactionRef})`);
+      // console.log(`Order ${orderId} marked as PAID (ref: ${transactionRef})`);
     } else {
-      console.log(`Received unhandled event: ${body.event}`);
+      // console.log(`Received unhandled event: ${body.event}`);
     }
 
     return NextResponse.json({ message: "Webhook received" }, { status: 200 });

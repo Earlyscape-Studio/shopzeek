@@ -16,6 +16,9 @@ export default async function OrderSuccessPage({
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
+  
+
+
   const { data: order } = await supabase
     .from("orders")
     .select(`
@@ -28,13 +31,17 @@ export default async function OrderSuccessPage({
 
   if (!order) notFound();
 
+  const paymentStatus = order.status === "paid" ? "Paid" : "Awaiting payment";
+  
+  const statusStyles = order.status === "paid"
+      ? "bg-green-50 text-green-600 border-green-200"
+      : "bg-orange-50 text-orange-600 border-orange-200";
+
   const shortRef = `ORD-${order.id.slice(0, 8)}`;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-
-        {/* Header */}
         <div className="bg-orange-50 border-b border-gray-100 px-8 py-10 text-center">
           <div className="w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center mx-auto mb-5">
             <CheckIcon className="h-7 w-7 text-white" strokeWidth={2.5} />
@@ -43,11 +50,10 @@ export default async function OrderSuccessPage({
             Order placed successfully!
           </h1>
           <p className="text-sm text-gray-500">
-            Thank you. We've received your order and will process it shortly.
+            Thank you. We&apos;ve received your order and will process it shortly.
           </p>
         </div>
 
-        {/* Reference + Status */}
         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-widest text-gray-400 mb-1">
@@ -59,13 +65,12 @@ export default async function OrderSuccessPage({
             <p className="text-xs font-medium uppercase tracking-widest text-gray-400 mb-1">
               Status
             </p>
-            <span className="text-xs font-medium bg-orange-50 text-orange-600 border border-orange-400 rounded-full px-3 py-1">
-              Awaiting payment
+            <span className={`text-xs font-medium bg-orange-50 text-orange-600 border border-orange-400 rounded-full px-3 py-1 ${statusStyles}`}>
+              {paymentStatus}
             </span>
           </div>
         </div>
 
-        {/* Items */}
         <div className="px-8 py-5 border-b border-gray-100">
           <p className="text-xs font-medium uppercase tracking-widest text-gray-400 mb-4">
             Items ordered
@@ -92,7 +97,6 @@ export default async function OrderSuccessPage({
           </div>
         </div>
 
-        {/* Delivery + Payment — two columns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 border-b border-gray-100">
           {order.addresses && (
             <div className="px-8 py-5">
@@ -120,13 +124,12 @@ export default async function OrderSuccessPage({
             </p>
             <div className="flex items-center gap-2 mb-1">
               <Building2 className="h-4 w-4 text-gray-400" />
-              <p className="text-sm font-medium text-gray-800">GlobalPay</p>
+              <p className="text-sm font-medium text-gray-800">Flutterwave</p>
             </div>
-            <p className="text-sm text-gray-500">Zenith Bank gateway</p>
+            <p className="text-sm text-gray-500">Secure online payment</p>
           </div>
         </div>
 
-        {/* Total */}
         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between">
           <p className="text-base font-medium text-gray-900">Total paid</p>
           <p className="text-xl font-semibold text-orange-500">
@@ -134,7 +137,6 @@ export default async function OrderSuccessPage({
           </p>
         </div>
 
-        {/* Actions */}
         <div className="px-8 py-5 flex flex-wrap gap-3">
           <Button asChild className="bg-orange-500 hover:bg-orange-600">
             <Link href="/shop">
@@ -149,7 +151,6 @@ export default async function OrderSuccessPage({
             </Link>
           </Button>
         </div>
-
       </div>
     </div>
   );

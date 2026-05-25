@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   images: {
     dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
+    contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
@@ -12,13 +12,18 @@ const nextConfig: NextConfig = {
         hostname: "placehold.co",
       },
       {
-        protocol: 'https',
-        hostname: 'swjqqxhvicbxqcembkml.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/**',
+        protocol: "https",
+        hostname: "swjqqxhvicbxqcembkml.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/**",
       },
     ],
   },
+  // experimental: {
+  //   serverActions: {
+  //     allowedOrigins: ["m0c7hdhv-3000.eun1.devtunnels.ms", "localhost:3000"],
+  //   },
+  // },
 };
 
 export default nextConfig;

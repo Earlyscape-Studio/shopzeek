@@ -1,14 +1,24 @@
 // components/storefront/checkout/CheckoutOrderSummary.tsx
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { CartItem } from "@/types/database";
 
 type Props = {
   items: CartItem[];
   subTotal: number;
   tax: number;
-  processingFee: number
+  shipping: number
+  shippingBreakdown?: {
+    baseCost: number;
+    vat: number;
+  };
   total: number;
   isProcessing: boolean;
 };
@@ -17,7 +27,8 @@ export function CheckoutOrderSummary({
   items,
   subTotal,
   tax,
-  processingFee,
+  shipping,
+  shippingBreakdown,
   total,
   isProcessing,
 }: Props) {
@@ -63,28 +74,54 @@ export function CheckoutOrderSummary({
             ₦{subTotal.toLocaleString()}
           </span>
         </div>
+
+        {/* ✅ Single shipping line – dynamic */}
         <div className="flex justify-between text-gray-500">
-          <span>Shipping</span>
-          <span className="font-semibold text-green-600">Free</span>
+          <span className="inline-flex items-center gap-1">
+            Shipping
+            {shipping > 0 && shippingBreakdown && (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-gray-400 hover:text-gray-600 transition"
+                      aria-label="Shipping cost breakdown"
+                    >
+                      <Info size={14} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="top"
+                    className="bg-gray-800 text-white text-xs px-3 py-2"
+                  >
+                    <p>
+                      Base cost: ₦{shippingBreakdown.baseCost.toLocaleString()}
+                    </p>
+                    <p>VAT: ₦{shippingBreakdown.vat.toLocaleString()}</p>
+                    <p className="mt-1 text-gray-300">
+                      Total: ₦{shipping.toLocaleString()}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </span>
+          <span className="font-semibold text-gray-800">
+            {shipping === 0 ? (
+              <span className="text-green-600">Free</span>
+            ) : (
+              `₦${shipping.toLocaleString()}`
+            )}
+          </span>
         </div>
+
+
         <div className="flex justify-between text-gray-500">
           <span>Discount</span>
           <span className="font-semibold text-gray-800">₦0.00</span>
         </div>
-        {processingFee > 0 && (
-          <div className="flex justify-between text-gray-500">
-            <span>Processing Fee</span>
-            <span className="font-semibold text-gray-800">
-              ₦{processingFee.toLocaleString()}
-            </span>
-          </div>
-        )}
 
-        <div className="flex justify-between text-sm text-gray-600">
-          <span>Delivery</span>
-          <span className="font-medium text-gray-900">Free</span>
-        </div>
-        
         <div className="flex justify-between text-gray-500">
           <span>Tax</span>
           <span className="font-semibold text-gray-800">
