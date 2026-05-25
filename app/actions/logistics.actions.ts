@@ -11,7 +11,7 @@ interface FezTokenCache {
 let tokenCache: FezTokenCache | null = null
 
 
-const FEZ_BASE_URL = process.env.NODE_ENV === "production" ? "https://api.fezdeliver.co" : "https://apisandbox.fezdelivery.co"
+const FEZ_BASE_URL = process.env.NODE_ENV === "production" ? "https://api.fezdelivery.co" : "https://apisandbox.fezdelivery.co"
 
 
 async function getFezCredentials(): Promise<{
