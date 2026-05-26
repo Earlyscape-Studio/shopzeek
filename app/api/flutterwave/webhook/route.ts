@@ -6,16 +6,13 @@ import crypto from "crypto";
 // We need the raw body for signature verification, so we read it manually
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
-  const signature = req.headers.get("flutterwave-signature");
+  const signature = req.headers.get("verif-hash");
   const secretHash = process.env.FLW_WEBHOOK_SECRET!;
 
   // 1. Verify the signature — reject anything not from Flutterwave
-  const expectedHash = crypto
-    .createHmac("sha256", secretHash)
-    .update(rawBody)
-    .digest("base64");
+  
 
-  if (!signature || signature !== expectedHash) {
+  if (!signature || signature !== secretHash) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -23,7 +20,7 @@ export async function POST(req: NextRequest) {
   // console.log("Webhook received:", payload.type, payload.data?.reference);
 
   // 2. Only handle successful charge completions
-  if (payload.type !== "charge.completed") {
+  if (payload.event !== "charge.completed") {
     return NextResponse.json({ received: true }, { status: 200 });
   }
 
