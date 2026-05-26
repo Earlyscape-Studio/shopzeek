@@ -321,6 +321,7 @@ export async function initBankTransfer(
     }
 
     console.log("Virtual accounts URL:", `${FLW_BASE_URL}/virtual-accounts`)
+    
     console.log("Access token present:", !!accessToken)
     console.log("Payload:", JSON.stringify(payload))
 
