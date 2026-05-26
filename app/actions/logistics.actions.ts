@@ -72,10 +72,10 @@ export async function getDeliveryQuote(
     try {
         const { authToken, secretKey } = await getFezCredentials()
 
-        console.log("secret-key", secretKey)
-        console.log("auth Token", authToken)
-        console.log("weight", weight)
-        console.log("state", state)
+        // console.log("secret-key", secretKey)
+        // console.log("auth Token", authToken)
+        // console.log("weight", weight)
+        // console.log("state", state)
         
 
 

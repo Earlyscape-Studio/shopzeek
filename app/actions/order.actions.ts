@@ -290,7 +290,7 @@ export async function initBankTransfer(
 
       customerId = customerRecord.id;
     } else {
-      return { success: false, error: customerData.error?.message || "Failed to create customer record." };
+      return { success: false, status: customerData.error.status, error: customerData.error?.message || "Failed to create customer record." };
     }
 
     const payload = {
