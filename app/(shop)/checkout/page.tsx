@@ -241,7 +241,7 @@ export default function CheckoutPage() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err ?? "Something went wrong. Please try again.");
       toast.error(message);
-      console.error(message)
+      console.log(message)
     } finally {
       setIsProcessing(false);
     }
