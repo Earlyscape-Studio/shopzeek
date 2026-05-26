@@ -33,8 +33,8 @@ export async function getFlutterwaveToken(): Promise<string> {
         return tokenCache!.accessToken
     }
 
-    // const clientId = process.env.FLW_CLIENT_ID
-    // const clientSecret = process.env.FLW_CLIENT_SECRET
+    const clientId = process.env.FLW_CLIENT_ID
+    const clientSecret = process.env.FLW_CLIENT_SECRET
 
 
     // console.log("clientId", clientId)
