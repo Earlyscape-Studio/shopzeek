@@ -93,7 +93,7 @@ export default function CheckoutPage() {
 
     const timeout = setTimeout(async () => {
       setIsCalculatingShipping(true);
-      const quote = await getDeliveryQuote(selectedState, selectedLga);
+      const quote = await getDeliveryQuote(selectedState);
       if (quote.success && quote.price) {
         setShipping(quote.price);
         setShippingBreakdown(quote.breakdown)
@@ -318,7 +318,7 @@ export default function CheckoutPage() {
                   <p className="text-xs text-gray-500">
                     {shipping > 0
                       ? `₦${shipping.toLocaleString()} (includes VAT)`
-                      : "Enter state and LGA to calculate"}
+                      : "Enter state to calculate"}
                   </p>
                 </div>
                 {isCalculatingShipping && (
