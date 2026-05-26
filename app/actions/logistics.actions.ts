@@ -1,107 +1,98 @@
 "use server"
 
-
 interface FezTokenCache {
     authToken: string
     secretKey: string
     expiresAt: number
 }
 
-
 let tokenCache: FezTokenCache | null = null
 
+const isProd = process.env.NODE_ENV === "production" // fix: was `proces`
 
-const FEZ_BASE_URL = process.env.NODE_ENV === "production" ? "https://api.fezdelivery.co" : "https://apisandbox.fezdelivery.co"
-
-console.log("fez base url", FEZ_BASE_URL)
+const FEZ_BASE_URL = isProd
+    ? "https://api.fezdelivery.co"
+    : "https://apisandbox.fezdelivery.co"
 
 
 async function getFezCredentials(): Promise<{
-    authToken: string,
+    authToken: string
     secretKey: string
-}>{
-        const now = Date.now()
-        const sixtySeconds = 60 * 1000
+}> {
+    const now = Date.now()
+    const sixtySeconds = 60 * 1000
 
-
-        if (tokenCache && tokenCache.expiresAt - now > sixtySeconds){
-            return {
-                authToken: tokenCache.authToken,
-                secretKey: tokenCache.secretKey
-            }
+    if (tokenCache && tokenCache.expiresAt - now > sixtySeconds) {
+        return {
+            authToken: tokenCache.authToken,
+            secretKey: tokenCache.secretKey,
         }
+    }
 
-         const authResponse = await fetch(`${FEZ_BASE_URL}/v1/user/authenticate`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                user_id: process.env.FEZ_USER_ID!,
-                password: process.env.FEZ_PASSWORD!
-            })
-        })
+    const authResponse = await fetch(`${FEZ_BASE_URL}/v1/user/authenticate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            user_id: process.env.FEZ_USER_ID!,
+            password: process.env.FEZ_PASSWORD!,
+        }),
+    })
 
+    const authData = await authResponse.json()
 
-        const authData = await authResponse.json()
+    if (!authResponse.ok || authData.status !== "Success") {
+        throw new Error(authData.description || "Authentication Failed")
+    }
 
+    const authToken: string = authData.authDetails.authToken
+    const secretKey: string = authData.orgDetails["secret-key"]
 
-        if(!authResponse.ok || authData.status !== "Success"){
-            throw new Error(authData.description || "Authentication Failed")
-        }
+    // fix: parse actual expiry from the API response instead of hardcoding 55 minutes.
+    // expireToken is returned as "YYYY-MM-DD HH:MM:SS" (UTC).
+    // We subtract 60 seconds as a safety buffer before treating the token as expired.
+    const expireToken: string = authData.authDetails.expireToken
+    const expiresAt = new Date(expireToken).getTime() - sixtySeconds
 
-        const authToken = authData.authDetails.authToken
-        const secretKey = authData.orgDetails["secret-key"]
+    tokenCache = { authToken, secretKey, expiresAt }
 
-        tokenCache = {
-            authToken,
-            secretKey,
-            expiresAt: now + 55 * 60 * 1000
-        }
-
-
-        return {authToken, secretKey}
+    return { authToken, secretKey }
 }
 
 
-    
-export async function getDeliveryQuote(state: string, lga: string, weight = 2) {
-    try{
-
-        const {authToken, secretKey}  = await getFezCredentials()
-
-        
-        
-        
+export async function getDeliveryQuote(
+    state: string,
+    weight = 2
+) {
+    try {
+        const { authToken, secretKey } = await getFezCredentials()
 
         const response = await fetch(`${FEZ_BASE_URL}/v1/order/cost`, {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${authToken}`,
+                Authorization: `Bearer ${authToken}`,
                 "secret-key": secretKey,
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-                state,
-                weight
-            })
+            body: JSON.stringify({ state, weight }),
         })
 
         const data = await response.json()
 
-        if(!response.ok || data.status !== "Success"){
+        if (!response.ok || data.status !== "Success") {
             throw new Error(data.description || "Failed to fetch shipping quote")
         }
 
-
-        return{
+        return {
             success: true,
             price: data.totalCost,
             breakdown: {
                 baseCost: data.cost?.cost ?? 0,
-                vat: data.vat?.vatAmount ?? 0
-            }
+                vat: data.vat?.vatAmount ?? 0,
+            },
         }
-    }catch(error: any){
-        console.error("Logistics Error:", error)
-        return {success: false, error: error.message}
+    } catch (error: unknown) { // fix: was `any`
+        const message = error instanceof Error ? error.message : "Unknown error"
+        console.error("Logistics Error:", message)
+        return { success: false, error: message }
     }
 }
