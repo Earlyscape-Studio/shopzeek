@@ -5,12 +5,14 @@ const TOKEN_URL ="https://idp.flutterwave.com/realms/flutterwave/protocol/openid
 // export const FLW_BASE_URL = process.env.NODE_ENV === "production" 
 // ? "https://api.flutterwave.com" : "https://developersandbox-api.flutterwave.com"
 
-const isProd = process.env.NODE_ENV === 'production';
+// const isProd = process.env.NODE_ENV === 'production';
 
-export const FLW_BASE_URL = isProd
-  ? 'https://f4bexperience.flutterwave.com'
-  : 'https://developersandbox-api.flutterwave.com'
+// export const FLW_BASE_URL = isProd
+//   ? 'https://f4bexperience.flutterwave.com'
+//   : 'https://developersandbox-api.flutterwave.com'
 
+
+export const FLW_BASE_URL = 'https://f4bexperience.flutterwave.com'
 
 interface TokenCache {
     accessToken: string
@@ -31,8 +33,14 @@ export async function getFlutterwaveToken(): Promise<string> {
         return tokenCache!.accessToken
     }
 
-    const clientId = process.env.FLW_CLIENT_ID
-    const clientSecret = process.env.FLW_CLIENT_SECRET
+    // const clientId = process.env.FLW_CLIENT_ID
+    // const clientSecret = process.env.FLW_CLIENT_SECRET
+
+
+    // console.log("clientId", clientId)
+    // console.log("clientId", process.env.FLW_CLIENT_ID)
+
+
 
 
     if(!clientId || !clientSecret){

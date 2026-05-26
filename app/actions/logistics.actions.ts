@@ -8,11 +8,12 @@ interface FezTokenCache {
 
 let tokenCache: FezTokenCache | null = null
 
-const isProd = process.env.NODE_ENV === "production" // fix: was `proces`
+// const isProd = process.env.NODE_ENV === "production" // fix: was `proces`
 
-const FEZ_BASE_URL = isProd
-    ? "https://api.fezdelivery.co"
-    : "https://apisandbox.fezdelivery.co"
+
+
+const FEZ_BASE_URL = "https://api.fezdelivery.co"
+
 
 
 async function getFezCredentials(): Promise<{
@@ -33,12 +34,17 @@ async function getFezCredentials(): Promise<{
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            user_id: process.env.FEZ_USER_ID!,
-            password: process.env.FEZ_PASSWORD!,
+            user_id: process.env.FEZ_USER_ID,
+            password: process.env.FEZ_PASSWORD,
         }),
     })
 
     const authData = await authResponse.json()
+
+    // console.log("response", authData)
+    // console.log("base url", FEZ_BASE_URL)
+    // console.log("usr id", process.env.FEZ_USER_ID)
+    // console.log("passwrd", process.env.FEZ_PASSWORD)
 
     if (!authResponse.ok || authData.status !== "Success") {
         throw new Error(authData.description || "Authentication Failed")
@@ -66,6 +72,13 @@ export async function getDeliveryQuote(
     try {
         const { authToken, secretKey } = await getFezCredentials()
 
+        console.log("secret-key", secretKey)
+        console.log("auth Token", authToken)
+        console.log("weight", weight)
+        console.log("state", state)
+        
+
+
         const response = await fetch(`${FEZ_BASE_URL}/v1/order/cost`, {
             method: "POST",
             headers: {
@@ -75,6 +88,8 @@ export async function getDeliveryQuote(
             },
             body: JSON.stringify({ state, weight }),
         })
+
+        console.log("response", response)
 
         const data = await response.json()
 
