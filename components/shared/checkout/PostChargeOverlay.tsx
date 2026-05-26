@@ -63,7 +63,7 @@ export function PostChargeOverlay({
         toast.error(result.error ?? "OTP verification failed");
       }
     } catch (err: any) {
-      toast.error(err.message ?? "OTP verifcation failed");
+      toast.error(err.message ?? "OTP verification failed");
     } finally {
       setIsLoading(false);
     }

@@ -99,6 +99,7 @@ export default function CheckoutPage() {
         setShippingBreakdown(quote.breakdown)
       } else {
         toast.error("Could not calculate delivery");
+        console.error("fez logistics error", Error.message)
         setShipping(0);
         setShippingBreakdown(undefined)
       }
@@ -225,6 +226,7 @@ export default function CheckoutPage() {
 
           if(!result.success) {
             toast.error(result.error ?? "Bank transfer setup failed")
+            console.error("bank transfer error:", result.error)
             setIsProcessing(false)
             return
           }
@@ -240,6 +242,7 @@ export default function CheckoutPage() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err ?? "Something went wrong. Please try again.");
       toast.error(message);
+      console.error(message)
     } finally {
       setIsProcessing(false);
     }
@@ -258,6 +261,7 @@ export default function CheckoutPage() {
       }
     }catch(err: any){
       toast.error(err.message ?? "Verification failed")
+      console.error(err.message)
     }finally{
       setIsProcessing(false)
     }
