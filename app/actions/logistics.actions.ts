@@ -13,6 +13,8 @@ let tokenCache: FezTokenCache | null = null
 
 const FEZ_BASE_URL = process.env.NODE_ENV === "production" ? "https://api.fezdelivery.co" : "https://apisandbox.fezdelivery.co"
 
+console.log("fez base url", FEZ_BASE_URL)
+
 
 async function getFezCredentials(): Promise<{
     authToken: string,
