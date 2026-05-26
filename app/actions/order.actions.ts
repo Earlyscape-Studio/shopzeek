@@ -314,11 +314,19 @@ export async function initBankTransfer(
     });
 
     const flwData = await response.json();
-    // console.log("Virtual account response:", flwData);
+    console.log("Virtual account response:", flwData);
 
     if (!response.ok || flwData.status !== "success") {
       return { success: false, error: flwData.message || "Bank transfer setup failed" };
     }
+
+    console.log("Virtual accounts URL:", `${FLW_BASE_URL}/virtual-accounts`)
+    console.log("Access token present:", !!accessToken)
+    console.log("Payload:", JSON.stringify(payload))
+
+
+  
+
     
     await supabase
       .from("orders")
