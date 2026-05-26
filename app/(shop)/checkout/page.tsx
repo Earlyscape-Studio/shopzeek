@@ -99,7 +99,6 @@ export default function CheckoutPage() {
         setShippingBreakdown(quote.breakdown)
       } else {
         toast.error("Could not calculate delivery");
-        console.error("fez logistics error", Error.message)
         setShipping(0);
         setShippingBreakdown(undefined)
       }
