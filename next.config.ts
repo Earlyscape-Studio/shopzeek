@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: "export",
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
@@ -19,7 +20,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  output: "export"
   // experimental: {
   //   serverActions: {
   //     allowedOrigins: ["m0c7hdhv-3000.eun1.devtunnels.ms", "localhost:3000"],
