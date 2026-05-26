@@ -158,6 +158,7 @@ export async function authorizeCardCharge(
   try {
     const accessToken = await getFlutterwaveToken();
 
+    
     const body = 
       authorization.type === "pin"
         ? {
