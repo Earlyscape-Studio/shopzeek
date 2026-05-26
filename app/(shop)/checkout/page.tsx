@@ -225,7 +225,7 @@ export default function CheckoutPage() {
 
           if(!result.success) {
             toast.error(result.error ?? "Bank transfer setup failed")
-            console.error("bank transfer error:", result.error)
+            console.log("bank transfer error:", result.error)
             setIsProcessing(false)
             return
           }
@@ -260,7 +260,7 @@ export default function CheckoutPage() {
       }
     }catch(err: any){
       toast.error(err.message ?? "Verification failed")
-      console.error(err.message)
+      console.log(err.message)
     }finally{
       setIsProcessing(false)
     }
