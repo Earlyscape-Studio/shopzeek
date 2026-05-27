@@ -30,6 +30,10 @@ async function getFezCredentials(): Promise<{
         }
     }
 
+    console.log("user_id length:", process.env.FEZ_USER_ID?.length)
+    console.log("password length:", process.env.FEZ_PASSWORD?.length)
+
+
     const authResponse = await fetch(`${FEZ_BASE_URL}/v1/user/authenticate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -41,7 +45,7 @@ async function getFezCredentials(): Promise<{
 
     const authData = await authResponse.json()
 
-    // console.log("response", authData)
+    console.log("response", authData)
     // console.log("base url", FEZ_BASE_URL)
     // console.log("usr id", process.env.FEZ_USER_ID)
     // console.log("passwrd", process.env.FEZ_PASSWORD)
