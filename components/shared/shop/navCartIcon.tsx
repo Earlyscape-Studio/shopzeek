@@ -4,15 +4,14 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/store/cart.store"; 
-import { useAuthModal } from "@/store/auth-modal.store";
-import { createClient } from "@/utils/supabase/client";
+
 
 export function CartNavIcon() {
   const [isMounted, setIsMounted] = useState(false);
   const items = useCartStore((state) => state.items);
-  const openAuthModal = useAuthModal((s) => s.open);
+
   const router = useRouter();
-  const supabase = createClient();
+
   
   useEffect(() => {
     setIsMounted(true);
@@ -21,12 +20,7 @@ export function CartNavIcon() {
   const cartCount = items.reduce((total, item) => total + item.quantity, 0);
 
   const handleCartClick = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      openAuthModal("signin");
-    } else {
-      router.push("/cart");
-    }
+    router.push("/cart");
   };
 
   return (

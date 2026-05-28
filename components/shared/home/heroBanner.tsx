@@ -82,12 +82,12 @@ export function HeroBanner() {
 
               {/* Left: Image (desktop only) */}
               <div className="hidden md:block md:w-1/2 relative flex-shrink-0">
-                <Image src="/biooilpeodukt.png" alt="Bio-Oil Campaign Banner" loading="eager" fill sizes="(max-width: 768px) 0vw, 50vw" className="object-cover object-center" />
+                <Image src="/biooilpeodukt.png" alt="Bio-Oil Campaign Banner" loading="eager" fill sizes="(max-width: 600px) 0vw, 50vw" className="object-contain object-center" />
               </div>
 
               {/* Text */}
               <div className="w-full md:w-1/2 p-8 md:p-16 z-10 flex flex-col justify-center items-start mt-auto md:mt-0">
-                <Image src="/biooillogo.jpg" alt="Bio-Oil logo" width={150} height={50} className="mb-4 object-contain" />
+              
                 <h1 className="text-3xl md:text-5xl font-bold text-[#E65C2C] leading-tight mb-3">
                   Shop your original<br />Bio-Oil products
                 </h1>
@@ -113,12 +113,12 @@ export function HeroBanner() {
 
               {/* Left: Image (desktop only) */}
               <div className="hidden md:block md:w-1/2 relative flex-shrink-0">
-                <Image src="/orsprdct.png" alt="ORS Oil Campaign Banner" loading="eager" fill sizes="(max-width: 768px) 0vw, 50vw" className="object-cover object-center" />
+                <Image src="/orsprdct.png" alt="ORS Oil Campaign Banner" loading="eager" fill sizes="(max-width: 600px) 0vw, 50vw" className="object-contain object-center" />
               </div>
 
               {/* Text */}
               <div className="w-full md:w-1/2 p-8 md:p-16 z-10 flex flex-col justify-center items-start mt-auto md:mt-0">
-                <Image src="/ors_img.jpg" alt="ORS logo" width={120} height={60} className="mb-4 object-contain" />
+                
                 <h1 className="text-3xl md:text-5xl font-bold text-[#4B793D] leading-tight mb-3">
                   Shop the original<br />ORS Olive Oil
                 </h1>

@@ -2,20 +2,26 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Star, ShoppingCart } from "lucide-react";
+import { Star, ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart.store";
-import { useAuthModal } from "@/store/auth-modal.store";
-import { createClient } from "@/utils/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Product } from "@/types/database";
+import { createClient } from "@/utils/supabase/client";
+import { useWishlistStore } from "@/store/wishlist.store";
+import { useAuthModal } from "@/store/auth-modal.store";
+
 
 type Props = { product: Product };
 
 export function ProductCard({ product }: Props) {
   const addItem = useCartStore((state) => state.addItem);
+
+  const supabase = createClient()
   const openAuthModal = useAuthModal((s) => s.open);
-  const supabase = createClient();
+
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore()
+  const isWishlisted = isInWishlist(product.id)
 
   const isOnDeal =
     product.deal_price &&
@@ -34,20 +40,33 @@ export function ProductCard({ product }: Props) {
     e.preventDefault();
     e.stopPropagation();
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      openAuthModal("signin");
-      return;
-    }
-
     addItem({
       product_id: product.id,
       name: product.name ?? "Unknown Product",
       price: product.price ?? 0,
       image_url: product.image_urls?.[0] ?? "/placeholder.png",
       quantity: 1,
-      slug: product.slug ?? "" 
+      slug: product.slug ?? ""
     });
+  };
+
+
+   const handleQuickAddToWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      openAuthModal("signin");
+      return;
+    }
+    if (isWishlisted) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
+    }
   };
 
   return (
@@ -76,6 +95,18 @@ export function ProductCard({ product }: Props) {
                 className="w-full bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest text-xs h-10 rounded-sm shadow-lg px-16 flex items-center justify-center gap-2"
               >
                 <ShoppingCart size={12} /> Add to Cart
+              </Button>
+
+              <Button
+                onClick={handleQuickAddToWishlist}
+                variant="outline"
+                className={`w-10 h-10 p-0 shrink-0 rounded-sm shadow-lg transition-colors border-transparent ${
+                  isWishlisted 
+                    ? "bg-[#FF5A00] text-white hover:bg-orange-600" 
+                    : "bg-white text-gray-600 hover:text-[#FF5A00]"
+                }`}
+              >
+                <Heart size={16} fill={isWishlisted ? "currentColor" : "none"} />
               </Button>
             </div>
           </div>

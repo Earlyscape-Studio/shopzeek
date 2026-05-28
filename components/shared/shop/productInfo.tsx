@@ -23,36 +23,55 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
   const supabase = createClient();
   const router = useRouter()
 
-  const handleAddToCart = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      openAuthModal("signin");
-      return;
-    }
-
-    addItem({
+  const processAddToCart = async () => {
+    const cartItem = {
       product_id: product.id,
       name: product.name,
       price: product.price ?? 0,
       image_url: product.image_urls?.[0] ?? "/placeholder.png",
-      quantity: quantity,
+      quantity: quantity, // Uses the state quantity from the counter
       slug: product.slug,
-    });
+    };
+
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+
+    if (!session){
+      const localCart = JSON.parse(localStorage.getItem("guest-cart") || "[]");
+      const existingItemIndex = localCart.findIndex(
+        (item: typeof cartItem) => item.product_id === product.id
+      );
+
+      if (existingItemIndex > -1) {
+        localCart[existingItemIndex].quantity += quantity;
+      } else {
+        localCart.push(cartItem);
+      }
+    }else{
+      await supabase.from("cart_items").insert({
+        user_id: session.user.id,
+        product_id: product.id,
+        quantity: 1
+      })
+    }
+
+
+    addItem(cartItem)
+    
+  }
+
+
+  const handleAddToCart = async () => {
+    await processAddtoCart
 
     // Show brief success state on the button
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
 
-  const handleBuyNow = () => {
-    addItem({
-      product_id: product.id,
-      name: product.name,
-      price: product.price ?? 0,
-      image_url: product.image_urls?.[0] ?? "/placeholder.png",
-      quantity: quantity,
-      slug: product.slug,
-    });
+  const handleBuyNow = async () => {
+    await processAddToCart()
 
     router.push("/checkout");
   };

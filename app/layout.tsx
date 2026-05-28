@@ -3,6 +3,9 @@ import { Sora } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from '@/components/ui/sonner'
+import { AuthCartSync } from "@/components/shared/shop/authCartSync";
+
+
 
 const soraSans = Sora({
   subsets: ['latin'],
@@ -17,6 +20,7 @@ export const metadata: Metadata = {
   },
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +32,8 @@ export default function RootLayout({
       className={cn("h-full", "antialiased", soraSans.variable, "font-sans")}
       suppressHydrationWarning
     >
-      <body className={soraSans.className}>
+      <body className={`w-lvw  ${soraSans.className}`}>
+        <AuthCartSync />
         {children}
         <Toaster richColors position="top-center" />
       </body>

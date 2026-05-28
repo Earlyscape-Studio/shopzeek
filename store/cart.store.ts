@@ -21,12 +21,16 @@ export const useCartStore = create<CartStore>()(
             items: [],
             coupon: null,
 
-            // 1. HYDRATE CART ON LOGIN
+            
             syncWithDB: async () => {
                 const supabase = createClient();
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session) return;
 
+                // A. Get the current guest cart from Zustand's persisted state
+                const localItems = get().items;
+
+                // B. Fetch the user's saved cart from the database
                 const { data } = await supabase
                     .from("cart_items")
                     .select(`
@@ -36,17 +40,64 @@ export const useCartStore = create<CartStore>()(
                     `)
                     .eq('user_id', session.user.id);
 
-                if (data) {
-                    const dbItems: CartItem[] = data.map((item: any) => ({
-                        product_id: item.product_id,
-                        name: item.products.name,
-                        price: item.products.price,
-                        image_url: item.products.image_urls?.[0] || "/placeholder.png",
-                        quantity: item.quantity,
-                        slug: item.products.slug
-                    }));
+                const dbItems: CartItem[] = (data || []).map((item: any) => ({
+                    product_id: item.product_id,
+                    name: item.products.name,
+                    price: item.products.price,
+                    image_url: item.products.image_urls?.[0] || "/placeholder.png",
+                    quantity: item.quantity,
+                    slug: item.products.slug
+                }));
+
+                // C. If the guest cart is empty, just load the DB cart and we're done
+                if (localItems.length === 0) {
                     set({ items: dbItems });
+                    return;
                 }
+
+                // D. Merge logic: Sum up quantities for overlapping products
+                const mergedMap = new Map<string, CartItem>();
+
+                // Load DB items into the map first
+                dbItems.forEach(item => mergedMap.set(item.product_id, item));
+
+                const upsertPayload = [];
+
+                // Loop through local items to merge and find what needs to be sent to the DB
+                for (const localItem of localItems) {
+                    const existingDbItem = mergedMap.get(localItem.product_id);
+
+                    if (existingDbItem) {
+                        // Conflict found! Sum the quantities together
+                        const newQuantity = existingDbItem.quantity + localItem.quantity;
+                        mergedMap.set(localItem.product_id, { ...existingDbItem, quantity: newQuantity });
+                        
+                        upsertPayload.push({
+                            user_id: session.user.id,
+                            product_id: localItem.product_id,
+                            quantity: newQuantity
+                        });
+                    } else {
+                        // New item from guest cart, add to map and schedule for DB insert
+                        mergedMap.set(localItem.product_id, localItem);
+                        
+                        upsertPayload.push({
+                            user_id: session.user.id,
+                            product_id: localItem.product_id,
+                            quantity: localItem.quantity
+                        });
+                    }
+                }
+
+                // E. Push all merged/new items to the database in one bulk operation
+                if (upsertPayload.length > 0) {
+                    await supabase
+                        .from("cart_items")
+                        .upsert(upsertPayload, { onConflict: 'user_id, product_id' });
+                }
+
+                // F. Finally, update the Zustand UI state with the perfectly merged cart
+                set({ items: Array.from(mergedMap.values()) });
             },
 
             addItem: async (item) => {

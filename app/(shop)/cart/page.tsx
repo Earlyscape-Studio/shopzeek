@@ -7,6 +7,9 @@ import { X, Minus, Plus, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/store/cart.store";
+import { useAuthModal } from "@/store/auth-modal.store";
+import {useRouter} from "next/navigation"
+import { createClient } from "@/utils/supabase/client";
 import {
   Table,
   TableBody,
@@ -34,12 +37,30 @@ export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
   const { items, removeItem, updateQuantity, clearCart } = useCartStore();
 
+  const router = useRouter()
+
+
+  const supabase = createClient()
+  const openAuthModal = useAuthModal((s) => s.open)
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   if (!isMounted) {
     return <div className="min-h-[60vh]" />;
+  }
+
+  async function handleProceedToCheckout(e: React.MouseEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          openAuthModal("signin");
+          return;
+        }
+
+        router.push("/checkout")
   }
 
   const subTotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
@@ -210,12 +231,10 @@ export default function CartPage() {
                   <span className="text-xl font-bold text-[#FF5A00]">₦{total.toLocaleString()} NGN</span>
                 </div>
                 <Button
-                  asChild
-                  className="w-full bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest h-14 rounded-sm"
+                  onClick={handleProceedToCheckout}
+                  className="w-full bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest h-14 rounded-sm flex items-center justify-center gap-2"
                 >
-                  <Link href="/checkout" className="flex items-center justify-center gap-2">
-                    Proceed to Checkout <ArrowRight size={18} />
-                  </Link>
+                    Proceed to Checkout <ArrowRight size={18} /> 
                 </Button>
               </CardContent>
             </Card>
