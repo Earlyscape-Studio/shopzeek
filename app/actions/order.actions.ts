@@ -14,6 +14,42 @@ interface ShippingBreakdown {
 
 
 
+async function upsertFlutterwaveCustomer(
+  accessToken: string,
+  email: string,
+  firstName: string,
+  lastName: string
+): Promise<string> {
+  const res = await fetch(`${FLW_BASE_URL}/customers`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, name: { first: firstName, last: lastName } }),
+  });
+
+  const data = await res.json();
+
+  if (res.ok && data.status === "success") return data.data.id;
+
+  if (Number(data.error?.code) === 10409) {
+    const lookupRes = await fetch(
+      `${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const lookupData = await lookupRes.json();
+    const record = Array.isArray(lookupData.data)
+      ? lookupData.data[0]
+      : lookupData.data;
+
+    if (!record?.id) throw new Error("Could not retrieve existing customer.");
+    return record.id;
+  }
+
+  throw new Error(data.error?.message || "Failed to create customer record.");
+}
+
 export async function initCardPayment(
   formData: FormData,
   cartItems: any[],
@@ -64,6 +100,12 @@ export async function initCardPayment(
     // 3. Generate reference & get token
     const transactionRef = `FW-${order.id.slice(0, 8)}-${Date.now()}`;
     const accessToken = await getFlutterwaveToken();
+    const customerId = await upsertFlutterwaveCustomer(
+      accessToken,
+      email,
+      firstName,
+      lastName
+    );
 
     // 4. Payload – amount in kobo, type standard_checkout
     const payload = {
@@ -82,14 +124,7 @@ export async function initCardPayment(
           encrypted_cvv: encryptedCard.encrypted_cvv,
         },
       },
-      customer: {
-        email,
-        phone: {
-          country_code: "234",
-          number: phone.startsWith("0") ? phone.slice(1) : phone,
-        },
-        name: { first: firstName, last: lastName },
-      },
+      customer_id: customerId
     };
 
     const response = await fetch(`${FLW_BASE_URL}/orchestration/direct-charges`, {
@@ -271,26 +306,34 @@ export async function initBankTransfer(
       }),
     });
     const customerData = await customerRes.json();
+    console.log("Customer create response:", JSON.stringify(customerData));
 
     let customerId: string;
 
     if (customerRes.ok && customerData.status === "success") {
       customerId = customerData.data.id;
-    } else if (customerData.error?.code === "10409") {
-      const existing = await fetch(`${FLW_BASE_URL}/customers?email=${email}`, {
+    } else if (Number(customerData.error?.code) === 10409) {
+      const existingRes = await fetch(`${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`
         }
       });
-      const existingData = await existing.json();
-      // console.log("existing customer lookup:", JSON.stringify(existingData));
+      const existingData = await existingRes.json();
+      console.log("existing customer lookup:", JSON.stringify(existingData));
 
       const customerRecord = Array.isArray(existingData.data)
         ? existingData.data[0]
         : existingData.data;
-
+      if (!customerRecord?.id) {
+        return {
+          success: false,
+          error: "Could not retrieve existing customer record. Please try again.",
+        };
+      }
+      
       customerId = customerRecord.id;
     } else {
+      console.error("Unexpected customer create error:", JSON.stringify(customerData));
       return { success: false, status: customerData.error.status, error: customerData.error?.message || "Failed to create customer record." };
     }
 
@@ -348,22 +391,40 @@ export async function initBankTransfer(
         note: `Transfer exactly ₦${totalAmount} before ${flwData.data.account_expiration_datetime}  to complete payment.`,
       },
     };
-  } catch (err: any) {
+  } catch (err) {
+    console.error("an unexpected error occured generating your bank account", err)
     return { success: false, error: err.message || "An unexpected error occurred generating your bank account." };
   }
 }
 
 export async function verifyTransaction(txRef: string) {
-  const accessToken = await getFlutterwaveToken();
-  const response = await fetch(
-    `${FLW_BASE_URL}/transactions?reference=${txRef}`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
+  try{
+      const accessToken = await getFlutterwaveToken();
+    const response = await fetch(
+      `${FLW_BASE_URL}/transactions?reference=${txRef}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Transaction verification request failed:", response.status);
+      return false;
     }
-  );
-  const data = await response.json();
-  const transaction = data.data?.[0];
-  return transaction?.status === "successful";
+
+    const data = await response.json();
+    const transaction = Array.isArray(data.data) ? data.data[0] : data.data;
+
+    if (!transaction) {
+      console.warn("No transaction found for ref:", txRef);
+      return false;
+    }
+    return transaction?.status === "successful";
+  }catch(err){
+    console.error("verifyTransaction threw:", err);
+    return false;
+  }
+  
 }
 
 
