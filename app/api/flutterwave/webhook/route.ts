@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import crypto from "crypto";
+import { sendOrderEmails } from "@/app/actions/email.actions";
+
 
 // We need the raw body for signature verification, so we read it manually
 export async function POST(req: NextRequest) {
@@ -86,6 +87,8 @@ export async function POST(req: NextRequest) {
     })
     .eq("id", existingOrder.id);
 
+    
+
   if (error) {
     console.error("Webhook: failed to update order", error.message);
     // Return 500 so Flutterwave retries
@@ -94,8 +97,50 @@ export async function POST(req: NextRequest) {
 
   // console.log("Webhook: order marked as paid", existingOrder.id);
 
+  const { data: fullOrder, error: fetchError } = await supabase
+    .from("orders")
+    .select(`
+      id,
+      email,
+      customer_name,
+      total_amount,
+      order_items (
+        quantity,
+        unit_price,
+        products (
+          name
+        )
+      )
+    `)
+    .eq("id", existingOrder.id)
+    .single();
+
+    if (fetchError || !fullOrder) {
+      console.error("Webhook: Failed to fetch full order details for email", fetchError);
+      // We still return 200 because the payment was successful, even if the email failed
+      return NextResponse.json({ received: true }, { status: 200 }); 
+    }
+
+    const formattedItems = fullOrder.order_items.map((item: any) => ({
+      name: item.products.name,
+      quantity: item.quantity,
+      price: item.unit_price,
+    }));
+
   // 7. Trigger any post-payment logic here (email, inventory update, etc.)
   // await sendOrderConfirmationEmail(existingOrder.id);
+
+    try {
+      await sendOrderEmails({
+        orderId: fullOrder.id,
+        email: fullOrder.email,
+        customerName: fullOrder.customer_name,
+        totalAmount: fullOrder.total_amount,
+        items: formattedItems,
+      });
+    } catch (emailError) {
+      console.error("Webhook: Failed to send order emails", emailError);
+    }
 
   return NextResponse.json({ received: true }, { status: 200 });
 }

@@ -63,7 +63,7 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
 
 
   const handleAddToCart = async () => {
-    await processAddtoCart
+    await processAddToCart()
 
     // Show brief success state on the button
     setAdded(true);

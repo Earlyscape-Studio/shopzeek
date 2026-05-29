@@ -211,7 +211,7 @@ export default function CartPage() {
                 <div className="space-y-4 text-sm">
                   <div className="flex justify-between text-gray-600">
                     <span>Sub-total</span>
-                    <span className="font-bold text-gray-900">{subTotal.toLocaleString()}</span>
+                    <span className="font-bold text-gray-900">₦{subTotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>

@@ -392,8 +392,9 @@ export async function initBankTransfer(
       },
     };
   } catch (err) {
-    console.error("an unexpected error occured generating your bank account", err)
-    return { success: false, error: err.message || "An unexpected error occurred generating your bank account." };
+     console.error("an unexpected error occurred generating your bank account", err)
+     const message = err instanceof Error ? err.message : String(err)
+     return { success: false, error: message || "An unexpected error occurred generating your bank account" };
   }
 }
 
