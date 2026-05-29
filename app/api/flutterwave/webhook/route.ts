@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { sendOrderEmails } from "@/app/actions/email.actions";
+import { OrderEmailPayload } from "@/types/email";
 
 
 // We need the raw body for signature verification, so we read it manually
@@ -103,7 +104,16 @@ export async function POST(req: NextRequest) {
       id,
       email,
       customer_name,
+      phone,
+      payment_method,
       total_amount,
+      shipping_cost,
+      shipping_vat,
+      shipping_street,
+      shipping_city,
+      shipping_state,
+      shipping_country,
+      shipping_postal_code,
       order_items (
         quantity,
         unit_price,
@@ -121,23 +131,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 }); 
     }
 
-    const formattedItems = fullOrder.order_items.map((item: any) => ({
-      name: item.products.name,
-      quantity: item.quantity,
-      price: item.unit_price,
-    }));
+    const emailPayload: OrderEmailPayload = {
+      orderId: fullOrder.id,
+      email: fullOrder.email,
+      customerName: fullOrder.customer_name,
+      phone: fullOrder.phone || '',
+      paymentMethod: fullOrder.payment_method,
+      totalAmount: fullOrder.total_amount,
+      shippingCost: fullOrder.shipping_cost,
+      shippingVat: fullOrder.shipping_vat,
+      items: fullOrder.order_items.map((item: any) => ({
+        name: item.products.name,
+        quantity: item.quantity,
+        price: item.unit_price,
+      })),
+      shippingAddress: {
+        street: fullOrder.shipping_street || '',
+        city: fullOrder.shipping_city || '',
+        state: fullOrder.shipping_state || '',
+        country: fullOrder.shipping_country || 'Nigeria',
+        postalCode: fullOrder.shipping_postal_code,
+      }
+    };
 
   // 7. Trigger any post-payment logic here (email, inventory update, etc.)
   // await sendOrderConfirmationEmail(existingOrder.id);
 
     try {
-      await sendOrderEmails({
-        orderId: fullOrder.id,
-        email: fullOrder.email,
-        customerName: fullOrder.customer_name,
-        totalAmount: fullOrder.total_amount,
-        items: formattedItems,
-      });
+      await sendOrderEmails(emailPayload);
     } catch (emailError) {
       console.error("Webhook: Failed to send order emails", emailError);
     }

@@ -2,53 +2,54 @@
 
 
 import {Resend} from "resend"
-import { OrderReceiptEmail } from "@/components/emails/OrderReceipt"
-
+import { OrderReceiptEmail } from "@/components/emails/orderReceiptEmail"
+import { AdminOrderNotificationEmail } from "@/components/emails/adminOrderNotificationEmail"
+import { OrderEmailPayload } from "@/types/email"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-
-const FROM_EMAIL = "ShopZeek Orders <hello@zeek.you>"
+const FROM_EMAIL = "ShopZeek Orders <hello@zeek.you>"; 
+const ADMIN_EMAIL = "hello@zeek.you";
 
 
 
 export async function sendOrderEmails(orderDetails: any) {
     try{
-        const {data: customerData, error: customerError} = await resend.emails.send({
+        const customerPromise = resend.emails.send({
             from: FROM_EMAIL,
             to: orderDetails.email,
-            subject: `Your ShopZeek Order Confirmation - ${orderDetails.orderId}`,
-            react: OrderReceiptEmail({
-                customerName: orderDetails.customerName,
-                orderId: orderDetails.orderId,
-                totalAmount: orderDetails.totalAmount,
-                items: orderDetails.items
-            })
-        })
-
-        if(customerError){
-            console.error("Failed to send customer email", customerError)
-            return {success: false, error: customerError}
-        }
-
-
-        const {error: adminError} = await resend.emails.send({
-            from: FROM_EMAIL,
-            to: "hello@zeek.you",
-            subject: `🎉 New Order Received! - ${orderDetails.orderId}`,
+            subject: `Your ShopZeek Order Confirmation - ${orderDetails.orderId.slice(0, 8)}`,
             react: OrderReceiptEmail({
                 customerName: orderDetails.customerName,
                 orderId: orderDetails.orderId,
                 totalAmount: orderDetails.totalAmount,
                 items: orderDetails.items,
             }),
-        })
+        });
 
-        if(adminError) {
-            console.error("Failed to send email to admin", adminError)
-        }
+        // 2. Send detailed profile to operational admin
+        const adminPromise = resend.emails.send({
+            from: FROM_EMAIL,
+            to: ADMIN_EMAIL,
+            subject: `🎉 [New Order] ${orderDetails.customerName} - ₦${orderDetails.totalAmount.toLocaleString()}`,
+            react: AdminOrderNotificationEmail({
+                orderId: orderDetails.orderId,
+                customerName: orderDetails.customerName,
+                email: orderDetails.email,
+                phone: orderDetails.phone,
+                paymentMethod: orderDetails.paymentMethod,
+                totalAmount: orderDetails.totalAmount,
+                items: orderDetails.items,
+                shippingAddress: orderDetails.shippingAddress,
+            }),
+        });
 
 
-        return {success: true, data: customerData}
+        const [customerRes, adminRes] = await Promise.all([customerPromise, adminPromise]);
+
+        if (customerRes.error) console.error("Customer email error:", customerRes.error);
+        if (adminRes.error) console.error("Admin email error:", adminRes.error);
+
+        return { success: !customerRes.error };
     }catch(err){
         console.error("unexpected error sending emails:", err)
         return {success: false, error: err}
