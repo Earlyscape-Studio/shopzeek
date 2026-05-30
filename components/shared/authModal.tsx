@@ -16,6 +16,7 @@ import {
     DialogDescription
 } from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
+import { sendWelcomeEmail } from "@/app/actions/email.actions"
 import {toast} from "sonner"
 // import {signInWithEmail, signUpWithEmail} from "@/app/actions/auth.actions"
 
@@ -31,7 +32,9 @@ export function AuthModal() {
     const [signUpState, signUpAction, signUpPending] = useActionState(signUp, {error: "", success: false})
 
     useEffect(() => {
-        if (signUpState?.success) {
+        const userData = signUpState?.data
+
+        if (signUpState?.success && userData) {
             const syncAndClose = async () => {
                 const supabase = createClient();
                 // 1. Force the browser client to read the new server cookie
@@ -41,6 +44,11 @@ export function AuthModal() {
                 toast.success("Account created successfully!");
                 router.refresh();
                 close();
+
+                sendWelcomeEmail(
+                    userData.email,
+                    userData.firstName
+                ).catch(err => console.error("Failed to trigger welcome email", err))
             };
             syncAndClose()
         }
@@ -59,7 +67,7 @@ export function AuthModal() {
 
             syncAndClose()
         }
-    }, [signInState?.success, signUpState?.success, close, router]);
+    }, [signInState?.success, signUpState?.success,signUpState?.data, close, router]);
 
     const handleClose = () => {
         close()

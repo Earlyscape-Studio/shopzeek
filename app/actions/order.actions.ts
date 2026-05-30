@@ -420,7 +420,7 @@ export async function verifyTransaction(txRef: string) {
       console.warn("No transaction found for ref:", txRef);
       return false;
     }
-    return transaction?.status === "successful";
+    return transaction?.status === "successful" || transaction?.status === "succeeded";
   }catch(err){
     console.error("verifyTransaction threw:", err);
     return false;

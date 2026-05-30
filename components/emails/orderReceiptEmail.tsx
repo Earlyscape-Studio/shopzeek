@@ -16,7 +16,7 @@ import { EmailOrderItem } from '@/types/email';
 interface OrderReceiptProps {
   customerName: string
   orderId: string
-  totalAmount: string
+  totalAmount: number
   items: EmailOrderItem[]
 }
 

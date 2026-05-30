@@ -5,6 +5,7 @@ import {Resend} from "resend"
 import { OrderReceiptEmail } from "@/components/emails/orderReceiptEmail"
 import { AdminOrderNotificationEmail } from "@/components/emails/adminOrderNotificationEmail"
 import { OrderEmailPayload } from "@/types/email"
+import { WelcomeEmail } from "@/components/emails/welcomeEmail"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM_EMAIL = "ShopZeek Orders <hello@zeek.you>"; 
@@ -12,7 +13,7 @@ const ADMIN_EMAIL = "hello@zeek.you";
 
 
 
-export async function sendOrderEmails(orderDetails: any) {
+export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
     try{
         const customerPromise = resend.emails.send({
             from: FROM_EMAIL,
@@ -54,4 +55,25 @@ export async function sendOrderEmails(orderDetails: any) {
         console.error("unexpected error sending emails:", err)
         return {success: false, error: err}
     }
+}
+
+export async function sendWelcomeEmail(email: string, firstName: string) {
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "Welcome to ShopZeek! 🎉",
+      react: WelcomeEmail({ firstName }),
+    });
+
+    if (error) {
+      console.error("Failed to send welcome email:", error);
+      return { success: false, error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected error in sendWelcomeEmail:", error);
+    return { success: false, error };
+  }
 }

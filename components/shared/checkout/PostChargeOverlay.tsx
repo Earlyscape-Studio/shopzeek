@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { X, Loader2 } from "lucide-react";
-// import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { X, Loader2, RefreshCw, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,23 +21,47 @@ interface PostChargeOverlayProps {
   onVerifyBankTransfer?: (txRef: string) => Promise<void>;
 }
 
+const RETRY_COOLDOWN = 30; // seconds between retries
+
 export function PostChargeOverlay({
   state,
   onClose,
   onVerifyBankTransfer,
 }: PostChargeOverlayProps) {
-
   const [isLoading, setIsLoading] = useState(false);
-  // const [error, setError] = useState<string | null>(null);
-
   const [otpCode, setOtpCode] = useState("");
+
+  // Retry / cooldown state
+  const [hasCheckedOnce, setHasCheckedOnce] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Clear interval on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
+
+  const startCooldown = () => {
+    setCooldown(RETRY_COOLDOWN);
+    cooldownRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   if (!state) return null;
 
+  // --- OTP handler (unchanged) ---
   async function handleOtpSubmit() {
     if (!otpCode || !state?.chargeId) return;
     setIsLoading(true);
-
     try {
       const result = await authorizeCardCharge(state.chargeId, {
         type: "otp",
@@ -48,12 +71,8 @@ export function PostChargeOverlay({
       if (result.success) {
         if (result.chargeStatus === "successful") {
           toast.success("Payment successful!");
-          // Redirect to success page or close overlay
           window.location.href = `/order/success?reference=${state.orderId}`;
-        } else if (
-          result.nextActionType === "redirect_url" &&
-          result.redirectUrl
-        ) {
+        } else if (result.nextActionType === "redirect_url" && result.redirectUrl) {
           window.location.href = result.redirectUrl;
         } else {
           toast.error("OTP accepted, but additional action needed.");
@@ -69,13 +88,22 @@ export function PostChargeOverlay({
     }
   }
 
+  // --- Bank transfer verify handler with cooldown ---
   const handleBankTransferVerification = async () => {
-    if (!onVerifyBankTransfer || !state.transactionRef) return;
+    if (!onVerifyBankTransfer || !state.transactionRef || isLoading || cooldown > 0) return;
+
     setIsLoading(true);
-    await onVerifyBankTransfer(state.transactionRef);
-    setIsLoading(false);
+    setHasCheckedOnce(true);
+
+    try {
+      await onVerifyBankTransfer(state.transactionRef);
+    } finally {
+      setIsLoading(false);
+      startCooldown();
+    }
   };
 
+  // Parse bank details
   let bankDetails: {
     bank_name: string;
     account_number: string;
@@ -83,6 +111,7 @@ export function PostChargeOverlay({
     amount: string;
     note: string;
   } | null = null;
+
   if (state.type === "bank_transfer" && state.instruction) {
     try {
       bankDetails = JSON.parse(state.instruction);
@@ -90,6 +119,8 @@ export function PostChargeOverlay({
       // plain text fallback
     }
   }
+
+  const isButtonDisabled = isLoading || cooldown > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -101,11 +132,12 @@ export function PostChargeOverlay({
           <X className="h-5 w-5" />
         </button>
 
+        {/* OTP flow */}
         {state.type === "requires_otp" && (
           <div className="text-center space-y-4">
             <h3 className="text-lg font-bold text-gray-900">Enter OTP</h3>
             <p className="text-sm text-gray-500">
-              Please enter the one‑time password sent to your phone/email.
+              Please enter the one-time password sent to your phone/email.
             </p>
             <Input
               type="text"
@@ -122,10 +154,7 @@ export function PostChargeOverlay({
               className="w-full bg-orange-500 hover:bg-orange-600"
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verifying…
-                </>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying…</>
               ) : (
                 "Verify OTP"
               )}
@@ -133,11 +162,13 @@ export function PostChargeOverlay({
           </div>
         )}
 
+        {/* Bank transfer flow — structured details */}
         {state.type === "bank_transfer" && bankDetails && (
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-gray-900 text-center">
               Bank Transfer Details
             </h3>
+
             <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Bank</span>
@@ -160,39 +191,54 @@ export function PostChargeOverlay({
                 </span>
               </div>
             </div>
-            <p className="text-xs text-gray-500 text-center">
-              {bankDetails.note}
-            </p>
+
+            <p className="text-xs text-gray-500 text-center">{bankDetails.note}</p>
+
+            {/* Contextual messaging based on whether they've checked already */}
+            {hasCheckedOnce && (
+              <div className="bg-orange-50 border border-orange-100 rounded-lg px-4 py-3 text-sm text-orange-700">
+                <p className="font-medium mb-0.5">Transfer not confirmed yet</p>
+                <p className="text-orange-600/80 text-xs">
+                  Bank transfers can take 1–3 minutes to reflect. If you&apos;ve
+                  already sent the money, wait a moment and check again.
+                </p>
+              </div>
+            )}
+
             <Button
               onClick={handleBankTransferVerification}
-              disabled={isLoading}
-              className="w-full bg-orange-500 hover:bg-orange-600"
+              disabled={isButtonDisabled}
+              className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60"
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Checking…
-                </>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking…</>
+              ) : cooldown > 0 ? (
+                <><Clock className="mr-2 h-4 w-4" /> Check again in {cooldown}s</>
+              ) : hasCheckedOnce ? (
+                <><RefreshCw className="mr-2 h-4 w-4" /> Check Again</>
               ) : (
-                "I’ve sent the money"
+                "I've sent the money"
               )}
             </Button>
+
+            <p className="text-xs text-center text-gray-400">
+              Do not close this window until your payment is confirmed.
+            </p>
           </div>
         )}
 
+        {/* Bank transfer flow — plain text fallback */}
         {state.type === "bank_transfer" && !bankDetails && (
           <div className="text-center space-y-4">
-            <h3 className="text-lg font-bold text-gray-900">
-              Payment Instruction
-            </h3>
+            <h3 className="text-lg font-bold text-gray-900">Payment Instruction</h3>
             <p className="text-sm text-gray-500">{state.instruction}</p>
             {state.transactionRef && (
               <Button
                 onClick={handleBankTransferVerification}
-                disabled={isLoading}
+                disabled={isButtonDisabled}
                 className="w-full bg-orange-500 hover:bg-orange-600"
               >
-                Check Payment Status
+                {cooldown > 0 ? `Check again in ${cooldown}s` : "Check Payment Status"}
               </Button>
             )}
           </div>

@@ -12,6 +12,10 @@ export type ResetState = {
 export type AuthState = {
   error: string;
   success: boolean;
+  data?: {
+    email: string
+    firstName: string
+  }
 };
 
 export async function signUp(
@@ -37,7 +41,11 @@ export async function signUp(
   if (error) return { error: error.message, success: false };
 
   // redirect("/");
-  return { error: "", success: true };
+  return { 
+    error: "", 
+    success: true,
+    data: { email: cleanEmail, firstName: formData.get("full_name") as string }
+  };
 }
 
 export async function signIn(
