@@ -9,7 +9,7 @@ import {
     Breadcrumb, BreadcrumbItem, BreadcrumbLink,
     BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { OrderStatusSteppper } from "@/components/shared/shop/profile/OrderStatusStepper"
+import { OrderStatusStepper } from "@/components/shared/shop/profile/OrderStatusStepper"
 
 
 export default async function ProfilePage () {
