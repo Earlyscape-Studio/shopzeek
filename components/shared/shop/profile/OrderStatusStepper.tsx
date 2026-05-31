@@ -22,7 +22,7 @@ function getActiveStep (status: string): number {
 
 
 
-export function OrderStatusSteppper({status}: {status: string}){
+export function OrderStatusStepper({status}: {status: string}){
     const activeStep = getActiveStep(status)
     const totalSteps = STEPS.length
 
