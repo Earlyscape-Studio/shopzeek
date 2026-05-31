@@ -388,7 +388,7 @@ export function Nav() {
                                         <button
                                             onClick={() => {
                                                 setMobileOpen(false)
-                                                handleSignOut()
+                                                signOut()
                                             }}
                                             className="flex items-center gap-3 h-14 text-base font-medium text-red-500 text-left"
                                         >
