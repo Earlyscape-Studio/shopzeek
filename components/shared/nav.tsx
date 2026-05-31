@@ -92,10 +92,10 @@ export function Nav() {
         }
     }
 
-    const handleSignOut = async () => {
-        await supabase.auth.signOut()
-        router.refresh()
-    }
+    // const handleSignOut = async () => {
+    //     await supabase.auth.signOut()
+    //     router.refresh()
+    // }
 
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && searchQuery.trim()) {
@@ -230,7 +230,7 @@ export function Nav() {
 
                                 <DropdownMenuItem asChild>
                                     <button
-                                        onClick={handleSignOut}
+                                        onClick={signOut}
                                         type="submit"
                                         className="flex items-center gap-2 w-full text-red-500 hover:text-red-600"
                                     >
