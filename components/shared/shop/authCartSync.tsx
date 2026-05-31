@@ -7,6 +7,7 @@ import { useCartStore } from "@/store/cart.store";
 export function AuthCartSync() {
   const supabase = createClient();
   const syncWithDB = useCartStore((state) => state.syncWithDB);
+  const resetForSignout = useCartStore((state) => state.resetForSignout)
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -15,13 +16,16 @@ export function AuthCartSync() {
         if (event === "SIGNED_IN" && session) {
           syncWithDB();
         }
+        if (event === "SIGNED_OUT" && session) {
+          resetForSignout();
+        }
       }
     );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [syncWithDB, supabase]);
+  }, [syncWithDB, supabase, resetForSignout]);
 
   return null; 
 }

@@ -1,4 +1,3 @@
-// app/actions/address.actions.ts
 "use server";
 
 import { cookies } from "next/headers";
@@ -50,4 +49,32 @@ export async function createAddress(
 
   revalidatePath("/checkout");
   return { success: true, data };
+}
+
+
+export async function getDefaultAddress() : Promise<ActionResponse<Address | null>>{
+    const cookieStore = await cookies()
+    const supabase = createClient(cookieStore)
+
+    const {data: { user }} = await supabase.auth.getUser()
+    if (!user) return {success: false, error: "Not authenticated"}
+
+
+    const {data, error} = await supabase
+      .from("addresses")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("is_default", true)
+      .single()
+
+
+
+      if (error && error.code !== "PGRST116"){
+        return {
+          success: false,
+          error: error.message
+        }
+      }
+
+      return {success: true, data: data ?? null}
 }

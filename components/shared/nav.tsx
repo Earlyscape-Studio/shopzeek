@@ -197,9 +197,9 @@ export function Nav() {
 
                             <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem asChild>
-                                    <Link href="/cart" className="flex items-center gap-2">
-                                        <ShoppingBag className="h-4 w-4 text-gray-400" />
-                                        My Orders
+                                    <Link href="/profile" className="flex items-center gap-2">
+                                        {/* <ShoppingBag className="h-4 w-4 text-gray-400" /> */}
+                                        Profile
                                     </Link>
                                 </DropdownMenuItem>
 
@@ -346,11 +346,11 @@ export function Nav() {
 
                                         <DrawerClose asChild>
                                             <Link
-                                                href="/orders"
+                                                href="/profile"
                                                 className="flex items-center gap-3 h-14 text-base font-medium text-gray-700 border-b border-gray-50 hover:text-[#FF5A00] transition-colors"
                                             >
-                                                <ShoppingBag className="h-4 w-4 text-gray-400" />
-                                                My Orders
+                                                {/* <ShoppingBag className="h-4 w-4 text-gray-400" /> */}
+                                                Profile
                                             </Link>
                                         </DrawerClose>
 

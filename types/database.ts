@@ -43,7 +43,7 @@ export type Product = {
 
 export type Order = {
     id: string
-    user_id: string
+    user_id: string | null
     status: OrderStatus
     total_amount: number
     discount_amount: number

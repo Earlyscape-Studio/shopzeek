@@ -14,6 +14,83 @@ interface ShippingBreakdown {
 
 
 
+function formatDeliveryAddress(formData: FormData): string{
+  const firstName = (formData.get("firstName") as string) ?? ""
+  const lastName = (formData.get("lastName") as string) ?? ""
+  const address = (formData.get("address") as string) ?? ""
+  const lga = (formData.get("lga") as string) ?? ""
+  const city = (formData.get("city") as string) ?? ""
+  const state = (formData.get("state") as string) ?? ""
+  
+  
+  
+  return [
+    `${firstName} ${lastName}`.trim(),
+    address,
+    [lga, city].filter(Boolean).join(", "),
+    state.charAt(0).toUpperCase() + state.slice(1),
+    "Nigeria"
+  ]
+  .filter(Boolean)
+  .join("\n")
+}
+
+
+
+async function saveCheckoutAddress(
+  supabase: any,
+  userId: string,
+  formData: FormData,
+  phone: string
+): Promise<string | null> {
+  try{
+    const firstName = (formData.get("firstName") as string) ?? ""
+    const lastName = (formData.get("lastName") as string) ?? ""
+    const addressLine = (formData.get("address") as string) ?? ""
+    const city = (formData.get("city") as string) ?? ""
+    const state = (formData.get("state") as string) ?? ""
+
+
+    if (!addressLine) return null
+
+    const {count} = await supabase
+      .from("addresses")
+      .select("id", {count: "exact", head: true})
+      .eq("user_id", userId)
+
+
+    const {data, error} = await supabase
+      .from("addresses")
+      .insert({
+        user_id: userId,
+        full_name: `${firstName} ${lastName}`.trim(),
+        phone,
+        address_line: addressLine,
+        address_line2: null,
+        city,
+        state: state.charAt(0).toUpperCase() + state.slice(1),
+        country: "Nigeria",
+        is_default: (count ?? 0) === 0
+      })
+      .select("id")
+      .single()
+
+
+    if(error) {
+      console.error("Failed to save checkout address", error.message)
+      return null
+    }
+
+
+    return data.id as string
+  }catch(err){
+    console.error("saveCheckoutAddress threw:", err)
+    return null
+  }
+}
+
+
+
 async function upsertFlutterwaveCustomer(
   accessToken: string,
   email: string,
@@ -50,6 +127,10 @@ async function upsertFlutterwaveCustomer(
   throw new Error(data.error?.message || "Failed to create customer record.");
 }
 
+
+
+
+
 export async function initCardPayment(
   formData: FormData,
   cartItems: any[],
@@ -61,6 +142,8 @@ export async function initCardPayment(
     const cookieStore = await cookies();
     const supabase = await createClient(cookieStore);
 
+    const { data: { user } } = await supabase.auth.getUser();
+
     const email = formData.get("email") as string;
     const firstName = formData.get("firstName") as string;
     const lastName = formData.get("lastName") as string;
@@ -70,10 +153,13 @@ export async function initCardPayment(
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
+        user_id: user?.id ?? null,
         email,
         customer_name: `${firstName} ${lastName}`,
+        customer_phone: phone,
+        delivery_address: formatDeliveryAddress(formData),
         status: "pending_payment",
-        payment_method: "checkout",
+        payment_method: "card",
         total_amount: totalAmount,
         shipping_cost: shippingBreakdown?.baseCost ?? 0,
         shipping_vat: shippingBreakdown?.vat ?? 0,
@@ -96,6 +182,14 @@ export async function initCardPayment(
       .insert(orderItems);
 
     if (itemsError) return { success: false, error: `Items Error: ${itemsError.message}` };
+
+    if(user?.id){
+      const addressId = await saveCheckoutAddress(supabase, user.id, formData, phone)
+
+      if(addressId){
+        await supabase.from("orders").update({address_id: addressId}).eq("id", order.id)
+      }
+    }
 
     // 3. Generate reference & get token
     const transactionRef = `FW-${order.id.slice(0, 8)}-${Date.now()}`;
@@ -262,15 +356,21 @@ export async function initBankTransfer(
     const cookieStore = await cookies();
     const supabase = await createClient(cookieStore);
 
+    const { data: { user } } = await supabase.auth.getUser();
+
     const email = formData.get("email") as string;
     const firstName = formData.get("firstName") as string;
     const lastName = formData.get("lastName") as string;
+    const phone = ((formData.get("phone") as string) ?? "").replace(/\s+/g, "")
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
+        user_id: user?.id ?? null,
         email,
         customer_name: `${firstName} ${lastName}`,
+        customer_phone: phone,
+        delivery_address: formatDeliveryAddress(formData),
         status: "pending_payment",
         payment_method: "bank_transfer",
         total_amount: totalAmount,
@@ -291,6 +391,15 @@ export async function initBankTransfer(
     }));
     await supabase.from("order_items").insert(orderItems);
 
+
+    if (user?.id){
+      const addressId = await saveCheckoutAddress(supabase, user.id, formData, phone)
+
+      if (addressId){
+        await supabase.from("orders").update({ address_id: addressId }).eq("id", order.id)
+      }
+    }
+
     const transactionRef = `FW-${order.id.slice(0, 8)}-${Date.now()}`;
     const accessToken = await getFlutterwaveToken();
 
@@ -305,6 +414,7 @@ export async function initBankTransfer(
         name: { first: firstName, last: lastName },
       }),
     });
+
     const customerData = await customerRes.json();
     console.log("Customer create response:", JSON.stringify(customerData));
 
@@ -324,6 +434,8 @@ export async function initBankTransfer(
       const customerRecord = Array.isArray(existingData.data)
         ? existingData.data[0]
         : existingData.data;
+
+        
       if (!customerRecord?.id) {
         return {
           success: false,
