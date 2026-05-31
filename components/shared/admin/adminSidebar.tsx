@@ -2,8 +2,8 @@
 
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { LayoutDashboard, ShoppingCart, Package, Tag, BookOpen } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { LayoutDashboard, ShoppingCart, Package, Tag, Home, ArrowLeft } from "lucide-react"
 import {
     Sidebar,
     SidebarContent,
@@ -38,6 +38,7 @@ interface Props {
 
 export function AdminSidebar({ profile }: Props) {
     const pathname = usePathname()
+    const router = useRouter()
 
     const isActive = (href: string, exact?: boolean) => exact ? pathname === href : pathname.startsWith(href)
 
@@ -72,6 +73,24 @@ export function AdminSidebar({ profile }: Props) {
             </SidebarContent>
 
             <SidebarFooter className="border-t border-gray-200 p-4">
+                <Button
+                    variant="ghost"
+                    onClick={() => router.back()}
+                    className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    Go Back
+                </Button>
+                <Button
+                    variant="ghost"
+                    asChild
+                    className="w-full justify-start text-gray-600 hover:text-[#FF5A00] hover:bg-orange-50"
+                >
+                    <Link href="/">
+                        <Home className="h-4 w-4" />
+                        View Store
+                    </Link>
+                </Button>
                 <form action={signOut}>
                     <Button
                         type="submit"

@@ -21,13 +21,11 @@ export default async function AdminDashboardPage() {
     .select("total_amount, status");
 
   const totalOrders = orders?.length || 0;
-  
-  // Calculate revenue (assuming you only count paid/completed orders)
+
   const totalRevenue = orders
-    ?.filter((o) => o.status === "paid" || o.status === "completed")
+    ?.filter((o) => o.status === "paid" || o.status === "delivered")
     .reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
 
-  // 3. Fetch Recent Orders (Limit 5)
   const { data: recentOrders } = await supabase
     .from("orders")
     .select(`
@@ -36,7 +34,8 @@ export default async function AdminDashboardPage() {
       status, 
       created_at,
       payment_reference,
-      profiles ( full_name )
+      customer_name,
+      customer_email
     `)
     .order("created_at", { ascending: false })
     .limit(5);
@@ -45,10 +44,11 @@ export default async function AdminDashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-        <p className="text-gray-500 mt-1">Welcome back. Here is what's happening with your store today.</p>
+        <p className="text-gray-500 mt-1">
+          Welcome back. Here is what's happening with your store today.
+        </p>
       </div>
 
-      {/* Quick Stats Grid */}
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -56,10 +56,12 @@ export default async function AdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">₦{totalRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              ₦{totalRevenue.toLocaleString()}
+            </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Total Orders</CardTitle>
@@ -81,7 +83,6 @@ export default async function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Recent Orders Table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">Recent Orders</h2>
@@ -91,7 +92,7 @@ export default async function AdminDashboardPage() {
             </Link>
           </Button>
         </div>
-        
+
         <Table>
           <TableHeader className="bg-gray-50">
             <TableRow>
@@ -105,22 +106,36 @@ export default async function AdminDashboardPage() {
           <TableBody>
             {recentOrders && recentOrders.length > 0 ? (
               recentOrders.map((order: any) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium text-xs text-gray-500">
-                    {order.payment_reference || order.id.split('-')[0]}...
-                  </TableCell>
-                  <TableCell className="font-medium text-gray-900">
-                    {order.profiles?.full_name || "Guest User"}
-                  </TableCell>
-                  <TableCell className="text-gray-500 text-sm">
-                    {new Date(order.created_at).toLocaleDateString()}
+                <TableRow key={order.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium text-xs text-gray-500 font-mono">
+                    {order.payment_reference || order.id.split("-")[0].toUpperCase()}
                   </TableCell>
                   <TableCell>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      order.status === "paid" || order.status === "completed" 
-                        ? "bg-green-100 text-green-700" 
-                        : "bg-orange-100 text-orange-700"
-                    }`}>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-900 text-sm">
+                        {order.customer_name || "Guest User"}
+                      </span>
+                      {order.customer_email && (
+                        <span className="text-xs text-gray-400">
+                          {order.customer_email}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-gray-500 text-sm">
+                    {new Date(order.created_at).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${order.status === "paid" || order.status === "delivered"
+                        ? "bg-green-100 text-green-700"
+                        : order.status === "shipped"
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-orange-100 text-orange-700"
+                      }`}>
                       {order.status.toUpperCase()}
                     </span>
                   </TableCell>

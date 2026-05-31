@@ -56,15 +56,18 @@ export default function ContactPage() {
           <div className="space-y-8 z-10 flex-1">
             <div className="flex items-center gap-4">
               <Phone className="h-5 w-5 text-orange-200" />
-              <span>+1012 3456 789</span>
+              <span>+(+234) 911 049 7316</span>
             </div>
             <div className="flex items-center gap-4">
               <Mail className="h-5 w-5 text-orange-200" />
-              <span>demo@gmail.com</span>
+              <span>info@zeek.you</span>
             </div>
             <div className="flex items-start gap-4">
               <MapPin className="h-6 w-6 text-orange-200 shrink-0" />
-              <span className="leading-relaxed">132 Dartmouth Street Boston, Massachusetts 02156 United States</span>
+              <p>Landmark House</p> 
+              <p>No. 52-54 Isaac John Street</p> 
+              <p>Ikeja GRA </p>
+              <p>Lagos</p>
             </div>
           </div>
 

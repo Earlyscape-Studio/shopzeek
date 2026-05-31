@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Search, User, Heart, Menu, LayoutDashboard, LogOut, ShoppingBag, X } from "lucide-react"
+import { Search, User, Heart, Menu, LayoutDashboard, LogOut, ShoppingBag, X, User2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { CartNavIcon } from "@/components/shared/shop/navCartIcon"
 import { useAuthModal } from "@/store/auth-modal.store"
@@ -198,7 +198,7 @@ export function Nav() {
                             <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem asChild>
                                     <Link href="/profile" className="flex items-center gap-2">
-                                        {/* <ShoppingBag className="h-4 w-4 text-gray-400" /> */}
+                                        <User2  className="h-4 w-4 text-gray-400" />
                                         Profile
                                     </Link>
                                 </DropdownMenuItem>
@@ -349,8 +349,17 @@ export function Nav() {
                                                 href="/profile"
                                                 className="flex items-center gap-3 h-14 text-base font-medium text-gray-700 border-b border-gray-50 hover:text-[#FF5A00] transition-colors"
                                             >
-                                                {/* <ShoppingBag className="h-4 w-4 text-gray-400" /> */}
+                                                <User2  className="h-4 w-4 text-gray-400" />
                                                 Profile
+                                            </Link>
+                                        </DrawerClose>
+                                        <DrawerClose asChild>
+                                            <Link
+                                                href="/cart"
+                                                className="flex items-center gap-3 h-14 text-base font-medium text-gray-700 border-b border-gray-50 hover:text-[#FF5A00] transition-colors"
+                                            >
+                                                <ShoppingBag className="h-4 w-4 text-gray-400" />
+                                                Cart
                                             </Link>
                                         </DrawerClose>
 

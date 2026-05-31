@@ -37,7 +37,7 @@ export default async function HomePage() {
     ]);
 
   return (
-    <div>
+    <div className="w-full px-0">
       <HeroBanner />
       <BrandLogos />
       <CategoryCards />

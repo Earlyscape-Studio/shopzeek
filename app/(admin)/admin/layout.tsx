@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
+import Link from "next/link"
+import { ExternalLink } from "lucide-react"
 import { redirect } from "next/navigation"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AdminSidebar } from "@/components/shared/admin/adminSidebar"
@@ -30,8 +32,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <SidebarProvider>
             <AdminSidebar profile={profile} />
             <main className="flex flex-col flex-1 min-h-screen">
-                <header className="flex items-center justify-between hh-16 px-6 bg-white border-b border-gray-200 sticky top-0 z-10">
+                <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200 sticky top-0 z-10">
                     <SidebarTrigger />
+                    <Link
+                        href="/"
+                        className="ml-4 flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#FF5A00] transition-colors"
+                    >
+                        <ExternalLink size={13} />
+                        View Store
+                    </Link>
                     <div className="flex items-center gap-3 ml-auto">
                         <span className="text-sm text-gray-700 hidden sm:block font-medium">
                             {profile.full_name ?? "Admin"}

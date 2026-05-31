@@ -79,7 +79,9 @@ export default async function AdminProductsPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="font-medium text-gray-900 max-w-[200px] truncate">
-                                            {product.name}
+                                            <Link href={`/admin/products/${product.id}`} >
+                                                <span>{product.name}</span>
+                                            </Link>
                                         </TableCell>
                                         <TableCell className="text-gray-500 capitalize">
                                             {product.category || "Uncategorized"}
