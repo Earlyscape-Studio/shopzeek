@@ -9,7 +9,7 @@ import { WelcomeEmail } from "@/components/emails/welcomeEmail"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM_EMAIL = "ShopZeek Orders <hello@zeek.you>"; 
-const ADMIN_EMAIL = "hello@zeek.you";
+const ADMIN_EMAIL = "zaygay@zeek.you";
 
 
 

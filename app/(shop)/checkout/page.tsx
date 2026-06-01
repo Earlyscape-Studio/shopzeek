@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Home } from "lucide-react";
 import { useRouter } from "next/navigation"
 import { useCartStore } from "@/store/cart.store";
-import { initCardPayment, initBankTransfer, verifyTransaction } from "@/app/actions/order.actions";
+import { initCardPayment, initBankTransfer, verifyTransaction, verifyBankTransferPayment } from "@/app/actions/order.actions";
 import {encryptCardData} from "@/utils/flutterwave/flutterwave-encrypt"
 import { getDeliveryQuote } from "@/app/actions/logistics.actions";
 import { Textarea } from "@/components/ui/textarea";
@@ -249,14 +249,19 @@ export default function CheckoutPage() {
 
 
   const handleBankTransferVerification = async (txRef: string) => {
+    const orderId = postCharage?.orderId
+    if(!orderId) return;
+
+
     setIsProcessing(true)
     try{
-      const isPaid = await verifyTransaction(txRef)
-      if (isPaid){
-        toast.success("Payment confirmed!, Redirecting...")
-        router.push(`/order/success?reference=${txRef}`)
+      const result = await verifyBankTransferPayment(txRef, orderId)
+      if(result.paid){
+        toast.success("Payment Confirmed! Redirecting...")
+        
+        router.push(`/order/success?reference=${orderId}`)
       }else{
-        toast.error("Payment not yet recieved. Please check and try again")
+        toast.error("Payment not yet received. Bank transfers can take 1–3 minutes.")
       }
     }catch(err: any){
       toast.error(err.message ?? "Verification failed")
@@ -265,6 +270,7 @@ export default function CheckoutPage() {
       setIsProcessing(false)
     }
   }
+  
 
   return (
      <div className="bg-gray-50 min-h-screen">

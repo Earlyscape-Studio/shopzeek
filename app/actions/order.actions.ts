@@ -346,6 +346,37 @@ export async function authorizeCardCharge(
 }
 
 
+export async function verifyTransaction(txRef: string) {
+  try{
+      const accessToken = await getFlutterwaveToken();
+    const response = await fetch(
+      `${FLW_BASE_URL}/transactions?reference=${txRef}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Transaction verification request failed:", response.status);
+      return false;
+    }
+
+    const data = await response.json();
+    const transaction = Array.isArray(data.data) ? data.data[0] : data.data;
+
+    if (!transaction) {
+      console.warn("No transaction found for ref:", txRef);
+      return false;
+    }
+    return transaction?.status === "successful" || transaction?.status === "succeeded";
+  }catch(err){
+    console.error("verifyTransaction threw:", err);
+    return false;
+  }
+  
+}
+
+
 export async function initBankTransfer(
   formData: FormData,
   cartItems: any[],
@@ -381,6 +412,10 @@ export async function initBankTransfer(
       .single();
 
     if (orderError) return { success: false, error: `Order error: ${orderError.message}` };
+
+    const rollbackOrder = async () => {
+      await supabase.from("orders").delete().eq("id", order.id);
+    };
 
     // Insert items
     const orderItems = cartItems.map((item) => ({
@@ -422,7 +457,11 @@ export async function initBankTransfer(
 
     if (customerRes.ok && customerData.status === "success") {
       customerId = customerData.data.id;
-    } else if (Number(customerData.error?.code) === 10409) {
+    } else if (
+      Number(customerData.error?.code) === 10409 ||
+      customerData.error?.message?.toLowerCase().includes("already exists") ||
+      customerData.status === "error" && customerData.message?.toLowerCase().includes("already exists")
+    ) {
       const existingRes = await fetch(`${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`
@@ -437,6 +476,7 @@ export async function initBankTransfer(
 
         
       if (!customerRecord?.id) {
+        await rollbackOrder()
         return {
           success: false,
           error: "Could not retrieve existing customer record. Please try again.",
@@ -445,6 +485,7 @@ export async function initBankTransfer(
       
       customerId = customerRecord.id;
     } else {
+      await rollbackOrder()
       console.error("Unexpected customer create error:", JSON.stringify(customerData));
       return { success: false, status: customerData.error.status, error: customerData.error?.message || "Failed to create customer record." };
     }
@@ -490,6 +531,9 @@ export async function initBankTransfer(
       .update({ payment_reference: transactionRef })
       .eq("id", order.id);
 
+
+    const transferAmount = Number(flwData.data.amount);
+
     return {
       success: true,
       orderId: order.id,
@@ -500,7 +544,7 @@ export async function initBankTransfer(
         account_name: flwData.data.note,
         amount: flwData.data.amount,
         expires_at: flwData.data.account_expiration_datetime,
-        note: `Transfer exactly ₦${totalAmount} before ${flwData.data.account_expiration_datetime}  to complete payment.`,
+        note: `Transfer exactly ₦${transferAmount.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to complete your payment. This account expires at ${new Date(flwData.data.account_expiration_datetime).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" })}.`,
       },
     };
   } catch (err) {
@@ -510,34 +554,65 @@ export async function initBankTransfer(
   }
 }
 
-export async function verifyTransaction(txRef: string) {
-  try{
-      const accessToken = await getFlutterwaveToken();
-    const response = await fetch(
-      `${FLW_BASE_URL}/transactions?reference=${txRef}`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
+
+
+
+export async function verifyBankTransferPayment(
+  txRef: string,
+  orderId: string
+): Promise<{paid: boolean; pending: boolean}> {
+    try{
+      const cookieStore = await cookies()
+      const supabase = await createClient(cookieStore)
+
+
+      const {data: order} = await supabase
+        .from("orders")
+        .select("status, total_amount")
+        .eq("id", orderId)
+        .single()
+
+
+      if(order?.status === "paid" || order?.status === "delivered"){
+        return {paid: true, pending: false}
       }
-    );
 
-    if (!response.ok) {
-      console.error("Transaction verification request failed:", response.status);
-      return false;
+      const accessToken = await getFlutterwaveToken()
+      const response = await fetch(
+        `${FLW_BASE_URL}/transactions?reference=${txRef}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      )
+
+      if (!response.ok) return {paid: false, pending: true}
+
+      const data = await response.json()
+      const transaction = Array.isArray(data.data) ? data.data[0] : data.data
+
+      if (!transaction) return {paid: false, pending: true}
+
+
+      const isPaid = transaction.status === "successful" || transaction.status === "succedded"
+
+
+      if(isPaid){
+        await supabase
+        .from("orders")
+        .update({
+          status: "paid",
+          paid_at: new Date().toISOString(),
+          flw_transction_id: String(transaction.id)
+        })
+        .eq("id", orderId)
+
+        return {paid: true, pending: false}
+      }
+
+      
+      return {paid: false, pending: true}
+    }catch(err){
+      console.error("verifyBankTransferPayment threw:", err)
+      return { paid: false, pending: true}
     }
-
-    const data = await response.json();
-    const transaction = Array.isArray(data.data) ? data.data[0] : data.data;
-
-    if (!transaction) {
-      console.warn("No transaction found for ref:", txRef);
-      return false;
-    }
-    return transaction?.status === "successful" || transaction?.status === "succeeded";
-  }catch(err){
-    console.error("verifyTransaction threw:", err);
-    return false;
-  }
-  
 }
 
 
