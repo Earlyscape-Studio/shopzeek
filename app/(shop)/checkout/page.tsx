@@ -249,7 +249,7 @@ export default function CheckoutPage() {
 
 
   const handleBankTransferVerification = async (txRef: string) => {
-    const orderId = postCharage?.orderId
+    const orderId = postCharge?.orderId
     if(!orderId) return;
 
 
