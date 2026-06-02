@@ -11,13 +11,13 @@ const brands = [
 
 export function BrandLogos() {
   return (
-    <section className="py-12 border-y border-gray-100 bg-white">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-10 opacity-60">
+    <section className="py-12 border-y border-gray-100 bg-white w-screen">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex flex-wrap justify-between items-center gap-8 md:gap-10 opacity-60">
           {brands.map((brand, index) => (
             <div 
               key={index} 
-              className="relative h-12 w-32 md:w-40 grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer"
+              className="relative h-12 w-18 md:w-32 grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer"
             >
               <Image
                 src={brand.logo}

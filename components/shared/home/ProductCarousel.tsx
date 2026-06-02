@@ -67,8 +67,8 @@ export function ProductCarousel({
             </CarouselContent>
             
             {/* Carousel Navigation Buttons */}
-            <CarouselPrevious className="hidden md:flex -left-5 xl:-left-12 bg-[#FF5A00] hover:bg-orange-600 border-none text-white h-10 w-10 shadow-md z-10 disabled:opacity-50 transition-all" />
-            <CarouselNext className="hidden md:flex -right-5 xl:-right-12 bg-[#FF5A00] hover:bg-orange-600 border-none text-white h-10 w-10 shadow-md z-10 disabled:opacity-50 transition-all" />
+            <CarouselPrevious className="hidden md:flex -left-5 xl:-left-10 bg-[#FF5A00] hover:bg-orange-600 border-none text-white h-10 w-10 shadow-md z-10 disabled:opacity-50 transition-all" />
+            <CarouselNext className="hidden md:flex -right-5 xl:-right-10 bg-[#FF5A00] hover:bg-orange-600 border-none text-white h-10 w-10 shadow-md z-10 disabled:opacity-50 transition-all" />
           </Carousel>
         )}
       </div>

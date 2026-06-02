@@ -17,10 +17,10 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer>
+    <footer className="w-screen">
       {/* Newsletter */}
       <div className="bg-orange-500 py-10 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
           {/* Text block centers on mobile, left-aligns on large screens */}
           <div className="text-center lg:text-left space-y-1">
             <p className="text-white text-xl font-bold">
@@ -47,7 +47,7 @@ export function Footer() {
 
       {/* Links */}
       <div className="bg-white py-12 px-4">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-6 gap-8">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-6 gap-8">
           {/* Brand */}
           <div className="col-span-2">
             <span className="text-2xl font-bold text-orange-500">Zeek.</span>

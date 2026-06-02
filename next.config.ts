@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: process.env.IS_HOSTINGER === 'true' ? 'standalone' : undefined,
   /* config options here */
   images: {
     dangerouslyAllowSVG: true,
