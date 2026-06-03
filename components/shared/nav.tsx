@@ -418,9 +418,6 @@ export function Nav() {
                             </Link>
                         ))}
                     </div>
-                    <span className="text-sm font-bold text-[#FF5A00]">
-                        (+234) 911 049 7316
-                    </span>
                 </div>
             </div>
         </header>

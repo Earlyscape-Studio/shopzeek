@@ -34,7 +34,7 @@ const categories = [
 export function CategoryCards() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-3 md:gap-6">
         {categories.map(({ title, desc, href, bg, image }) => (
           <Link
             key={title}
@@ -42,17 +42,17 @@ export function CategoryCards() {
             className={`${bg} rounded-3xl overflow-hidden flex flex-col h-[450px] relative group transition-transform hover:-translate-y-1`}
           >
             {/* Text at the top */}
-            <div className="p-8 pb-0 z-10">
-              <h3 className="text-3xl font-bold text-gray-900 whitespace-pre-line leading-tight">
+            <div className="p-3 md:p-8 pb-0 z-10">
+              <h3 className="text-xl text-center md:text-left md:text-3xl font-bold text-gray-900 whitespace-pre-line leading-tight">
                 {title}
               </h3>
-              <p className="text-xs text-gray-600 mt-4 leading-relaxed max-w-[200px]">
+              <p className="text-xs text-center md:text-left text-gray-600 mt-4 leading-relaxed max-w-[200px]">
                 {desc}
               </p>
             </div>
             
             {/* Image at the bottom */}
-            <div className="relative flex-1 w-full mt-4">
+            <div className="relative flex-1 w-full mt-2 md:mt-4">
               <Image 
                 src={image} 
                 alt={title.replace("\n", " ")}
