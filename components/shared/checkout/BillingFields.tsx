@@ -198,7 +198,6 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
             className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
             required
             placeholder="Enter LGA"
-            required
           />
           ) : (
             <>
