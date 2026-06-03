@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { getFlutterwaveToken, FLW_BASE_URL } from "@/utils/flutterwave/flutterwave";
 import type { EncryptedCardData } from "@/utils/flutterwave/flutterwave-encrypt";
 import { randomUUID } from "crypto";
+import {supabaseAdmin} from "@/utils/supabase/admin"
 import { revalidatePath } from "next/cache";
 
 interface ShippingBreakdown {
@@ -38,7 +39,6 @@ function formatDeliveryAddress(formData: FormData): string{
 
 
 async function saveCheckoutAddress(
-  supabase: any,
   userId: string,
   formData: FormData,
   phone: string
@@ -53,19 +53,19 @@ async function saveCheckoutAddress(
 
     if (!addressLine) return null
 
-    const {count} = await supabase
+    const {count} = await supabaseAdmin
       .from("addresses")
       .select("id", {count: "exact", head: true})
       .eq("user_id", userId)
 
 
-    const {data, error} = await supabase
+    const {data, error} = await supabaseAdmin
       .from("addresses")
       .insert({
         user_id: userId,
         full_name: `${firstName} ${lastName}`.trim(),
         phone,
-        address_line: addressLine,
+        address_line1: addressLine,
         address_line2: null,
         city,
         state: state.charAt(0).toUpperCase() + state.slice(1),
@@ -184,7 +184,7 @@ export async function initCardPayment(
     if (itemsError) return { success: false, error: `Items Error: ${itemsError.message}` };
 
     if(user?.id){
-      const addressId = await saveCheckoutAddress(supabase, user.id, formData, phone)
+      const addressId = await saveCheckoutAddress(user.id, formData, phone)
 
       if(addressId){
         await supabase.from("orders").update({address_id: addressId}).eq("id", order.id)
@@ -413,9 +413,9 @@ export async function initBankTransfer(
 
     if (orderError) return { success: false, error: `Order error: ${orderError.message}` };
 
-    const rollbackOrder = async () => {
-      await supabase.from("orders").delete().eq("id", order.id);
-    };
+    // const rollbackOrder = async () => {
+    //   await supabase.from("orders").delete().eq("id", order.id);
+    // };
 
     // Insert items
     const orderItems = cartItems.map((item) => ({
@@ -428,7 +428,7 @@ export async function initBankTransfer(
 
 
     if (user?.id){
-      const addressId = await saveCheckoutAddress(supabase, user.id, formData, phone)
+      const addressId = await saveCheckoutAddress(user.id, formData, phone)
 
       if (addressId){
         await supabase.from("orders").update({ address_id: addressId }).eq("id", order.id)
@@ -438,66 +438,73 @@ export async function initBankTransfer(
     const transactionRef = `FW-${order.id.slice(0, 8)}-${Date.now()}`;
     const accessToken = await getFlutterwaveToken();
 
-    const customerRes = await fetch(`${FLW_BASE_URL}/customers`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        name: { first: firstName, last: lastName },
-      }),
-    });
+    
 
-    const customerData = await customerRes.json();
-    console.log("Customer create response:", JSON.stringify(customerData));
+    
 
-    let customerId: string;
+    let customerId: string | null = null
 
-    if (customerRes.ok && customerData.status === "success") {
-      customerId = customerData.data.id;
-    } else if (
-      Number(customerData.error?.code) === 10409 ||
-      customerData.error?.message?.toLowerCase().includes("already exists") ||
-      customerData.status === "error" && customerData.message?.toLowerCase().includes("already exists")
-    ) {
-      const existingRes = await fetch(`${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
-      });
-      const existingData = await existingRes.json();
-      console.log("existing customer lookup:", JSON.stringify(existingData));
-
-      const customerRecord = Array.isArray(existingData.data)
-        ? existingData.data[0]
-        : existingData.data;
-
-        
-      if (!customerRecord?.id) {
-        await rollbackOrder()
-        return {
-          success: false,
-          error: "Could not retrieve existing customer record. Please try again.",
-        };
-      }
+    try{
       
-      customerId = customerRecord.id;
-    } else {
-      await rollbackOrder()
-      console.error("Unexpected customer create error:", JSON.stringify(customerData));
-      return { success: false, status: customerData.error.status, error: customerData.error?.message || "Failed to create customer record." };
+      const customerRes = await fetch(`${FLW_BASE_URL}/customers`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          name: { first: firstName, last: lastName },
+          phone_number: phone
+        }),
+      });
+
+      const customerData = await customerRes.json();
+      console.log("Customer create response:", JSON.stringify(customerData));
+
+      
+      if (customerRes.ok && customerData.status === "success") {
+          // Created fresh
+          customerId = customerData.data.id;
+      } else {
+          // Creation failed (exists, forbidden, or other) — try lookup by email
+          const lookupRes = await fetch(
+              `${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`,
+              { headers: { Authorization: `Bearer ${accessToken}` } }
+          );
+          const lookupData = await lookupRes.json();
+          const record = Array.isArray(lookupData.data)
+              ? lookupData.data[0]
+              : lookupData.data;
+
+          if (record?.id) {
+              customerId = record.id;
+          }
+          // If lookup also fails, customerId stays null — handled below
+      }
+
+    }catch(err) {
+      console.warn("Customer resolution failed, will use inline email:", err);
     }
 
-    const payload = {
-      customer_id: customerId,
+   
+
+    const payload: Record<string, any> = {
       reference: transactionRef,
       amount: totalAmount,                
       currency: "NGN",
       account_type: "dynamic",
       meta: { order_id: order.id },
     };
+
+    if (customerId) {
+        payload.customer_id = customerId;
+    } else {
+        // Inline fallback — supported by Flutterwave virtual accounts
+        payload.email = email;
+        payload.name  = `${firstName} ${lastName}`;
+        payload.phone_number = phone;
+    }
 
     const response = await fetch(`${FLW_BASE_URL}/virtual-accounts`, {
       method: "POST",
@@ -512,6 +519,7 @@ export async function initBankTransfer(
 
     const flwData = await response.json();
     console.log("Virtual account response:", flwData);
+    console.log("Virtual account validation errors:", JSON.stringify(flwData.error?.validation_errors, null, 2))
 
     if (!response.ok || flwData.status !== "success") {
       return { success: false, error: flwData.message || "Bank transfer setup failed" };
@@ -522,8 +530,6 @@ export async function initBankTransfer(
     console.log("Access token present:", !!accessToken)
     console.log("Payload:", JSON.stringify(payload))
 
-
-  
 
     
     await supabase
