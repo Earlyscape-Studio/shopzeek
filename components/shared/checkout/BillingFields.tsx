@@ -114,17 +114,7 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
         </div>
       </div>
 
-      {/* Company */}
-      <div className="space-y-1.5">
-        <label className="text-sm font-medium text-gray-700">
-          Company Name{" "}
-          <span className="text-gray-400 font-normal">(Optional)</span>
-        </label>
-        <Input
-          name="company"
-          className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
-        />
-      </div>
+     
 
       {/* Address */}
       <div className="space-y-1.5">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import Image from "next/image"
 import { Button } from "@/components/ui/button";
 
 const footerLinks = {
@@ -7,7 +8,7 @@ const footerLinks = {
     "Hair Care", "Skin Care Oil", "Body Oil",
     "Fragrance", "Body Lotion", "Beauty Soap", "Hair Mask",
   ],
-  Company: ["About Shop Zeek", "Shop", "Blog", "Store Locations"],
+  Company: ["About Zeek", "Shop", "Blog", "Store Locations"],
   "Help Center": [
     "Customer Service", "Policy", "Terms & Conditions",
     "Track Order", "FAQs", "My Account", "Product Support",
@@ -50,7 +51,9 @@ export function Footer() {
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-6 gap-8">
           {/* Brand */}
           <div className="col-span-2">
-            <span className="text-2xl font-bold text-orange-500">Zeek.</span>
+            <span className="">
+              <Image src="/zeek2.svg" alt="zeek logo" width={100} height={50} className="object-cover" />
+            </span>
             <p className="text-sm text-orange-500 font-semibold mt-2">
               HOTLINE 24/7
             </p>
@@ -61,7 +64,7 @@ export function Footer() {
               <p>Ikeja GRA </p>
               <p>Lagos</p>
             </div>
-            <p className="text-sm text-gray-500">contactcenter@shopzeek.com</p>
+            <p className="text-sm text-gray-500">contactcenter@zeek.com</p>
           </div>
 
           {/* Link columns */}
