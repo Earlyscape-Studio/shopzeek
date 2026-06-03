@@ -89,7 +89,7 @@ export function ProductCard({ product }: Props) {
               - Mobile: opacity-100, positioned cleanly at the bottom
               - Desktop (md:): Hidden by default (opacity-0, translate-y-4), reveals seamlessly on image hover
             */}
-            <div className="absolute bottom-4 flex flex-col items-start md:flex-row md:items-center justify-center left-0 right-0 px-4 z-20 transition-all duration-300 opacity-100 translate-y-0 md:opacity-0 md:translate-y-4 md:group-hover/image:opacity-100 md:group-hover/image:translate-y-0">
+            <div className="absolute bottom-4 flex flex-row items-center justify-center left-0 right-0 px-4 z-20 transition-all duration-300 opacity-100 translate-y-4 md:opacity-0 md:translate-y-4 md:group-hover/image:opacity-100 md:group-hover/image:translate-y-0">
               <Button 
                 onClick={handleQuickAddToCart}
                 className="w- bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest text-xs h-10 rounded-sm shadow-lg px-3 md:px-5 flex items-center justify-center gap-2"
