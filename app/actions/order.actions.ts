@@ -534,6 +534,8 @@ export async function initBankTransfer(
 
     const transferAmount = Number(flwData.data.amount);
 
+    console.log("expiration time", flwData.data.account_expiration_datetime)
+
     return {
       success: true,
       orderId: order.id,
