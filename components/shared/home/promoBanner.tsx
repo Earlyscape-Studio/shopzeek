@@ -31,7 +31,7 @@ export function PromoBanner() {
             variant="outline"
             className="border-white text-white hover:bg-white hover:text-[#FF5A00] rounded-sm px-8 bg-transparent"
           >
-            <Link href="/shop">DISCOVER NOW</Link>
+            <Link href="/shop?brand=The+Cosmetic+Republic">DISCOVER NOW</Link>
           </Button>
         </div>
       </div>

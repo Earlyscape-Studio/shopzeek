@@ -64,7 +64,7 @@ export function Footer() {
               <p>Ikeja GRA </p>
               <p>Lagos</p>
             </div>
-            <p className="text-sm text-gray-500">contactcenter@zeek.com</p>
+            <p className="text-sm text-gray-500">hello@zeek.you</p>
           </div>
 
           {/* Link columns */}
