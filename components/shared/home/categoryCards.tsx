@@ -39,14 +39,14 @@ export function CategoryCards() {
           <Link
             key={title}
             href={href}
-            className={`${bg} rounded-3xl overflow-hidden flex flex-col h-[450px] relative group transition-transform hover:-translate-y-1`}
+            className={`${bg} rounded-3xl overflow-hidden flex flex-col h-64 md:h-[450px] relative group transition-transform hover:-translate-y-1`}
           >
             {/* Text at the top */}
             <div className="p-3 md:p-8 pb-0 z-10">
-              <h3 className="text-xl text-center md:text-left md:text-3xl font-bold text-gray-900 whitespace-pre-line leading-tight">
+              <h3 className="text-sm text-center md:text-left md:text-3xl font-bold text-gray-900 whitespace-pre-line leading-tight">
                 {title}
               </h3>
-              <p className="text-xs text-center md:text-left text-gray-600 mt-4 leading-relaxed max-w-[200px]">
+              <p className="text-xs text-center hidden md:block md:text-left text-gray-600 mt-4 leading-relaxed max-w-[200px]">
                 {desc}
               </p>
             </div>

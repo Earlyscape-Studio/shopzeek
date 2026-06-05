@@ -10,13 +10,18 @@ import {
   Section,
   Text,
   Button,
+  Img,
+  Tailwind
 } from '@react-email/components';
+
+
+//TODO: update with zeek logo in this page
 
 
 
 
 interface WelcomeEmailProps {
-    firstName: string
+  firstName: string
 }
 
 
@@ -24,21 +29,48 @@ export const WelcomeEmail = ({ firstName }: WelcomeEmailProps) => {
   return (
     <Html lang="en" dir="ltr">
       <Head />
-      <Preview>Welcome to ShopZeek, {firstName}!</Preview>
+      <Preview>Welcome to zeek, {firstName}!</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>ShopZeek</Heading>
-          
+          <Heading style={heading}>zeek</Heading>
+
           <Text style={paragraph}>Hi {firstName},</Text>
           <Text style={paragraph}>
-            Welcome to ShopZeek! We are thrilled to have you join our community. Your account is now fully set up, which means you can start building your wishlist, track orders easily, and enjoy faster checkouts.
+            We are doing a happy dance over here because you just joined the Zeek family!
+
+            Whether you&apos;re here to treat yourself, find the perfect gift, or just window-shop our latest drops, we promise to make it worth your while. Here is what you can expect from us:
+
+            Early access to our newest collections.
+
+            Exclusive discounts that we only share with our email crew.
+
+            Zero spam. Just the good stuff.
+
+            To kick things off, we want to treat you to 7% OFF your first order.
+
+            Use code: ZEEKFAM at checkout.
           </Text>
 
           <Section style={btnContainer}>
             <Button style={button} href={process.env.NEXT_PUBLIC_BASE_URL}>
               Start Shopping Now
             </Button>
-          </Section>
+          </Section>.
+
+          <Text style={paragraph}>
+            Happy Shopping,
+
+            The Zeek Team ❤️
+          </Text>
+          <Tailwind>
+            <Img 
+            alt="zeek logo"
+            className=""
+            width={150}
+            height={80}
+            src="/zeek1.svg"
+            />
+          </Tailwind>
 
           <Hr style={hr} />
 

@@ -75,13 +75,13 @@ export function HeroBanner() {
             <div className="bg-[#FFFDFB] rounded-3xl relative overflow-hidden flex flex-col md:flex-row h-[450px]">
 
               {/* Background image (mobile only) */}
-              <div className="absolute inset-0 md:hidden">
+              {/* <div className="absolute inset-0 md:hidden">
                 <Image src="/biooilpeodukt.png" alt="" fill sizes="100vw" className="object-cover object-center" />
                 <div className="absolute inset-0 bg-white/60" />
-              </div>
+              </div> */}
 
               {/* Left: Image (desktop only) */}
-              <div className="hidden md:block md:w-1/2 relative flex-shrink-0">
+              <div className="md:w-1/2 relative flex-shrink-0">
                 <Image src="/biooilpeodukt.png" alt="Bio-Oil Campaign Banner" loading="eager" fill sizes="(max-width: 600px) 0vw, 50vw" className="object-contain object-center" />
               </div>
 

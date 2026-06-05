@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, Loader2, RefreshCw, Clock } from "lucide-react";
+import { X, Loader2, RefreshCw, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,46 @@ interface PostChargeOverlayProps {
   onVerifyBankTransfer?: (txRef: string) => Promise<void>;
 }
 
-const RETRY_COOLDOWN = 30; // seconds between retries
+const RETRY_COOLDOWN = 30;
+
+
+function useCountdown(expiresAt: string | null | undefined){
+  const getInitialSeconds = () => {
+    if(expiresAt){
+      const expiry = new Date(expiresAt).getTime()
+      const remaining = Math.floor((expiry - Date.now()) / 1000)
+
+      if (remaining > 120) return remaining
+
+    }
+    return 30 * 60
+
+  }
+  const [totalSeconds, setTotalSeconds] = useState(getInitialSeconds)
+
+
+  useEffect(() => {
+    if (totalSeconds <= 0) return
+
+    const id = setInterval(
+      () => setTotalSeconds((s) => Math.max(0, s - 1)),
+      1000
+    )
+    return () => clearInterval(id)
+  }, [totalSeconds])
+
+
+  const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0")
+  const ss = String(totalSeconds % 60).padStart(2, "0")
+
+
+  return {
+    display: `${mm}:${ss}`,
+    isExpired: totalSeconds === 0,
+    isUrgent: totalSeconds > 0 && totalSeconds < 5 * 60,
+    totalSeconds 
+  }
+}
 
 export function PostChargeOverlay({
   state,
@@ -34,31 +73,40 @@ export function PostChargeOverlay({
   // Retry / cooldown state
   const [hasCheckedOnce, setHasCheckedOnce] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
 
-  // Clear interval on unmount
+
   useEffect(() => {
-    return () => {
-      if (cooldownRef.current) clearInterval(cooldownRef.current);
-    };
-  }, []);
+    if (cooldown <= 0) return;
+    const id = setInterval(
+      () => setCooldown((s) => Math.max(0, s - 1)),
+      1000
+    );
+    return () => clearInterval(id);
+  }, [cooldown]);
 
-  const startCooldown = () => {
-    setCooldown(RETRY_COOLDOWN);
-    cooldownRef.current = setInterval(() => {
-      setCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(cooldownRef.current!);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
+  
   if (!state) return null;
 
-  // --- OTP handler (unchanged) ---
+  let bankDetails: {
+    bank_name: string;
+    account_number: string;
+    account_name: string;
+    amount: string;
+    expires_at?: string
+    note: string;
+  } | null = null;
+
+  if (state.type === "bank_transfer" && state.instruction) {
+    try {
+      bankDetails = JSON.parse(state.instruction);
+    } catch {
+      // plain text fallback
+    }
+  }
+
+
+
   async function handleOtpSubmit() {
     if (!otpCode || !state?.chargeId) return;
     setIsLoading(true);
@@ -87,8 +135,8 @@ export function PostChargeOverlay({
       setIsLoading(false);
     }
   }
+  
 
-  // --- Bank transfer verify handler with cooldown ---
   const handleBankTransferVerification = async () => {
     if (!onVerifyBankTransfer || !state.transactionRef || isLoading || cooldown > 0) return;
 
@@ -99,45 +147,28 @@ export function PostChargeOverlay({
       await onVerifyBankTransfer(state.transactionRef);
     } finally {
       setIsLoading(false);
-      startCooldown();
+      setCooldown(RETRY_COOLDOWN);
     }
   };
-
-  // Parse bank details
-  let bankDetails: {
-    bank_name: string;
-    account_number: string;
-    account_name: string;
-    amount: string;
-    note: string;
-  } | null = null;
-
-  if (state.type === "bank_transfer" && state.instruction) {
-    try {
-      bankDetails = JSON.parse(state.instruction);
-    } catch {
-      // plain text fallback
-    }
-  }
 
   const isButtonDisabled = isLoading || cooldown > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6 relative animate-in fade-in zoom-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md relative animate-in fade-in zoom-in">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
 
-        {/* OTP flow */}
+        {/* ── OTP flow ── */}
         {state.type === "requires_otp" && (
-          <div className="text-center space-y-4">
+          <div className="p-6 text-center space-y-4">
             <h3 className="text-lg font-bold text-gray-900">Enter OTP</h3>
             <p className="text-sm text-gray-500">
-              Please enter the one-time password sent to your phone/email.
+              Enter the one-time password sent to your phone or email.
             </p>
             <Input
               type="text"
@@ -162,74 +193,21 @@ export function PostChargeOverlay({
           </div>
         )}
 
-        {/* Bank transfer flow — structured details */}
+        {/* ── Bank transfer flow — structured ── */}
         {state.type === "bank_transfer" && bankDetails && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 text-center">
-              Bank Transfer Details
-            </h3>
-
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Bank</span>
-                <span className="font-medium">{bankDetails.bank_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Account Number</span>
-                <span className="font-mono font-bold tracking-wider">
-                  {bankDetails.account_number}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Account Name</span>
-                <span className="font-medium">{bankDetails.account_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Amount</span>
-                <span className="font-bold text-orange-500">
-                  ₦{bankDetails.amount}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-xs text-gray-500 text-center">{bankDetails.note}</p>
-
-            {/* Contextual messaging based on whether they've checked already */}
-            {hasCheckedOnce && (
-              <div className="bg-orange-50 border border-orange-100 rounded-lg px-4 py-3 text-sm text-orange-700">
-                <p className="font-medium mb-0.5">Transfer not confirmed yet</p>
-                <p className="text-orange-600/80 text-xs">
-                  Bank transfers can take 1–3 minutes to reflect. If you&apos;ve
-                  already sent the money, wait a moment and check again.
-                </p>
-              </div>
-            )}
-
-            <Button
-              onClick={handleBankTransferVerification}
-              disabled={isButtonDisabled}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60"
-            >
-              {isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking…</>
-              ) : cooldown > 0 ? (
-                <><Clock className="mr-2 h-4 w-4" /> Check again in {cooldown}s</>
-              ) : hasCheckedOnce ? (
-                <><RefreshCw className="mr-2 h-4 w-4" /> Check Again</>
-              ) : (
-                "I've sent the money"
-              )}
-            </Button>
-
-            <p className="text-xs text-center text-gray-400">
-              Do not close this window until your payment is confirmed.
-            </p>
-          </div>
+          <BankTransferContent
+            bankDetails={bankDetails}
+            hasCheckedOnce={hasCheckedOnce}
+            isLoading={isLoading}
+            cooldown={cooldown}
+            isButtonDisabled={isButtonDisabled}
+            onVerify={handleBankTransferVerification}
+          />
         )}
 
-        {/* Bank transfer flow — plain text fallback */}
+        {/* ── Bank transfer flow — plain text fallback ── */}
         {state.type === "bank_transfer" && !bankDetails && (
-          <div className="text-center space-y-4">
+          <div className="p-6 text-center space-y-4">
             <h3 className="text-lg font-bold text-gray-900">Payment Instruction</h3>
             <p className="text-sm text-gray-500">{state.instruction}</p>
             {state.transactionRef && (
@@ -246,4 +224,139 @@ export function PostChargeOverlay({
       </div>
     </div>
   );
+}
+
+
+function BankTransferContent({
+  bankDetails,
+  hasCheckedOnce,
+  isLoading,
+  cooldown,
+  isButtonDisabled,
+  onVerify
+} : {
+  bankDetails: {
+    bank_name: string
+    account_number: string
+    account_name: string
+    amount: string
+    expires_at?: string
+    note: string
+  }
+  hasCheckedOnce: boolean
+  isLoading: boolean
+  cooldown: number
+  isButtonDisabled: boolean
+  onVerify: () => void
+}) {
+  const countdown = useCountdown(bankDetails.expires_at)
+
+  return (
+    <div className="p-6 space-y-4">
+      <h3 className="text-lg font-bold text-gray-900 text-center">
+        Bank Transfer Details
+      </h3>
+
+       <div
+        className={`rounded-lg border px-4 py-3 text-center transition-colors ${
+          countdown.isExpired
+            ? "bg-red-50 border-red-200"
+            : countdown.isUrgent
+            ? "bg-orange-50 border-orange-200"
+            : "bg-gray-50 border-gray-200"
+        }`}
+      >
+        {countdown.isExpired ? (
+          <div className="flex items-center justify-center gap-2 text-red-600">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <p className="text-sm font-semibold">
+              This account has expired. Please place a new order.
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+              Time remaining to transfer
+            </p>
+            <p
+              className={`text-3xl font-mono font-bold tabular-nums tracking-widest ${
+                countdown.isUrgent ? "text-orange-500" : "text-gray-900"
+              }`}
+            >
+              {countdown.display}
+            </p>
+            {countdown.isUrgent && (
+              <p className="text-xs text-orange-500 mt-1 font-medium">
+                Transfer now — account expiring soon
+              </p>
+            )}
+          </>
+        )}
+      </div>
+
+    
+      <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-500">Bank</span>
+          <span className="font-medium text-gray-900">{bankDetails.bank_name}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Account Number</span>
+          <span className="font-mono font-bold tracking-widest text-gray-900">
+            {bankDetails.account_number}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Account Name</span>
+          <span className="font-medium text-gray-900 text-right max-w-[200px]">
+            {bankDetails.account_name}
+          </span>
+        </div>
+        <div className="flex justify-between border-t border-gray-200 pt-2 mt-2">
+          <span className="text-gray-500">Amount</span>
+          <span className="font-bold text-orange-500 text-base">
+            ₦{bankDetails.amount}
+          </span>
+        </div>
+      </div>
+
+      <p className="text-xs text-gray-500 text-center leading-relaxed">
+        {bankDetails.note}
+      </p>
+
+     
+      {hasCheckedOnce && (
+        <div className="bg-orange-50 border border-orange-100 rounded-lg px-4 py-3 text-sm text-orange-700">
+          <p className="font-medium mb-0.5">Transfer not confirmed yet</p>
+          <p className="text-orange-600/80 text-xs">
+            Bank transfers can take 1–3 minutes to reflect. Wait a moment then
+            check again.
+          </p>
+        </div>
+      )}
+
+
+      <Button
+        onClick={onVerify}
+        disabled={isButtonDisabled || countdown.isExpired}
+        className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60"
+      >
+        {isLoading ? (
+          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking…</>
+        ) : cooldown > 0 ? (
+          <><Clock className="mr-2 h-4 w-4" /> Check again in {cooldown}s</>
+        ) : hasCheckedOnce ? (
+          <><RefreshCw className="mr-2 h-4 w-4" /> Check Again</>
+        ) : (
+          "I've sent the money"
+        )}
+      </Button>
+
+      {!countdown.isExpired && (
+        <p className="text-xs text-center text-gray-400">
+          Do not close this window until your payment is confirmed.
+        </p>
+      )}
+    </div>
+  )
 }

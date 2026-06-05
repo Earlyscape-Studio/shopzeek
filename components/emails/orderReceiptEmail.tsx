@@ -31,11 +31,11 @@ export const OrderReceiptEmail = ({
   return (
     <Html lang="en" dir="ltr">
       <Head />
-      <Preview>Your ShopZeek Order Receipt</Preview>
+      <Preview>Your zeek Order Receipt</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>ShopZeek</Heading>
-          <Text style={paragraph}>Hi {customerName},</Text>
+          <Heading style={heading}>zeek</Heading>
+          <Text style={paragraph}>You did it, {customerName}!</Text>
           <Text style={paragraph}>
             Thank you for your order! We are currently processing it. Here are your order details:
           </Text>

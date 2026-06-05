@@ -45,7 +45,7 @@ export function ProductCarousel({
           </Link>
         </div>
 
-        {/* Layout Toggle: Grid vs Carousel */}
+        
         {layout === "grid" ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 justify-items-center">
             {products.map((p) => (

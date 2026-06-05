@@ -98,10 +98,10 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
           <span className="font-bold text-gray-900 text-lg">Size</span>
           <span className="text-gray-500">60 ml</span>
         </div>
-        <div className="grid grid-cols-[140px_1fr] items-center">
+        {/* <div className="grid grid-cols-[140px_1fr] items-center">
           <span className="font-bold text-gray-900 text-lg">Stock</span>
           <span className="text-gray-500">{product.stock || 100} Units</span>
-        </div>
+        </div> */}
       </div>
 
       {/* Quantity & Actions */}

@@ -65,12 +65,12 @@ export default async function OrderFailedPage({
           </div>
         ) : (
           <div>
-              <p className="text-sm text-gray-500">
-                No order reference was provided. If you just attempted a
-                payment, please check your email or try again.
-              </p>
-            </div>
-        ) }
+            <p className="text-sm text-gray-500">
+              No order reference was provided. If you just attempted a
+              payment, please check your email or try again.
+            </p>
+          </div>
+        )}
 
         <div className="px-8 py-5 border-b border-gray-100">
           <p className="text-xs font-medium uppercase tracking-widest text-gray-400 mb-4">
@@ -102,7 +102,7 @@ export default async function OrderFailedPage({
             </span>{" "}
             or email{" "}
             <span className="font-medium text-gray-700">
-              contactcenter@shopzeek.com
+              contactcenter@zeek.com
             </span>
           </p>
         </div>

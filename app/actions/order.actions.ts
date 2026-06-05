@@ -383,6 +383,10 @@ export async function initBankTransfer(
   totalAmount: number,
   shippingBreakdown?: ShippingBreakdown
 ) {
+
+  console.log("bank transfer started")
+
+
   try {
     const cookieStore = await cookies();
     const supabase = await createClient(cookieStore);
@@ -552,7 +556,10 @@ export async function initBankTransfer(
         account_name: flwData.data.note,
         amount: flwData.data.amount,
         expires_at: flwData.data.account_expiration_datetime,
-        note: `Transfer exactly ₦${transferAmount.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to complete your payment. This account expires at ${new Date(flwData.data.account_expiration_datetime).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" })}.`,
+        note: `Transfer exactly ₦${transferAmount.toLocaleString("en-NG", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            })} to complete your payment.`
       },
     };
   } catch (err) {
