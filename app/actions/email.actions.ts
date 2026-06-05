@@ -3,12 +3,178 @@
 import { Resend } from "resend";
 import { OrderReceiptEmail } from "@/components/emails/orderReceiptEmail";
 import { AdminOrderNotificationEmail } from "@/components/emails/adminOrderNotificationEmail";
-import { OrderEmailPayload } from "@/types/email";
+import { DeliveryScheduleEmail } from "@/components/emails/deliveryScheduleEmail";
+import { AbandonedCartEmail } from "@/components/emails/abandonedCartEmail";
+import { OrderEmailPayload, DeliveryEmailPayload, AbandonedCartEmailPayload } from "@/types/email";
 import { WelcomeEmail } from "@/components/emails/welcomeEmail";
+import { supabaseAdmin } from "@/utils/supabase/admin";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = "zeek Orders <hello@zeek.you>";
 const ADMIN_EMAIL = "zaygay@zeek.you";
+
+export async function sendAbandonedCartEmail(payload: AbandonedCartEmailPayload) {
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: payload.email,
+      subject: "Did you forget something awesome? 👀",
+      react: AbandonedCartEmail({
+        customerName: payload.customerName,
+        items: payload.items,
+        cartUrl: payload.cartUrl,
+      }),
+    });
+
+    if (error) {
+      console.error("Failed to send abandoned cart email:", error);
+      return { success: false, error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected error in sendAbandonedCartEmail:", error);
+    return { success: false, error };
+  }
+}
+
+export async function triggerDeliveryEmail(orderId: string) {
+  try {
+    const { data: order, error } = await supabaseAdmin
+      .from("orders")
+      .select("customer_name, email, delivery_date, tracking_url")
+      .eq("id", orderId)
+      .single();
+
+    if (error || !order) {
+      console.error("Failed to fetch order for delivery email:", error);
+      return { success: false };
+    }
+
+    if (!order.delivery_date) {
+      console.warn("No delivery date set for order:", orderId);
+      return { success: false };
+    }
+
+    const payload: DeliveryEmailPayload = {
+      customerName: order.customer_name,
+      email: order.email,
+      estimatedDeliveryDate: new Date(order.delivery_date).toLocaleDateString("en-GB", {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+      }),
+      trackingUrl: order.tracking_url || `${process.env.NEXT_PUBLIC_BASE_URL}/order/success?reference=${orderId}`,
+    };
+
+    return await sendDeliveryEmail(payload);
+  } catch (err) {
+    console.error("Error in triggerDeliveryEmail:", err);
+    return { success: false };
+  }
+}
+
+export async function sendDeliveryEmail(payload: DeliveryEmailPayload) {
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: payload.email,
+      subject: "Knock, knock! Your delivery is scheduled 🚚💨",
+      react: DeliveryScheduleEmail({
+        customerName: payload.customerName,
+        estimatedDeliveryDate: payload.estimatedDeliveryDate,
+        trackingUrl: payload.trackingUrl,
+      }),
+    });
+
+    if (error) {
+      console.error("Failed to send delivery email:", error);
+      return { success: false, error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected error in sendDeliveryEmail:", error);
+    return { success: false, error };
+  }
+}
+
+export async function triggerOrderEmails(orderId: string) {
+  try {
+    const { data: fullOrder, error: fetchError } = await supabaseAdmin
+      .from("orders")
+      .select(`
+        id,
+        email,
+        customer_name,
+        phone:customer_phone,
+        payment_method,
+        total_amount,
+        shipping_cost,
+        shipping_vat,
+        discount_amount,
+        shipping_street,
+        shipping_city,
+        shipping_state,
+        shipping_country,
+        shipping_postal_code,
+        created_at,
+        coupon:coupons (
+          code
+        ),
+        order_items (
+          quantity,
+          unit_price,
+          products (
+            name
+          )
+        )
+      `)
+      .eq("id", orderId)
+      .single();
+
+    if (fetchError || !fullOrder) {
+      console.error("Failed to fetch order details for email:", fetchError);
+      return { success: false, error: "Order not found" };
+    }
+
+    const emailPayload: OrderEmailPayload = {
+      orderId: fullOrder.id,
+      orderDate: new Date(fullOrder.created_at).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }),
+      orderDetailUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/order/success?reference=${fullOrder.id}`,
+      email: fullOrder.email,
+      customerName: fullOrder.customer_name,
+      phone: fullOrder.phone || "",
+      paymentMethod: fullOrder.payment_method as any,
+      totalAmount: fullOrder.total_amount,
+      shippingCost: fullOrder.shipping_cost,
+      shippingVat: fullOrder.shipping_vat,
+      discountAmount: fullOrder.discount_amount,
+      couponCode: (fullOrder.coupon as any)?.code || null,
+      items: (fullOrder.order_items as any[]).map((item: any) => ({
+        name: item.products?.name || "Product",
+        quantity: item.quantity,
+        price: item.unit_price,
+      })),
+      shippingAddress: {
+        street: fullOrder.shipping_street || "",
+        city: fullOrder.shipping_city || "",
+        state: fullOrder.shipping_state || "",
+        country: fullOrder.shipping_country || "Nigeria",
+        postalCode: fullOrder.shipping_postal_code,
+      },
+    };
+
+    return await sendOrderEmails(emailPayload);
+  } catch (err) {
+    console.error("Error in triggerOrderEmails:", err);
+    return { success: false, error: err };
+  }
+}
 
 export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
   try {
@@ -19,8 +185,9 @@ export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
       react: OrderReceiptEmail({
         customerName: orderDetails.customerName,
         orderId: orderDetails.orderId,
+        orderDate: orderDetails.orderDate,
         totalAmount: orderDetails.totalAmount,
-        items: orderDetails.items,
+        orderDetailUrl: orderDetails.orderDetailUrl,
       }),
     });
 

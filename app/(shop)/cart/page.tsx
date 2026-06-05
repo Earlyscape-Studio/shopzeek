@@ -10,6 +10,8 @@ import { useCartStore } from "@/store/cart.store";
 import { useAuthModal } from "@/store/auth-modal.store";
 import {useRouter} from "next/navigation"
 import { createClient } from "@/utils/supabase/client";
+import { validateCoupon } from "@/app/actions/coupon.actions";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -33,9 +35,14 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
+import { ProductCarousel } from "@/components/shared/home/ProductCarousel";
+
 export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
-  const { items, removeItem, updateQuantity, clearCart } = useCartStore();
+  const [couponCode, setCouponCode] = useState("");
+  const [isApplying, setIsApplying] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const { items, removeItem, updateQuantity, clearCart, coupon, applyCoupon, removeCoupon } = useCartStore();
 
   const router = useRouter()
 
@@ -44,11 +51,41 @@ export default function CartPage() {
   const openAuthModal = useAuthModal((s) => s.open)
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    
+    // Fetch suggestions
+    const fetchSuggestions = async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_published", true)
+        .limit(8);
+      if (data) setSuggestions(data);
+    };
+    fetchSuggestions();
+  }, [supabase]);
 
   if (!isMounted) {
     return <div className="min-h-[60vh]" />;
   }
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode) return;
+    setIsApplying(true);
+    try {
+      const result = await validateCoupon(couponCode);
+      if (result.success && result.coupon) {
+        applyCoupon(result.coupon);
+        setCouponCode("");
+        toast.success(`Coupon "${result.coupon.code}" applied!`);
+      } else {
+        toast.error(result.error || "Invalid coupon.");
+      }
+    } catch (err) {
+      toast.error("Failed to apply coupon.");
+    } finally {
+      setIsApplying(false);
+    }
+  };
 
   async function handleProceedToCheckout(e: React.MouseEvent) {
         e.preventDefault()
@@ -64,9 +101,19 @@ export default function CartPage() {
   }
 
   const subTotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
+
+  // Calculate discount
+  let discount = 0;
+  if (coupon) {
+    if (coupon.discount_type === "percentage") {
+      discount = (subTotal * coupon.discount_value) / 100;
+    } else {
+      discount = coupon.discount_value;
+    }
+  }
+
   const shipping = 0;
-  const discount = 0;
-  const total = subTotal + shipping - discount;
+  const total = Math.max(0, subTotal + shipping - discount);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
@@ -104,80 +151,145 @@ export default function CartPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* Left Column: Shadcn Table */}
+          {/* Left Column: Responsive Product Listing */}
           <div className="lg:col-span-2">
             <div className="border border-gray-200 rounded-sm bg-white overflow-hidden">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-bold text-gray-900">Shopping Cart</h2>
               </div>
 
-              <Table>
-                <TableHeader className="bg-gray-50">
-                  <TableRow className="hover:bg-gray-50">
-                    <TableHead className="w-[50%] font-bold text-gray-500 uppercase tracking-wider text-xs">Products</TableHead>
-                    <TableHead className="text-center font-bold text-gray-500 uppercase tracking-wider text-xs">Price</TableHead>
-                    <TableHead className="text-center font-bold text-gray-500 uppercase tracking-wider text-xs">Quantity</TableHead>
-                    <TableHead className="text-right font-bold text-gray-500 uppercase tracking-wider text-xs">Sub-Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.product_id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={() => removeItem(item.product_id)}
-                            className="text-red-500 hover:bg-red-50 border border-red-200 rounded-full p-1 transition-colors shrink-0"
-                          >
-                            <X size={14} />
-                          </button>
-                          <div className="w-16 h-16 bg-[#F9F9F9] rounded-sm relative shrink-0 flex items-center justify-center p-2">
-                            <Image
-                              src={item.image_url || "/placeholder.png"}
-                              alt={item.name}
-                              fill
-                              className="object-contain mix-blend-multiply"
-                            />
-                          </div>
-                          <span className="font-medium text-gray-900 text-sm line-clamp-2">
-                            {item.name}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center font-medium text-gray-900">
-                        ₦{item.price.toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex justify-center">
-                          <div className="flex items-center border border-gray-200 rounded-sm w-[100px] h-10">
-                            <button
-                              onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))}
-                              className="flex-1 flex items-center justify-center hover:bg-gray-50 text-gray-500 transition-colors"
-                            >
-                              <Minus size={14} />
-                            </button>
-                            <span className="w-10 text-center text-sm font-medium">
-                              {item.quantity.toString().padStart(2, '0')}
-                            </span>
-                            <button
-                              onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                              className="flex-1 flex items-center justify-center hover:bg-gray-50 text-gray-500 transition-colors"
-                            >
-                              <Plus size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-bold text-gray-900">
-                        ₦{(item.price * item.quantity).toLocaleString()}
-                      </TableCell>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader className="bg-gray-50">
+                    <TableRow className="hover:bg-gray-50">
+                      <TableHead className="w-[50%] font-bold text-gray-500 uppercase tracking-wider text-xs">Products</TableHead>
+                      <TableHead className="text-center font-bold text-gray-500 uppercase tracking-wider text-xs">Price</TableHead>
+                      <TableHead className="text-center font-bold text-gray-500 uppercase tracking-wider text-xs">Quantity</TableHead>
+                      <TableHead className="text-right font-bold text-gray-500 uppercase tracking-wider text-xs">Sub-Total</TableHead>
                     </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item) => (
+                      <TableRow key={item.product_id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={() => removeItem(item.product_id)}
+                              className="text-red-500 hover:bg-red-50 border border-red-200 rounded-full p-1 transition-colors shrink-0"
+                            >
+                              <X size={14} />
+                            </button>
+                            <div className="w-16 h-16 bg-[#F9F9F9] rounded-sm relative shrink-0 flex items-center justify-center p-2">
+                              <Image
+                                src={item.image_url || "/placeholder.png"}
+                                alt={item.name}
+                                fill
+                                className="object-contain mix-blend-multiply"
+                              />
+                            </div>
+                            <span className="font-medium text-gray-900 text-sm line-clamp-2">
+                              {item.name}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center font-medium text-gray-900">
+                          ₦{item.price.toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-center">
+                            <div className="flex items-center border border-gray-200 rounded-sm w-[100px] h-10">
+                              <button
+                                onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))}
+                                className="flex-1 flex items-center justify-center hover:bg-gray-50 text-gray-500 transition-colors"
+                              >
+                                <Minus size={14} />
+                              </button>
+                              <span className="w-10 text-center text-sm font-medium">
+                                {item.quantity.toString().padStart(2, '0')}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                                className="flex-1 flex items-center justify-center hover:bg-gray-50 text-gray-500 transition-colors"
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-gray-900">
+                          ₦{(item.price * item.quantity).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card List View */}
+              <div className="md:hidden">
+                <div className="divide-y divide-gray-100">
+                  {items.map((item) => (
+                    <div key={item.product_id} className="p-4 space-y-4">
+                      <div className="flex gap-4">
+                        <div className="w-20 h-20 bg-[#F9F9F9] rounded-sm relative shrink-0 flex items-center justify-center p-2">
+                          <Image
+                            src={item.image_url || "/placeholder.png"}
+                            alt={item.name}
+                            fill
+                            className="object-contain mix-blend-multiply"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div className="flex justify-between items-start gap-2">
+                            <h3 className="text-sm font-medium text-gray-900 line-clamp-2">
+                              {item.name}
+                            </h3>
+                            <button
+                              onClick={() => removeItem(item.product_id)}
+                              className="text-red-500 hover:bg-red-50 border border-red-200 rounded-full p-1 transition-colors shrink-0"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            ₦{item.price.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center border border-gray-200 rounded-sm w-[100px] h-10">
+                          <button
+                            onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))}
+                            className="flex-1 flex items-center justify-center hover:bg-gray-50 text-gray-500 transition-colors"
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className="w-10 text-center text-sm font-medium">
+                            {item.quantity.toString().padStart(2, '0')}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                            className="flex-1 flex items-center justify-center hover:bg-gray-50 text-gray-500 transition-colors"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Sub-Total</p>
+                          <p className="font-bold text-gray-900">
+                            ₦{(item.price * item.quantity).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              </div>
 
               {/* CLEANED UP Action Buttons */}
-              <div className="p-6 flex items-center justify-between border-t border-gray-200">
+              <div className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200">
                 <Button
                   variant="outline"
                   className="border-[#FF5A00] text-[#FF5A00] hover:bg-orange-50 font-bold uppercase tracking-widest text-xs h-12 px-6 gap-2"
@@ -219,11 +331,13 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Discount</span>
-                    <span className="font-bold text-gray-900">0.00</span>
+                    <span className="font-bold text-gray-900">
+                      {discount > 0 ? `-₦${discount.toLocaleString()}` : "₦0.00"}
+                    </span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Tax</span>
-                    <span className="font-bold text-gray-900">₦{total.toLocaleString()}</span>
+                    <span className="font-bold text-gray-900">₦0.00</span>
                   </div>
                 </div>
                 <div className="border-t border-orange-200/50 pt-4 flex justify-between items-center">
@@ -245,18 +359,53 @@ export default function CartPage() {
                 <CardTitle className="text-lg font-bold text-gray-900">Coupon Code</CardTitle>
               </CardHeader>
               <CardContent>
-                <Input
-                  type="text"
-                  placeholder="Email address"
-                  className="bg-white border-gray-200 rounded-sm h-12 px-4 mb-4 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-0"
-                />
-                <Button className="bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest h-12 px-8 rounded-sm">
-                  Apply Coupon
-                </Button>
+                {coupon ? (
+                  <div className="bg-white p-4 rounded-sm border border-orange-200 flex justify-between items-center">
+                    <div>
+                      <p className="text-xs font-bold text-orange-500 uppercase tracking-widest">Active Coupon</p>
+                      <p className="text-lg font-bold text-gray-900">{coupon.code}</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      onClick={removeCoupon}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Input
+                      type="text"
+                      placeholder="Coupon code"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      className="bg-white border-gray-200 rounded-sm h-12 px-4 mb-4 focus-visible:ring-[#FF5A00] focus-visible:ring-offset-0"
+                    />
+                    <Button 
+                      onClick={handleApplyCoupon}
+                      disabled={isApplying || !couponCode}
+                      className="bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest h-12 px-8 rounded-sm w-full disabled:opacity-50"
+                    >
+                      {isApplying ? "Applying..." : "Apply Coupon"}
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
 
           </div>
+        </div>
+      )}
+
+      {/* Suggested Products Section */}
+      {suggestions.length > 0 && (
+        <div className="mt-20 pt-10 border-t border-gray-100">
+          <ProductCarousel 
+            title="You might also like" 
+            products={suggestions} 
+            layout="carousel"
+          />
         </div>
       )}
     </div>

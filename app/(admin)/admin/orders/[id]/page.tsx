@@ -108,23 +108,50 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     {/* Status Update Form */}
                     <Card className="shadow-sm border-orange-100 bg-orange-50/30">
                         <CardContent className="p-6">
-                            <h3 className="font-bold text-gray-900 mb-4">Update Fulfillment Status</h3>
-                            <form action={updateOrderStatus.bind(null, order.id)} className="flex items-center gap-4">
-                                <select
-                                    name="status"
-                                    defaultValue={order.status}
-                                    className="flex-1 h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5A00]"
-                                >
-                                    <option value="pending">Pending (Awaiting Payment/Confirmation)</option>
-                                    <option value="pending_payment">Pending Payment</option>
-                                    <option value="processing">Processing (Packing Order)</option>
-                                    <option value="shipped">Shipped (Handed to Courier)</option>
-                                    <option value="delivered">Delivered (Completed)</option>
-                                    <option value="cancelled">Cancelled</option>
-                                </select>
-                                <Button type="submit" className="bg-gray-900 hover:bg-black text-white">
-                                    Save Status
+                            <h3 className="font-bold text-gray-900 mb-4">Update Order Details</h3>
+                            <form action={updateOrderStatus.bind(null, order.id)} className="space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase text-gray-500">Fulfillment Status</label>
+                                        <select
+                                            name="status"
+                                            defaultValue={order.status}
+                                            className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                                        >
+                                            <option value="pending">Pending</option>
+                                            <option value="pending_payment">Pending Payment</option>
+                                            <option value="processing">Processing</option>
+                                            <option value="shipped">Shipped</option>
+                                            <option value="delivered">Delivered</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase text-gray-500">Estimated Delivery Date</label>
+                                        <input
+                                            type="date"
+                                            name="delivery_date"
+                                            defaultValue={order.delivery_date ? new Date(order.delivery_date).toISOString().split('T')[0] : ""}
+                                            className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase text-gray-500">Tracking URL (Optional)</label>
+                                    <input
+                                        type="url"
+                                        name="tracking_url"
+                                        placeholder="https://track.courier.com/..."
+                                        defaultValue={order.tracking_url || ""}
+                                        className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                                    />
+                                </div>
+                                <Button type="submit" className="w-full bg-gray-900 hover:bg-black text-white py-6">
+                                    Update Order Info & Notify Customer
                                 </Button>
+                                <p className="text-[10px] text-gray-400 text-center italic">
+                                    Changing status to &quot;Shipped&quot; will automatically email the customer with the delivery date.
+                                </p>
                             </form>
                         </CardContent>
                     </Card>

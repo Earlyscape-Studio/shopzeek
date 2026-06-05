@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { CartItem } from "@/types/database";
+import type { CartItem, Coupon } from "@/types/database";
 
 type Props = {
   items: CartItem[];
@@ -21,6 +21,7 @@ type Props = {
   };
   total: number;
   isProcessing: boolean;
+  coupon?: CartState["coupon"]
 };
 
 export function CheckoutOrderSummary({
@@ -31,7 +32,20 @@ export function CheckoutOrderSummary({
   shippingBreakdown,
   total,
   isProcessing,
+  coupon,
 }: Props) {
+
+  let discount = 0;
+  if (coupon) {
+    if (coupon.discount_type === "percentage") {
+      discount = (subTotal * coupon.discount_value) / 100;
+    } else {
+      discount = coupon.discount_value;
+    }
+  }
+
+  const finalTotal = Math.max(0, subTotal + shipping + tax - discount);
+
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-6 sticky top-24">
       <h2 className="text-lg font-bold text-gray-900 mb-6 pb-4 border-b border-gray-100">
@@ -119,8 +133,17 @@ export function CheckoutOrderSummary({
 
         <div className="flex justify-between text-gray-500">
           <span>Discount</span>
-          <span className="font-semibold text-gray-800">₦0.00</span>
+          <span className="font-semibold text-green-600">
+             {discount > 0 ? `-₦${discount.toLocaleString()}` : "₦0.00"}
+          </span>
         </div>
+
+        {/* Show coupon code if active */}
+        {coupon && (
+          <div className="flex justify-between text-xs text-gray-400 -mt-2">
+            <span>Code: {coupon.code}</span>
+          </div>
+        )}
 
         <div className="flex justify-between text-gray-500">
           <span>Tax</span>
@@ -134,7 +157,7 @@ export function CheckoutOrderSummary({
       <div className="flex justify-between items-center border-t border-gray-100 mt-4 pt-4">
         <span className="font-bold text-gray-900">Total</span>
         <span className="text-xl font-bold text-orange-500">
-          ₦{total.toLocaleString()}
+          ₦{finalTotal.toLocaleString()}
         </span>
       </div>
 

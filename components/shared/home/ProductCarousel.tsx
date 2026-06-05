@@ -58,7 +58,7 @@ export function ProductCarousel({
           <Carousel opts={{ align: "start", dragFree: true }} className="w-full relative">
             <CarouselContent className="-ml-4 md:-ml-6 py-4">
               {products.map((p) => (
-                <CarouselItem key={p.id} className="pl-4 md:pl-6 basis-full sm:basis-1/2 lg:basis-1/4">
+                <CarouselItem key={p.id} className="pl-4 md:pl-6 basis-1/2 lg:basis-1/4">
                   <div className="w-full max-w-[270px] h-full mx-auto md:mx-0">
                     <ProductCard product={p} />
                   </div>

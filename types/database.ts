@@ -44,13 +44,25 @@ export type Product = {
 export type Order = {
     id: string
     user_id: string | null
-    status: OrderStatus
+    address_id: string | null
+    email: string
+    customer_name: string
+    customer_phone: string
+    delivery_address: string
     total_amount: number
+    shipping_cost: number
+    shipping_vat: number
     discount_amount: number
+    payment_method: "card" | "bank_transfer" | "checkout"
     payment_provider: PaymentProvider | null
     payment_reference: string | null
+    flw_transaction_id: string | null
     coupon_id: string | null
-    address_id: string | null
+    status: OrderStatus
+    paid_at: string | null
+    delivered_at: string | null
+    delivery_date: string | null
+    tracking_url: string | null
     created_at: string
 }
 

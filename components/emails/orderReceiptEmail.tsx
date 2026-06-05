@@ -6,69 +6,73 @@ import {
   Hr,
   Html,
   Preview,
-  Row,
-  Column,
+  Section,
   Text,
+  Button,
 } from '@react-email/components';
-import { EmailOrderItem } from '@/types/email';
 
 
 interface OrderReceiptProps {
   customerName: string
   orderId: string
+  orderDate: string
   totalAmount: number
-  items: EmailOrderItem[]
+  orderDetailUrl: string
 }
 
 
 export const OrderReceiptEmail = ({
   customerName,
   orderId,
+  orderDate,
   totalAmount,
-  items
+  orderDetailUrl
 }: OrderReceiptProps) => {
 
   return (
     <Html lang="en" dir="ltr">
       <Head />
-      <Preview>Your zeek Order Receipt</Preview>
+      <Preview>Cha-ching! We got your order! 🛍️</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={heading}>zeek</Heading>
           <Text style={paragraph}>You did it, {customerName}!</Text>
           <Text style={paragraph}>
-            Thank you for your order! We are currently processing it. Here are your order details:
+            Great news: your payment went through, your order is confirmed, and our team is already getting your items ready for their grand journey to your doorstep.
           </Text>
-          <Text style={subBlock}>
-            Order ID: <strong>{orderId}</strong>
-          </Text>
+          
+          <Text style={paragraph}>Here’s what you snagged:</Text>
+          
+          <Section style={infoSection}>
+            <Text style={infoText}>
+              Order Number: <strong>#{orderId}</strong>
+            </Text>
+            <Text style={infoText}>
+              Order Date: <strong>{orderDate}</strong>
+            </Text>
+            <Text style={infoText}>
+              Total Paid: <strong>₦{totalAmount.toLocaleString()}</strong>
+            </Text>
+          </Section>
 
           <Hr style={hr} />
 
-          {items.map((item, index) => (
-            <Row key={index} style={itemRow}>
-              <Column style={{ width: '75%' }}>
-                <Text style={itemName}>{item.name}</Text>
-                <Text style={itemMeta}>Qty: {item.quantity}</Text>
-              </Column>
-              <Column style={{ width: '25%' }} align="right">
-                <Text style={itemPrice}>
-                  ₦{(item.price * item.quantity).toLocaleString()}
-                </Text>
-              </Column>
-            </Row>
-          ))}
+          <Text style={paragraph}>Need a recap of your items?</Text>
+          
+          <Section style={buttonContainer}>
+            <Button style={button} href={orderDetailUrl}>
+              VIEW ORDER DETAILS
+            </Button>
+          </Section>
 
-          <Hr style={hr} />
-
-          <Row>
-            <Column>
-              <Text style={totalLabel}>Total Paid</Text>
-            </Column>
-            <Column align="right">
-              <Text style={totalValue}>₦{totalAmount.toLocaleString()}</Text>
-            </Column>
-          </Row>
+          <Text style={paragraph}>
+            We’ll send you another quick update as soon as your box of joy leaves our warehouse. Until then,
+          </Text>
+          
+          <Text style={footerText}>
+            Happy Shopping<br />
+            The Zeek Team 🧡
+          </Text>
         </Container>
       </Body>
     </Html>
@@ -81,13 +85,22 @@ const main = { backgroundColor: '#f6f9fc', fontFamily: 'sans-serif' };
 const container = { backgroundColor: '#ffffff', padding: '40px', borderRadius: '8px', margin: '40px auto', maxWidth: '600px' };
 const heading = { color: '#FF5A00', textAlign: 'center' as const, margin: '0 0 20px 0' };
 const paragraph = { fontSize: '16px', color: '#333', lineHeight: '1.5' };
-const subBlock = { fontSize: '14px', color: '#555' };
+const infoSection = { margin: '20px 0' };
+const infoText = { fontSize: '14px', color: '#555', margin: '4px 0' };
 const hr = { borderColor: '#e6ebf1', margin: '20px 0' };
-const itemRow = { marginBottom: '12px' };
-const itemName = { margin: 0, fontWeight: 'bold', fontSize: '14px' };
-const itemMeta = { margin: 0, color: '#666', fontSize: '12px' };
-const itemPrice = { margin: 0, fontSize: '14px' };
-const totalLabel = { margin: 0, fontWeight: 'bold', fontSize: '16px' };
-const totalValue = { margin: 0, fontWeight: 'bold', fontSize: '16px', color: '#FF5A00' };
+const buttonContainer = { textAlign: 'center' as const, margin: '30px 0' };
+const button = {
+  backgroundColor: '#FF5A00',
+  borderRadius: '5px',
+  color: '#fff',
+  fontSize: '14px',
+  fontWeight: 'bold',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'block',
+  width: '100%',
+  padding: '12px 0',
+};
+const footerText = { fontSize: '16px', color: '#333', lineHeight: '1.5', marginTop: '20px' };
 
 // export default OrderReceiptEmail;

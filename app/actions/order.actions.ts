@@ -7,10 +7,75 @@ import type { EncryptedCardData } from "@/utils/flutterwave/flutterwave-encrypt"
 import { randomUUID } from "crypto";
 import {supabaseAdmin} from "@/utils/supabase/admin"
 import { revalidatePath } from "next/cache";
+import { validateCoupon } from "./coupon.actions";
 
 interface ShippingBreakdown {
   baseCost: number;
   vat: number;
+}
+
+async function validateOrderTotal(
+  cartItems: any[],
+  couponCode: string | null,
+  providedTotal: number,
+  shippingBreakdown?: ShippingBreakdown
+): Promise<{ valid: boolean; error?: string; discount?: number; coupon?: any }> {
+  try {
+    let recalculatedSubtotal = 0;
+    const productIds = cartItems.map((item) => item.product_id);
+
+    // 1. Fetch latest prices
+    const { data: products } = await supabaseAdmin
+      .from("products")
+      .select("id, price, deal_price, deal_ends_at")
+      .in("id", productIds);
+
+    if (!products || products.length === 0) {
+      return { valid: false, error: "Product information could not be verified." };
+    }
+
+    // 2. Calculate subtotal using server-side prices
+    for (const item of cartItems) {
+      const product = products.find((p) => p.id === item.product_id);
+      if (!product) return { valid: false, error: "One or more products in your cart are invalid." };
+
+      const isOnDeal = product.deal_price && product.deal_ends_at && new Date(product.deal_ends_at) > new Date();
+      const activePrice = isOnDeal ? product.deal_price : product.price;
+      
+      recalculatedSubtotal += activePrice * item.quantity;
+    }
+
+    // 3. Handle Coupon
+    let discount = 0;
+    let couponData = null;
+    if (couponCode) {
+      const couponRes = await validateCoupon(couponCode);
+      if (couponRes.success && couponRes.coupon) {
+        couponData = couponRes.coupon;
+        if (couponData.discount_type === "percentage") {
+          discount = (recalculatedSubtotal * couponData.discount_value) / 100;
+        } else {
+          discount = couponData.discount_value;
+        }
+      } else {
+        return { valid: false, error: "Coupon is no longer valid." };
+      }
+    }
+
+    const shipping = (shippingBreakdown?.baseCost ?? 0) + (shippingBreakdown?.vat ?? 0);
+    const expectedTotal = Math.max(0, recalculatedSubtotal + shipping - discount);
+
+    // Allow for small rounding differences
+    if (Math.abs(expectedTotal - providedTotal) > 1) {
+      console.error(`Total mismatch: Expected ${expectedTotal}, got ${providedTotal}`);
+      return { valid: false, error: "Price mismatch. Your cart may have updated. Please refresh and try again." };
+    }
+
+    return { valid: true, discount, coupon: couponData };
+  } catch (err) {
+    console.error("Validation Error:", err);
+    return { valid: false, error: "Validation failed." };
+  }
 }
 
 
@@ -136,9 +201,14 @@ export async function initCardPayment(
   cartItems: any[],
   totalAmount: number,
   encryptedCard: EncryptedCardData,
-  shippingBreakdown?: ShippingBreakdown
+  shippingBreakdown?: ShippingBreakdown,
+  couponCode?: string | null
 ) {
   try {
+    // Server-side safety check
+    const validation = await validateOrderTotal(cartItems, couponCode ?? null, totalAmount, shippingBreakdown);
+    if (!validation.valid) return { success: false, error: validation.error };
+
     const cookieStore = await cookies();
     const supabase = await createClient(cookieStore);
 
@@ -163,6 +233,8 @@ export async function initCardPayment(
         total_amount: totalAmount,
         shipping_cost: shippingBreakdown?.baseCost ?? 0,
         shipping_vat: shippingBreakdown?.vat ?? 0,
+        discount_amount: validation.discount ?? 0,
+        coupon_id: validation.coupon?.id ?? null,
       })
       .select()
       .single();
@@ -381,13 +453,18 @@ export async function initBankTransfer(
   formData: FormData,
   cartItems: any[],
   totalAmount: number,
-  shippingBreakdown?: ShippingBreakdown
+  shippingBreakdown?: ShippingBreakdown,
+  couponCode?: string | null
 ) {
 
   console.log("bank transfer started")
 
 
   try {
+    // Server-side safety check
+    const validation = await validateOrderTotal(cartItems, couponCode ?? null, totalAmount, shippingBreakdown);
+    if (!validation.valid) return { success: false, error: validation.error };
+
     const cookieStore = await cookies();
     const supabase = await createClient(cookieStore);
 
@@ -411,6 +488,8 @@ export async function initBankTransfer(
         total_amount: totalAmount,
         shipping_cost: shippingBreakdown?.baseCost ?? 0,
         shipping_vat: shippingBreakdown?.vat ?? 0,
+        discount_amount: validation.discount ?? 0,
+        coupon_id: validation.coupon?.id ?? null,
       })
       .select()
       .single();
@@ -572,6 +651,8 @@ export async function initBankTransfer(
 
 
 
+import { triggerOrderEmails } from "@/app/actions/email.actions";
+
 export async function verifyBankTransferPayment(
   txRef: string,
   orderId: string
@@ -606,18 +687,28 @@ export async function verifyBankTransferPayment(
       if (!transaction) return {paid: false, pending: true}
 
 
-      const isPaid = transaction.status === "successful" || transaction.status === "succedded"
+      const isPaid = transaction.status === "successful" || transaction.status === "succeeded"
 
 
       if(isPaid){
-        await supabase
+        const { data: updatedOrder } = await supabase
         .from("orders")
         .update({
           status: "paid",
           paid_at: new Date().toISOString(),
-          flw_transction_id: String(transaction.id)
+          flw_transaction_id: String(transaction.id)
         })
         .eq("id", orderId)
+        .neq("status", "paid")
+        .select("id");
+
+        if (updatedOrder && updatedOrder.length > 0) {
+          try {
+            await triggerOrderEmails(orderId);
+          } catch (emailError) {
+            console.error("Bank Transfer: Failed to trigger order emails", emailError);
+          }
+        }
 
         return {paid: true, pending: false}
       }
@@ -637,15 +728,30 @@ export async function updateOrderStatus(orderId: string, formData: FormData) {
   const supabase = createClient(cookieStore);
 
   const newStatus = formData.get("status") as string;
+  const deliveryDate = formData.get("delivery_date") as string;
+  const trackingUrl = formData.get("tracking_url") as string;
+
+  const updateData: any = { status: newStatus };
+  if (deliveryDate) updateData.delivery_date = deliveryDate;
+  if (trackingUrl) updateData.tracking_url = trackingUrl;
 
   const { error } = await supabase
     .from("orders")
-    .update({ status: newStatus })
+    .update(updateData)
     .eq("id", orderId);
 
   if (error) {
     console.error("Failed to update order status:", error);
     throw new Error("Could not update status.");
+  }
+
+  // Trigger delivery email if status is shipped
+  if (newStatus === "shipped") {
+    try {
+      await triggerDeliveryEmail(orderId);
+    } catch (emailError) {
+      console.error("Failed to trigger delivery email:", emailError);
+    }
   }
 
   // Instantly refresh the page data so the new status badge appears in the Admin UI

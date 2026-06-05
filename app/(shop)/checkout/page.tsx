@@ -60,7 +60,7 @@ export default function CheckoutPage() {
 >(undefined);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [cardBrand, setCardBrand] = useState<CardBrand>("unknown");
-  const { items } = useCartStore();
+  const { items, coupon } = useCartStore();
 
   // const handleStateChange = (state: string) => {
   //   setSelectedState(state);
@@ -117,7 +117,18 @@ export default function CheckoutPage() {
   );
 
   const tax = 0;
-  const baseAmount = subTotal + shipping + tax;
+  
+  // Calculate discount
+  let discount = 0;
+  if (coupon) {
+    if (coupon.discount_type === "percentage") {
+      discount = (subTotal * coupon.discount_value) / 100;
+    } else {
+      discount = coupon.discount_value;
+    }
+  }
+
+  const finalTotal = Math.max(0, subTotal + shipping + tax - discount);
 
   const handleCardNumberChange = (value: string) => {
     setCardFields(prev => ({ ...prev, cardNumber: value }));
@@ -176,9 +187,10 @@ export default function CheckoutPage() {
           const result = await initCardPayment(
             formData,
             items,
-            baseAmount,
+            finalTotal,
             encryptedCard,
-            shippingBreakdown
+            shippingBreakdown,
+            coupon?.code
           )
 
           if (!result.success) {
@@ -219,8 +231,9 @@ export default function CheckoutPage() {
           const result = await initBankTransfer(
             formData,
             items,
-            baseAmount,
-            shippingBreakdown
+            finalTotal,
+            shippingBreakdown,
+            coupon?.code
           )
 
           if(!result.success) {
@@ -384,8 +397,9 @@ export default function CheckoutPage() {
               tax={tax}
               shipping={shipping}
               shippingBreakdown={shippingBreakdown}
-              total={baseAmount}
+              total={finalTotal}
               isProcessing={isProcessing}
+              coupon={coupon}
             />
           </div>
         </form>

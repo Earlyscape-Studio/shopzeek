@@ -24,7 +24,9 @@ export const AdminOrderNotificationEmail = ({
   totalAmount,
   items,
   shippingAddress,
-}: Omit<OrderEmailPayload, 'shippingCost' | 'shippingVat'>) => {
+  discountAmount,
+  couponCode,
+}: Omit<OrderEmailPayload, 'shippingCost' | 'shippingVat' | 'orderDate' | 'orderDetailUrl'>) => {
   return (
     <Html lang="en" dir="ltr">
       <Head />
@@ -38,6 +40,9 @@ export const AdminOrderNotificationEmail = ({
             <Text style={metaText}><strong>Customer:</strong> {customerName} ({email})</Text>
             <Text style={metaText}><strong>Phone:</strong> {phone}</Text>
             <Text style={metaText}><strong>Payment Method:</strong> {paymentMethod.toUpperCase()}</Text>
+            {couponCode && (
+              <Text style={metaText}><strong>Coupon Used:</strong> {couponCode} (₦{discountAmount.toLocaleString()} off)</Text>
+            )}
           </Section>
 
           <Heading as="h3" style={subHeading}>Shipping Address</Heading>
@@ -64,6 +69,17 @@ export const AdminOrderNotificationEmail = ({
           ))}
 
           <Hr style={hr} />
+
+          {discountAmount > 0 && (
+            <Row style={{ marginBottom: '10px' }}>
+              <Column>
+                <Text style={{ ...totalLabel, color: '#16a34a' }}>Discount Applied</Text>
+              </Column>
+              <Column align="right">
+                <Text style={{ ...totalValue, color: '#16a34a' }}>-₦{discountAmount.toLocaleString()}</Text>
+              </Column>
+            </Row>
+          )}
 
           <Row>
             <Column>
@@ -94,4 +110,3 @@ const itemMeta = { margin: 0, color: '#71717a', fontSize: '12px' };
 const itemPrice = { margin: 0, fontSize: '14px', color: '#18181b' };
 const totalLabel = { margin: 0, fontWeight: 'bold', fontSize: '16px' };
 const totalValue = { margin: 0, fontWeight: 'bold', fontSize: '16px', color: '#16a34a' };
-

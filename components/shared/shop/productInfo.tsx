@@ -23,11 +23,18 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
   const supabase = createClient();
   const router = useRouter()
 
+  const isOnDeal =
+    product.deal_price &&
+    product.deal_ends_at &&
+    new Date(product.deal_ends_at) > new Date();
+
+  const activePrice = isOnDeal ? product.deal_price : product.price;
+
   const processAddToCart = async () => {
     await addItem ({
       product_id: product.id,
       name: product.name,
-      price: product.price ?? 0,
+      price: activePrice ?? 0,
       image_url: product.image_urls?.[0] ?? "/placeholder.png",
       quantity: quantity, // Uses the state quantity from the counter
       slug: product.slug,
@@ -82,8 +89,15 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
       </div>
 
       {/* Price */}
-      <div className="text-5xl font-bold text-[#FF5A00] mb-10">
-        ₦{product.price?.toLocaleString()}
+      <div className="flex items-baseline gap-4 mb-10">
+        <div className="text-5xl font-bold text-[#FF5A00]">
+          ₦{activePrice?.toLocaleString()}
+        </div>
+        {isOnDeal && (
+          <div className="text-2xl text-gray-400 line-through">
+            ₦{product.price?.toLocaleString()}
+          </div>
+        )}
       </div>
 
       {/* Description Table */}

@@ -4,6 +4,8 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { getFlutterwaveToken, FLW_BASE_URL } from "@/utils/flutterwave/flutterwave";
 
+import { triggerOrderEmails } from "@/app/actions/email.actions";
+
 export async function verifyPaymentCallback(txRef: string): Promise<
   | { verified: true; orderId: string }
   | { verified: false; pending: true }
@@ -35,15 +37,17 @@ export async function verifyPaymentCallback(txRef: string): Promise<
   );
 
   const data = await response.json();
-  const transaction = data.data?.[0];
+  const transaction = Array.isArray(data.data) ? data.data[0] : data.data;
 
   if (!transaction) {
     return { verified: false, pending: false, message: "Transaction not found." };
   }
 
-  if (transaction.status === "succeeded" || transaction.status === "successful") {
+  const isSuccessful = transaction.status === "succeeded" || transaction.status === "successful";
+
+  if (isSuccessful) {
     // Guard against underpayment
-    if (transaction.amount < order.total_amount) {
+    if (Number(transaction.amount) < Number(order.total_amount)) {
       return {
         verified: false,
         pending: false,
@@ -51,14 +55,25 @@ export async function verifyPaymentCallback(txRef: string): Promise<
       };
     }
 
-    await supabase
+    const { data: updatedOrder } = await supabase
       .from("orders")
       .update({
         status: "paid",
         paid_at: new Date().toISOString(),
-        flw_transaction_id: transaction.id,
+        flw_transaction_id: String(transaction.id),
       })
-      .eq("id", order.id);
+      .eq("id", order.id)
+      .neq("status", "paid") // Only if not already marked paid
+      .select("id");
+
+    // If we were the ones to mark it as paid, trigger the email
+    if (updatedOrder && updatedOrder.length > 0) {
+      try {
+        await triggerOrderEmails(order.id);
+      } catch (emailError) {
+        console.error("Callback: Failed to trigger order emails", emailError);
+      }
+    }
 
     return { verified: true, orderId: order.id };
   }

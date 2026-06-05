@@ -30,6 +30,7 @@ export default async function ProfilePage () {
          .select(`
             id, status, total_amount, created_at,
             payment_method, customer_name, delivery_address,
+            delivery_date, tracking_url,
             order_items (
             id, quantity, unit_price,
             products ( name, image_urls, slug )
@@ -284,7 +285,11 @@ export default async function ProfilePage () {
                         </span>
                       </div>
                     ) : (
-                      <OrderStatusStepper status={order.status} />
+                      <OrderStatusStepper 
+                        status={order.status} 
+                        deliveryDate={order.delivery_date}
+                        trackingUrl={order.tracking_url}
+                      />
                     )}
                   </CardContent>
                 </Card>

@@ -43,7 +43,7 @@ export function ProductCard({ product }: Props) {
     addItem({
       product_id: product.id,
       name: product.name ?? "Unknown Product",
-      price: product.price ?? 0,
+      price: activePrice ?? 0,
       image_url: product.image_urls?.[0] ?? "/placeholder.png",
       quantity: 1,
       slug: product.slug ?? ""
