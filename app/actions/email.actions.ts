@@ -207,6 +207,8 @@ export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
         totalAmount: orderDetails.totalAmount,
         items: orderDetails.items,
         shippingAddress: orderDetails.shippingAddress,
+        discountAmount: orderDetails.discountAmount,
+        couponCode: orderDetails.couponCode,
       }),
     });
 
