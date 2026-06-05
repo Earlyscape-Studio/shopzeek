@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { CartItem, Coupon } from "@/types/database";
+import type { CartItem, Coupon, CartState } from "@/types/database";
 
 type Props = {
   items: CartItem[];
