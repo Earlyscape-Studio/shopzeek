@@ -651,7 +651,7 @@ export async function initBankTransfer(
 
 
 
-import { triggerOrderEmails } from "@/app/actions/email.actions";
+import { triggerOrderEmails, triggerDeliveryEmail } from "@/app/actions/email.actions";
 
 export async function verifyBankTransferPayment(
   txRef: string,
