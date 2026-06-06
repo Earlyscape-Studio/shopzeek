@@ -444,7 +444,7 @@ export async function authorizeCardCharge(
 
 export async function verifyTransaction(txRef: string) {
   try{
-      const accessToken = await getFlutterwaveToken();
+    const accessToken = await getFlutterwaveToken();
     const response = await fetch(
       `${FLW_BASE_URL}/transactions?reference=${txRef}`,
       {
@@ -464,12 +464,12 @@ export async function verifyTransaction(txRef: string) {
       console.warn("No transaction found for ref:", txRef);
       return false;
     }
+    
     return transaction?.status === "successful" || transaction?.status === "succeeded";
   }catch(err){
     console.error("verifyTransaction threw:", err);
     return false;
   }
-  
 }
 
 
@@ -703,12 +703,18 @@ export async function verifyBankTransferPayment(
         { headers: { Authorization: `Bearer ${accessToken}` } }
       )
 
-      if (!response.ok) return {paid: false, pending: true}
+      if (!response.ok) {
+        console.error("Bank transfer verification failed:", response.status);
+        return {paid: false, pending: true}
+      }
 
       const data = await response.json()
       const transaction = Array.isArray(data.data) ? data.data[0] : data.data
 
-      if (!transaction) return {paid: false, pending: true}
+      if (!transaction) {
+        console.warn("No transaction found for bank transfer ref:", txRef);
+        return {paid: false, pending: true}
+      }
 
 
       const isPaid = transaction.status === "successful" || transaction.status === "succeeded"

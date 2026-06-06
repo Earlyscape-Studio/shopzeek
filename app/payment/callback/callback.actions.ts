@@ -6,7 +6,7 @@ import { getFlutterwaveToken, FLW_BASE_URL } from "@/utils/flutterwave/flutterwa
 
 import { triggerOrderEmails } from "@/app/actions/email.actions";
 
-export async function verifyPaymentCallback(txRef: string): Promise<
+export async function verifyPaymentCallback(txRef: string, transactionId?: string): Promise<
   | { verified: true; orderId: string }
   | { verified: false; pending: true }
   | { verified: false; pending: false; message: string }
@@ -31,10 +31,19 @@ export async function verifyPaymentCallback(txRef: string): Promise<
 
   // Webhook hasn't fired yet — verify directly with Flutterwave
   const accessToken = await getFlutterwaveToken();
-  const response = await fetch(
-    `${FLW_BASE_URL}/transactions?reference=${txRef}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  );
+  
+  // Prefer verification by transaction ID if available
+  const verifyUrl = transactionId 
+    ? `${FLW_BASE_URL}/v4/transactions/${transactionId}/verify`
+    : `${FLW_BASE_URL}/transactions?reference=${txRef}`;
+
+  const response = await fetch(verifyUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+
+  if (!response.ok) {
+    return { verified: false, pending: false, message: "Could not verify payment with Flutterwave." };
+  }
 
   const data = await response.json();
   const transaction = Array.isArray(data.data) ? data.data[0] : data.data;
@@ -48,6 +57,7 @@ export async function verifyPaymentCallback(txRef: string): Promise<
   if (isSuccessful) {
     // Guard against underpayment
     if (Number(transaction.amount) < Number(order.total_amount)) {
+      console.warn(`Payment amount mismatch for order ${order.id}. Expected ${order.total_amount}, got ${transaction.amount}`);
       return {
         verified: false,
         pending: false,

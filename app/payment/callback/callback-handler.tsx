@@ -17,6 +17,7 @@ export default function CallbackHandler() {
 
   useEffect(() => {
     const txRef = searchParams.get("tx_ref");
+    const transactionId = searchParams.get("transaction_id");
     const status = searchParams.get("status");
 
     if (!txRef) {
@@ -30,7 +31,7 @@ export default function CallbackHandler() {
       return;
     }
 
-    verifyPaymentCallback(txRef).then((result) => {
+    verifyPaymentCallback(txRef, transactionId || undefined).then((result) => {
         if (result.verified) {
             router.push(`/order/success?reference=${result.orderId}`);
         } else if (result.pending) {
