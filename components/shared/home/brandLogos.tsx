@@ -1,12 +1,13 @@
 import Image from "next/image";
+import Link from "next/link"
 
 const brands = [
-  { name: "The Cosmetic Republic", logo: "/cosmetic_img.png" },
-  { name: "ORS", logo: "/ors_img.jpg" },
-  { name: "Bio Oil", logo: "/biooillogo.jpg" },
-  { name: "The Cosmetic Republic 2", logo: "/cosmetic_img.png" },
-  { name: "ORS 2", logo: "/ors_img.jpg" },
-  { name: "Bio Oil 2", logo: "/biooillogo.jpg" },
+  { name: "The Cosmetic Republic", logo: "/cosmetic_img.png", href:"/shop?brand=The+Cosmetic+Republic" },
+  { name: "ORS", logo: "/ors_img.jpg", href: "/shop?brand=ORS" },
+  { name: "Bio Oil", logo: "/biooillogo.jpg", href: "/shop?brand=Bio-Oil" },
+  { name: "The Cosmetic Republic 2", logo: "/cosmetic_img.png", href:"/shop?brand=The+Cosmetic+Republic" },
+  { name: "ORS 2", logo: "/ors_img.jpg", href: "/shop?brand=ORS" },
+  { name: "Bio Oil 2", logo: "/biooillogo.jpg", href: "/shop?brand=Bio-Oil" },
 ];
 
 export function BrandLogos() {
@@ -17,7 +18,7 @@ export function BrandLogos() {
           {brands.map((brand, index) => {
             const isVersion2 = brand.name.endsWith(" 2");
             return(
-            <div 
+            <Link href={brand.href} 
               key={index} 
               className={`relative h-12 w-18 md:w-32 grayscale hover:grayscale-0 transition-all duration-300 cursor-pointer ${isVersion2 ? "hidden md:block" : "block"}`}
             >
@@ -27,7 +28,7 @@ export function BrandLogos() {
                 fill
                 className="object-contain"
               />
-            </div>
+            </Link>
             )})}
         </div>
       </div>

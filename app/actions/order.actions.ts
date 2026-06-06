@@ -81,12 +81,15 @@ async function validateOrderTotal(
 
 
 function formatDeliveryAddress(formData: FormData): string{
-  const firstName = (formData.get("firstName") as string) ?? ""
-  const lastName = (formData.get("lastName") as string) ?? ""
-  const address = (formData.get("address") as string) ?? ""
-  const lga = (formData.get("lga") as string) ?? ""
-  const city = (formData.get("city") as string) ?? ""
-  const state = (formData.get("state") as string) ?? ""
+  const useAlternate = formData.get("use_alternate_shipping") === "on"
+  const p = useAlternate ? "ship_" : ""
+
+  const firstName = (formData.get(`{p}firstName`) as string) ?? ""
+  const lastName = (formData.get(`${p}lastName`) as string) ?? ""
+  const address = (formData.get(`${p}address`) as string) ?? ""
+  const lga = (formData.get(`${p}lga`) as string) ?? ""
+  const city = (formData.get(`${p}city`) as string) ?? ""
+  const state = (formData.get(`${p}state`) as string) ?? ""
   
   
   
@@ -102,6 +105,20 @@ function formatDeliveryAddress(formData: FormData): string{
 }
 
 
+function extractShippingColumns (formData: FormData){
+  const useAlternate = formData.get("use_alternate_shipping") === "on"
+  const p = useAlternate ? "ship_" : ""
+
+
+  return {
+    shipping_street: (formData.get(`${p}address`) as string) ?? "",
+    shipping_city: (formData.get(`${p}city`) as string) ?? "",
+    shipping_state: (formData.get(`${p}state`) as string) ?? "",
+    shipping_country: "Nigeria",
+    shipping_postal_code: (formData.get(`${p}zipcode`) as string) || null
+  }
+}
+
 
 async function saveCheckoutAddress(
   userId: string,
@@ -109,11 +126,17 @@ async function saveCheckoutAddress(
   phone: string
 ): Promise<string | null> {
   try{
-    const firstName = (formData.get("firstName") as string) ?? ""
-    const lastName = (formData.get("lastName") as string) ?? ""
-    const addressLine = (formData.get("address") as string) ?? ""
-    const city = (formData.get("city") as string) ?? ""
-    const state = (formData.get("state") as string) ?? ""
+
+
+    const useAlternate = formData.get("use_alternate_shipping") === "on"
+    const p = useAlternate ? "ship_" : ""
+
+
+    const firstName = (formData.get(`${p}firstName`) as string) ?? ""
+    const lastName = (formData.get(`${p}lastName`) as string) ?? ""
+    const addressLine = (formData.get(`${p}address`) as string) ?? ""
+    const city = (formData.get(`${p}city`) as string) ?? ""
+    const state = (formData.get(`${p}state`) as string) ?? ""
 
 
     if (!addressLine) return null
@@ -229,6 +252,7 @@ export async function initCardPayment(
         customer_phone: phone,
         delivery_address: formatDeliveryAddress(formData),
         status: "pending_payment",
+        ...extractShippingColumns(formData),
         payment_method: "card",
         total_amount: totalAmount,
         shipping_cost: shippingBreakdown?.baseCost ?? 0,
@@ -483,6 +507,7 @@ export async function initBankTransfer(
         customer_name: `${firstName} ${lastName}`,
         customer_phone: phone,
         delivery_address: formatDeliveryAddress(formData),
+        ...extractShippingColumns(formData),
         status: "pending_payment",
         payment_method: "bank_transfer",
         total_amount: totalAmount,

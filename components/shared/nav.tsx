@@ -35,7 +35,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 const navLinks = [
     { href: "/", label: "Home" },
     { href: "/shop", label: "Shop" },
-    { href: "/blog", label: "Blog" },
+    // { href: "/blog", label: "Blog" },
     { href: "/contact", label: "Contact" },
 ]
 

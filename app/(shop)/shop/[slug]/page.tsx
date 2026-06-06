@@ -67,14 +67,14 @@ export default async function ProductDetailPage(props: { params: Promise<{ slug:
       </div>
 
       {/* Middle Section: Reviews */}
-      <div className="mb-20">
+      {/* <div className="mb-20">
         <ProductReviews
           productId={product.id}
           reviews={reviews ?? []}
           avgRating={avgRating}
           totalReviews={totalReviews}
         />
-      </div>
+      </div> */}
 
       {/* Bottom Section: Related Products */}
       {related && related.length > 0 && (

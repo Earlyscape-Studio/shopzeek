@@ -6,7 +6,7 @@ import { Home } from "lucide-react";
 import { useRouter } from "next/navigation"
 import { useCartStore } from "@/store/cart.store";
 import { initCardPayment, initBankTransfer, verifyTransaction, verifyBankTransferPayment } from "@/app/actions/order.actions";
-import {encryptCardData} from "@/utils/flutterwave/flutterwave-encrypt"
+import { encryptCardData } from "@/utils/flutterwave/flutterwave-encrypt"
 import { getDeliveryQuote } from "@/app/actions/logistics.actions";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,10 +22,10 @@ import {
 } from "@/components/ui/breadcrumb";
 import { BillingFields } from "@/components/shared/checkout/BillingFields";
 import { CheckoutOrderSummary } from "@/components/shared/checkout/CheckoutOrderSummary";
-import {PaymentMethodSelector} from "@/components/shared/checkout/PaymentMethodSelector"
+import { PaymentMethodSelector } from "@/components/shared/checkout/PaymentMethodSelector"
 import type { CardFields } from "@/components/shared/checkout/PaymentMethodSelector";
-import {PostChargeOverlay, type PostChargeState} from "@/components/shared/checkout/PostChargeOverlay"
-import {detectCardBrand, type CardBrand} from "@/utils/flutterwave/card-utils"
+import { PostChargeOverlay, type PostChargeState } from "@/components/shared/checkout/PostChargeOverlay"
+import { detectCardBrand, type CardBrand } from "@/utils/flutterwave/card-utils"
 
 
 
@@ -46,6 +46,9 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedState, setSelectedState] = useState("")
   const [selectedLga, setSelectedLga] = useState("")
+  const [showAlternateShipping, setShowAlternateShipping] = useState(false)
+  const [selectedShipState, setSelectedShipState] = useState("")
+  const [selectedShipLga, setSelectedShipLga] = useState("")
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bank_transfer");
   const [cardFields, setCardFields] = useState<CardFields>({
     cardNumber: "",
@@ -56,8 +59,8 @@ export default function CheckoutPage() {
   const [postCharge, setPostCharge] = useState<PostChargeState>(null)
   const [shipping, setShipping] = useState(0);
   const [shippingBreakdown, setShippingBreakdown] = useState<
-  { baseCost: number; vat: number } | undefined
->(undefined);
+    { baseCost: number; vat: number } | undefined
+  >(undefined);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [cardBrand, setCardBrand] = useState<CardBrand>("unknown");
   const { items, coupon } = useCartStore();
@@ -87,13 +90,18 @@ export default function CheckoutPage() {
 
 
   useEffect(() => {
-    if (!selectedState || !selectedLga) {
+
+    const deliveryState = showAlternateShipping && selectedShipState ? selectedShipState : selectedState
+
+    const deliveryLga = showAlternateShipping && selectedShipLga ? selectedShipLga : selectedLga
+
+    if (!deliveryState || !deliveryLga) {
       return;
     }
 
     const timeout = setTimeout(async () => {
       setIsCalculatingShipping(true);
-      const quote = await getDeliveryQuote(selectedState);
+      const quote = await getDeliveryQuote(deliveryState);
       if (quote.success && quote.price) {
         setShipping(quote.price);
         setShippingBreakdown(quote.breakdown)
@@ -107,7 +115,7 @@ export default function CheckoutPage() {
     }, 600);
 
     return () => clearTimeout(timeout);
-  }, [selectedState, selectedLga]);
+  }, [selectedState, selectedLga, selectedShipState, selectedShipLga, showAlternateShipping]);
 
   if (!isMounted) return <div className="min-h-screen" />;
 
@@ -117,7 +125,7 @@ export default function CheckoutPage() {
   );
 
   const tax = 0;
-  
+
   // Calculate discount
   let discount = 0;
   if (coupon) {
@@ -162,94 +170,94 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if(items.length === 0) return;
+    if (items.length === 0) return;
     setIsProcessing(true);
 
     try {
       const formData = new FormData(e.currentTarget);
 
-        if (paymentMethod === "card") {
-          // Card flow
-          const { cardNumber, expiryMonth, expiryYear, cvv } = cardFields;
-          if (!cardNumber || !expiryMonth || !expiryYear || !cvv) {
-            toast.error("Please fill in all card details.");
-            setIsProcessing(false);
-            return;
-          }
-
-          const encryptedCard = await encryptCardData({
-            cardNumber: cardNumber.replace(/\s/g, ""),
-            expiryMonth,
-            expiryYear,
-            cvv,
-          });
-
-          const result = await initCardPayment(
-            formData,
-            items,
-            finalTotal,
-            encryptedCard,
-            shippingBreakdown,
-            coupon?.code
-          )
-
-          if (!result.success) {
-            toast.error(result.error ?? "Card payment failed");
-            setIsProcessing(false)
-            return;
-          }
-
-          switch (result.nextActionType){
-            case "redirect_url":
-              if (result.redirectUrl) window.location.href = result.redirectUrl
-              break;
-
-            case "requires_otp":
-              setPostCharge({
-                type: "requires_otp",
-                chargeId: result.chargeId!,
-                orderId: result.orderId,
-              }); 
-              break;
-
-            case "require_pin":
-              toast.error("PIN-based cards are not supported yet. Try a different card.")
-              break;
-
-            case "payment_instruction":
-              setPostCharge({
-                type: "bank_transfer", // reuse existing overlay
-                instruction: result.paymentInstruction ?? "",
-                orderId: result.orderId,
-              });
-              break;
-
-            default:
-              toast.error("Unexpected response from payment provider")
-          }
-        } else {
-          const result = await initBankTransfer(
-            formData,
-            items,
-            finalTotal,
-            shippingBreakdown,
-            coupon?.code
-          )
-
-          if(!result.success) {
-            toast.error(result.error ?? "Bank transfer setup failed")
-            console.log("bank transfer error:", result.error)
-            setIsProcessing(false)
-            return
-          }
-
-          setPostCharge({
-              type: "bank_transfer",
-              instruction: JSON.stringify(result.accountDetails), // serialise for overlay
-              orderId: result.orderId,
-              transactionRef: result.transactionRef,
-            });
+      if (paymentMethod === "card") {
+        // Card flow
+        const { cardNumber, expiryMonth, expiryYear, cvv } = cardFields;
+        if (!cardNumber || !expiryMonth || !expiryYear || !cvv) {
+          toast.error("Please fill in all card details.");
+          setIsProcessing(false);
+          return;
         }
+
+        const encryptedCard = await encryptCardData({
+          cardNumber: cardNumber.replace(/\s/g, ""),
+          expiryMonth,
+          expiryYear,
+          cvv,
+        });
+
+        const result = await initCardPayment(
+          formData,
+          items,
+          finalTotal,
+          encryptedCard,
+          shippingBreakdown,
+          coupon?.code
+        )
+
+        if (!result.success) {
+          toast.error(result.error ?? "Card payment failed");
+          setIsProcessing(false)
+          return;
+        }
+
+        switch (result.nextActionType) {
+          case "redirect_url":
+            if (result.redirectUrl) window.location.href = result.redirectUrl
+            break;
+
+          case "requires_otp":
+            setPostCharge({
+              type: "requires_otp",
+              chargeId: result.chargeId!,
+              orderId: result.orderId,
+            });
+            break;
+
+          case "require_pin":
+            toast.error("PIN-based cards are not supported yet. Try a different card.")
+            break;
+
+          case "payment_instruction":
+            setPostCharge({
+              type: "bank_transfer", // reuse existing overlay
+              instruction: result.paymentInstruction ?? "",
+              orderId: result.orderId,
+            });
+            break;
+
+          default:
+            toast.error("Unexpected response from payment provider")
+        }
+      } else {
+        const result = await initBankTransfer(
+          formData,
+          items,
+          finalTotal,
+          shippingBreakdown,
+          coupon?.code
+        )
+
+        if (!result.success) {
+          toast.error(result.error ?? "Bank transfer setup failed")
+          console.log("bank transfer error:", result.error)
+          setIsProcessing(false)
+          return
+        }
+
+        setPostCharge({
+          type: "bank_transfer",
+          instruction: JSON.stringify(result.accountDetails), // serialise for overlay
+          orderId: result.orderId,
+          transactionRef: result.transactionRef,
+        });
+      }
 
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err ?? "Something went wrong. Please try again.");
@@ -263,30 +271,30 @@ export default function CheckoutPage() {
 
   const handleBankTransferVerification = async (txRef: string) => {
     const orderId = postCharge?.orderId
-    if(!orderId) return;
+    if (!orderId) return;
 
 
     setIsProcessing(true)
-    try{
+    try {
       const result = await verifyBankTransferPayment(txRef, orderId)
-      if(result.paid){
+      if (result.paid) {
         toast.success("Payment Confirmed! Redirecting...")
-        
+
         router.push(`/order/success?reference=${orderId}`)
-      }else{
+      } else {
         toast.error("Payment not yet received. Bank transfers can take 1–3 minutes.")
       }
-    }catch(err: any){
+    } catch (err: any) {
       toast.error(err.message ?? "Verification failed")
       console.log(err.message)
-    }finally{
+    } finally {
       setIsProcessing(false)
     }
   }
-  
+
 
   return (
-     <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 min-h-screen">
       {postCharge && (
         <PostChargeOverlay
           state={postCharge}
@@ -324,6 +332,12 @@ export default function CheckoutPage() {
               <h2 className="text-lg font-bold text-gray-900 mb-6 pb-4 border-b border-gray-100">
                 Billing & Shipping Information
               </h2>
+              <input
+                type="hidden"
+                name="use_alternate_shipping"
+                value={showAlternateShipping ? "on" : "off"}
+              />
+
               <BillingFields
                 state={selectedState}
                 lga={selectedLga}
@@ -345,11 +359,38 @@ export default function CheckoutPage() {
                 )}
               </div>
               <div className="flex items-center gap-2.5 mt-6 pt-6 border-t border-gray-100">
-                <Checkbox id="different-address" className="border-gray-300 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500" />
-                <label htmlFor="different-address" className="text-sm text-gray-600 cursor-pointer select-none">
+                <Checkbox
+                  id="different-address"
+                  checked={showAlternateShipping}
+                  onCheckedChange={(checked) => {
+                    setShowAlternateShipping(checked as boolean);
+                    if (!checked) {
+                      setSelectedShipState("");
+                      setSelectedShipLga("");
+                    }
+                  }}
+                  className="border-gray-300 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                />
+                <label
+                  htmlFor="different-address"
+                  className="text-sm text-gray-600 cursor-pointer select-none"
+                >
                   Ship to a different address
                 </label>
               </div>
+              {showAlternateShipping && (
+                <div className="mt-6 pt-6 border-t border-gray-100 space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Shipping Address</h3>
+                  <BillingFields
+                    namePrefix="ship_"
+                    showContactFields={false}
+                    state={selectedShipState}
+                    lga={selectedShipLga}
+                    onStateChange={setSelectedShipState}
+                    onLgaChange={setSelectedShipLga}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Payment Method */}
@@ -361,12 +402,13 @@ export default function CheckoutPage() {
                 selectedMethod={paymentMethod}
                 onMethodChange={setPaymentMethod}
                 cardFields={cardFields}
-                onCardFieldChange={(field, value) =>{
-                  if(field === "cardNumber"){
+                onCardFieldChange={(field, value) => {
+                  if (field === "cardNumber") {
                     handleCardNumberChange(value)
-                  }else {
+                  } else {
                     setCardFields((prev) => ({ ...prev, [field]: value }))
-                }}}
+                  }
+                }}
                 cardBrand={cardBrand}
               />
             </div>

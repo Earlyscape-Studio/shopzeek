@@ -42,25 +42,20 @@ async function getLgasData(): Promise<Record<string, string[]>> {
   return _inflightRequest
 }
 
-// const nigerianStates = [
-//   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa",
-//   "Benue", "Borno", "Cross River", "Delta", "Ebonyi", "Edo",
-//   "Ekiti", "Enugu", "FCT", "Gombe", "Imo", "Jigawa", "Kaduna",
-//   "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa",
-//   "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers",
-//   "Sokoto", "Taraba", "Yobe", "Zamfara",
-// ];
-
 
 interface Props {
   state: string
   lga: string
   onStateChange: (value: string) => void
   onLgaChange: (value: string) => void
+  namePrefix?: string
+  showContactFields?: boolean
 }
 
 
-export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props) {
+export function BillingFields({ state, lga, onStateChange, onLgaChange, namePrefix = "", showContactFields = true }: Props) {
+
+  const n = namePrefix
   const [lgasData, setLgasData] = useState<Record<string, string[]>>(_cachedData ?? {})
   const [isLoading, setIsLoading] = useState(!_cachedData)
   const [fetchError, setFetchError] = useState(false)
@@ -97,7 +92,7 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-gray-700">First Name</label>
           <Input
-            name="firstName"
+            name={`${n}firstName`}
             placeholder="First name"
             className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
             required
@@ -106,7 +101,7 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-gray-700">Last Name</label>
           <Input
-            name="lastName"
+            name={`${n}lastName`}
             placeholder="Last name"
             className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
             required
@@ -120,7 +115,7 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-gray-700">Address</label>
         <Input
-          name="address"
+          name={`${n}address`}
           className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
           required
         />
@@ -128,17 +123,21 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
 
       {/* Country / State / City / Zip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700">Country</label>
-          <Select name="country" defaultValue="ng">
-            <SelectTrigger className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
-              <SelectValue placeholder="Select country" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ng">Nigeria</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {
+          !namePrefix && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Country</label>
+            <Select name="country" defaultValue="ng">
+              <SelectTrigger className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
+                <SelectValue placeholder="Select country" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ng">Nigeria</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          )
+        }
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-gray-700">State</label>
@@ -146,7 +145,7 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
             <LoadingSlot label="Loading states..." />
           ) : fetchError ? (
             <Input
-             name="state"
+             name={`${n}state`}
              value={state}
              onChange={(e) => handleStateChange(e.target.value)}
              placeholder="Enter state"
@@ -155,9 +154,9 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
              />
           ) : (
             <>
-            <Input type="hidden" name="state" value={state} />
-            <Select name="state" value={state} onValueChange={handleStateChange}>
-            <SelectTrigger id="state" className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
+            <Input type="hidden" name={`${n}state`} value={state} />
+            <Select name={`${n}state`} value={state} onValueChange={handleStateChange}>
+            <SelectTrigger className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
               <SelectValue placeholder="Select state" />
             </SelectTrigger>
             <SelectContent>
@@ -182,7 +181,7 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
           ) : fetchError ? (
             <Input
             id="lga"
-            name="lga"
+            name={`${n}lga`}
             value={lga}
             onChange={(e) => onLgaChange(e.target.value)}
             className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
@@ -191,8 +190,8 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
           />
           ) : (
             <>
-              <Input type="hidden" name="lga" value={lga} />
-              <Select name="lga" value={lga} onValueChange={onLgaChange} disabled={lgas.length === 0}>
+              <Input type="hidden" name={`${n}lga`} value={lga} />
+              <Select name={`${n}lga`} value={lga} onValueChange={onLgaChange} disabled={lgas.length === 0}>
                 <SelectTrigger className="h-11 border-gray-200 rounded-lg">
                   <SelectValue placeholder="Select LGA" />
                 </SelectTrigger>
@@ -212,7 +211,7 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-gray-700">City</label>
           <Input
-            name="city"
+            name={`${n}city`}
             className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
             required
           />
@@ -221,33 +220,35 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange }: Props)
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-gray-700">Zip Code</label>
           <Input
-            name="zipcode"
+            name={`${n}zipcode`}
             className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
           />
         </div>
       </div>
 
       {/* Email / Phone */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700">Email</label>
-          <Input
-            name="email"
-            type="email"
-            className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
-            required
-          />
+      {showContactFields && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Email</label>
+            <Input
+              name="email"
+              type="email"
+              className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Phone Number</label>
+            <Input
+              name="phone"
+              type="tel"
+              className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
+              required
+            />
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700">Phone Number</label>
-          <Input
-            name="phone"
-            type="tel"
-            className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
-            required
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

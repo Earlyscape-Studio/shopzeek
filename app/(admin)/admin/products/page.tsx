@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Edit, Trash2, MoreHorizontal } from "lucide-react";
+import { Plus, Edit, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Table,
@@ -13,6 +13,10 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { DeleteProductButton } from "@/components/shared/admin/deleteProductButton";
+
+
+
 
 export default async function AdminProductsPage() {
     const cookieStore = await cookies();
@@ -111,9 +115,7 @@ export default async function AdminProductsPage() {
                                                         <Edit size={16} />
                                                     </Link>
                                                 </Button>
-                                                <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-600">
-                                                    <Trash2 size={16} />
-                                                </Button>
+                                            <DeleteProductButton productId={product.id} />
                                             </div>
                                         </TableCell>
                                     </TableRow>

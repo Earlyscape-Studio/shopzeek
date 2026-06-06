@@ -4,25 +4,24 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button";
 
 const footerLinks = {
-  Products: [
-    "Hair Care", "Skin Care Oil", "Body Oil",
-    "Fragrance", "Body Lotion", "Beauty Soap", "Hair Mask",
-  ],
-  Company: ["About Zeek", "Shop", "Blog", "Store Locations"],
+  // Products: [
+  //   "Hair Care", "Skin Care Oil", "Body Oil",
+  //   "Fragrance", "Body Lotion", "Beauty Soap", "Hair Mask",
+  // ],
+  Company: ["About Zeek"],
   "Help Center": [
     "Customer Service", "Policy", "Terms & Conditions",
-    "Track Order", "FAQs", "My Account", "Product Support",
+    "Track Order", "FAQs",
   ],
-  Partner: ["Become Seller", "Affiliate", "Advertise", "Partnership"],
+  Partner: ["Become Seller", "Affiliate", "Partnerships & Advertising"],
 };
 
 export function Footer() {
   return (
     <footer className="w-screen">
       {/* Newsletter */}
-      <div className="bg-orange-500 py-10 px-4">
+      {/* <div className="bg-orange-500 py-10 px-4">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
-          {/* Text block centers on mobile, left-aligns on large screens */}
           <div className="text-center lg:text-left space-y-1">
             <p className="text-white text-xl font-bold">
               Subscribe & Get 10% OFF for first order
@@ -32,7 +31,7 @@ export function Footer() {
             </p>
           </div>
           
-          {/* Input block handles width fluidly across mobile views */}
+      
           <div className="flex items-center gap-2 w-full max-w-md lg:w-auto">
             <Input
               type="email"
@@ -44,7 +43,7 @@ export function Footer() {
             </Button>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Links */}
       <div className="bg-white py-12 px-4">
@@ -54,10 +53,6 @@ export function Footer() {
             <span className="">
               <Image src="/zeek2.svg" alt="zeek logo" width={100} height={50} className="object-cover" />
             </span>
-            <p className="text-sm text-orange-500 font-semibold mt-2">
-              HOTLINE 24/7
-            </p>
-            <p className="text-sm font-bold">(+234) 911 049 7316</p>
             <div className="text-sm text-gray-500 mt-2">
               <p>Landmark House</p> 
               <p>No. 52-54 Isaac John Street</p> 

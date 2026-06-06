@@ -51,7 +51,7 @@ export default function ContactPage() {
         {/* Left Orange Block */}
         <div className="bg-[#FF5A00] text-white p-10 rounded-lg lg:w-[400px] flex flex-col relative overflow-hidden shrink-0">
           <h3 className="text-2xl font-bold mb-2 z-10">Contact Information</h3>
-          <p className="text-orange-100 mb-12 z-10">Say something to start a live chat!</p>
+          <p className="text-orange-100 mb-12 z-10">Say something to start a conversation!</p>
 
           <div className="space-y-8 z-10 flex-1">
             <div className="flex items-center gap-4">
@@ -64,26 +64,28 @@ export default function ContactPage() {
             </div>
             <div className="flex items-start gap-4">
               <MapPin className="h-6 w-6 text-orange-200 shrink-0" />
-              <p>Landmark House</p> 
-              <p>No. 52-54 Isaac John Street</p> 
-              <p>Ikeja GRA </p>
-              <p>Lagos</p>
+              <div className="flex flex-col">
+                <p>Landmark House</p> 
+                <p>No. 52-54 Isaac John Street</p> 
+                <p>Ikeja GRA </p>
+                <p>Lagos</p>
+              </div>
             </div>
           </div>
 
          <div className="flex items-center gap-4 mt-12 z-10">
-            <a href="#" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
+            <a href="https://x.com/zeekonline" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
               <FontAwesomeIcon icon={faXTwitter} className="w-5 h-5" />
             </a>
-            <a href="#" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
+            <a href="https://www.facebook.com" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
               <FontAwesomeIcon icon={faFacebookF} className="w-5 h-5" />
             </a>
-            <a href="#" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
+            <a href="https://www.instagram.com/zeek.you" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
               <FontAwesomeIcon icon={faInstagram} className="w-5 h-5" />
             </a>
-            <a href="#" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
+            {/* <a href="#" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
               <FontAwesomeIcon icon={faYoutube} className="w-5 h-5" />
-            </a>
+            </a> */}
           </div>
 
           {/* Decorative Circles */}

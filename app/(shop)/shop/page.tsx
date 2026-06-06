@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { Suspense } from "react"
 import Link from "next/link";
 import { Home, ChevronRight } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
@@ -13,9 +14,10 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import type { Product } from "@/types/database";
+import { SortDropdown } from "@/components/shared/shop/sortDropdown";
 
 type SearchParams = Promise<{
-  search?: string; // <-- 1. Added search to types
+  search?: string;
   category?: string;
   brand?: string;
   minPrice?: string;
@@ -126,6 +128,12 @@ export default async function ShopPage(props: {
           {/* Sort By Dropdown */}
           <div className="flex items-center gap-3 mb-8">
             <span className="text-sm font-medium text-gray-700">Sort by:</span>
+            <Suspense fallback={<div className="w-48 h-9 bg-gray-100 rounded-md animate-pulse" />}>
+              <SortDropdown currentSort={searchParams.sort ?? "popular"} />
+            </Suspense>
+          </div>
+          {/* <div className="flex items-center gap-3 mb-8">
+            <span className="text-sm font-medium text-gray-700">Sort by:</span>
             <select
               className="text-sm border border-gray-200 rounded-md px-3 py-2 w-48 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none"
               defaultValue={searchParams.sort ?? "popular"}
@@ -135,7 +143,7 @@ export default async function ShopPage(props: {
               <option value="price_asc">Price: Low to High</option>
               <option value="price_desc">Price: High to Low</option>
             </select>
-          </div>
+          </div> */}
 
           {products?.length ? (
             <>
@@ -169,8 +177,8 @@ export default async function ShopPage(props: {
                               href={createPageURL(p)}
                               isActive={page === p}
                               className={`rounded-full h-10 w-10 border flex items-center justify-center font-mono text-sm ${page === p
-                                  ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white"
-                                  : "border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500"
+                                ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white"
+                                : "border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500"
                                 }`}
                             >
                               {String(p).padStart(2, "0")}
