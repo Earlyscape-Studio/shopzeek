@@ -107,6 +107,7 @@ export async function getDeliveryQuote(
             breakdown: {
                 baseCost: data.cost?.cost ?? 0,
                 vat: data.vat?.vatAmount ?? 0,
+                total: data.totalCost
             },
         }
     } catch (error: unknown) { // fix: was `any`

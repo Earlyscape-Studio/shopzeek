@@ -12,6 +12,7 @@ import { validateCoupon } from "./coupon.actions";
 interface ShippingBreakdown {
   baseCost: number;
   vat: number;
+  total?: number
 }
 
 async function validateOrderTotal(
@@ -62,7 +63,7 @@ async function validateOrderTotal(
       }
     }
 
-    const shipping = (shippingBreakdown?.baseCost ?? 0) + (shippingBreakdown?.vat ?? 0);
+    const shipping = shippingBreakdown?.total ?? ((shippingBreakdown?.baseCost ?? 0) + (shippingBreakdown?.vat ?? 0));
     const expectedTotal = Math.max(0, recalculatedSubtotal + shipping - discount);
 
     // Allow for small rounding differences
