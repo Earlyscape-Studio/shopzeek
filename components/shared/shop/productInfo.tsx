@@ -76,16 +76,16 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
 
       {/* Stats Row */}
       <div className="flex items-center gap-4 mb-8 text-sm">
-        <div className="flex items-center gap-1 text-[#FF5A00]">
+        {/* <div className="flex items-center gap-1 text-[#FF5A00]">
           {[...Array(5)].map((_, i) => (
             <Star key={i} size={18} fill={i < Math.round(avgRating) ? "currentColor" : "none"} className={i >= Math.round(avgRating) ? "text-gray-300" : ""} />
           ))}
           <span className="text-gray-900 ml-2 font-bold">( {avgRating.toFixed(1)} / 5 )</span>
-        </div>
-        <span className="text-gray-300">|</span>
+        </div> */}
+        {/* <span className="text-gray-300">|</span>
         <span className="text-gray-600">{totalReviews} Reviews</span>
         <span className="text-gray-300">|</span>
-        <span className="text-gray-600">1K Sold</span>
+        <span className="text-gray-600">1K Sold</span> */}
       </div>
 
       {/* Price */}

@@ -106,19 +106,19 @@ function formatDeliveryAddress(formData: FormData): string{
 }
 
 
-function extractShippingColumns (formData: FormData){
-  const useAlternate = formData.get("use_alternate_shipping") === "on"
-  const p = useAlternate ? "ship_" : ""
+// function extractShippingColumns (formData: FormData){
+//   const useAlternate = formData.get("use_alternate_shipping") === "on"
+//   const p = useAlternate ? "ship_" : ""
 
 
-  return {
-    shipping_street: (formData.get(`${p}address`) as string) ?? "",
-    shipping_city: (formData.get(`${p}city`) as string) ?? "",
-    shipping_state: (formData.get(`${p}state`) as string) ?? "",
-    shipping_country: "Nigeria",
-    shipping_postal_code: (formData.get(`${p}zipcode`) as string) || null
-  }
-}
+//   return {
+//     shipping_street: (formData.get(`${p}address`) as string) ?? "",
+//     shipping_city: (formData.get(`${p}city`) as string) ?? "",
+//     shipping_state: (formData.get(`${p}state`) as string) ?? "",
+//     shipping_country: "Nigeria",
+//     shipping_postal_code: (formData.get(`${p}zipcode`) as string) || null
+//   }
+// }
 
 
 async function saveCheckoutAddress(
@@ -253,7 +253,6 @@ export async function initCardPayment(
         customer_phone: phone,
         delivery_address: formatDeliveryAddress(formData),
         status: "pending_payment",
-        ...extractShippingColumns(formData),
         payment_method: "card",
         total_amount: totalAmount,
         shipping_cost: shippingBreakdown?.baseCost ?? 0,
@@ -508,7 +507,6 @@ export async function initBankTransfer(
         customer_name: `${firstName} ${lastName}`,
         customer_phone: phone,
         delivery_address: formatDeliveryAddress(formData),
-        ...extractShippingColumns(formData),
         status: "pending_payment",
         payment_method: "bank_transfer",
         total_amount: totalAmount,
