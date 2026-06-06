@@ -102,41 +102,41 @@ export async function sendDeliveryEmail(payload: DeliveryEmailPayload) {
 export async function triggerOrderEmails(orderId: string) {
   try {
     const { data: fullOrder, error: fetchError } = await supabaseAdmin
-      .from("orders")
-      .select(`
-        id,
-        email,
-        customer_name,
-        phone:customer_phone,
-        payment_method,
-        total_amount,
-        shipping_cost,
-        shipping_vat,
-        discount_amount,
-        shipping_street,
-        shipping_city,
-        shipping_state,
-        shipping_country,
-        shipping_postal_code,
-        created_at,
-        coupon:coupons (
-          code
-        ),
-        order_items (
-          quantity,
-          unit_price,
-          products (
-            name
-          )
+    .from("orders")
+    .select(`
+      id,
+      email,
+      customer_name,
+      phone:customer_phone,
+      payment_method,
+      total_amount,
+      shipping_cost,
+      shipping_vat,
+      discount_amount,
+      delivery_address,
+      created_at,
+      coupon:coupons (
+        code
+      ),
+      order_items (
+        quantity,
+        unit_price,
+        products (
+          name
         )
-      `)
-      .eq("id", orderId)
-      .single();
+      )
+    `)
+    .eq("id", orderId)
+    .single();
 
     if (fetchError || !fullOrder) {
       console.error("Failed to fetch order details for email:", fetchError);
       return { success: false, error: "Order not found" };
     }
+
+    const addrLines = ((fullOrder.delivery_address as string) || "")
+      .split("\n")
+      .filter(Boolean);
 
     const emailPayload: OrderEmailPayload = {
       orderId: fullOrder.id,
@@ -161,11 +161,10 @@ export async function triggerOrderEmails(orderId: string) {
         price: item.unit_price,
       })),
       shippingAddress: {
-        street: fullOrder.shipping_street || "",
-        city: fullOrder.shipping_city || "",
-        state: fullOrder.shipping_state || "",
-        country: fullOrder.shipping_country || "Nigeria",
-        postalCode: fullOrder.shipping_postal_code,
+        street: addrLines[1] || "",
+        city:   addrLines[2] || "",
+        state:  addrLines[3] || "",
+        country: addrLines[4] || "Nigeria",
       },
     };
 
