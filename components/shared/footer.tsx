@@ -1,90 +1,123 @@
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
 import Image from "next/image"
-import { Button } from "@/components/ui/button";
+import { Mail, Phone, MapPin } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faXTwitter, faFacebookF, faInstagram } from "@fortawesome/free-brands-svg-icons";
 
 const footerLinks = {
-  // Products: [
-  //   "Hair Care", "Skin Care Oil", "Body Oil",
-  //   "Fragrance", "Body Lotion", "Beauty Soap", "Hair Mask",
-  // ],
-  Company: ["About Zeek"],
-  "Help Center": [
-    "Customer Service", "Policy", "Terms & Conditions",
-    "Track Order", "FAQs",
+  Company: [
+    { label: "About Zeek", href: "/about" },
+    { label: "Contact Us", href: "/contact" },
+    { label: "Shop All", href: "/shop" },
   ],
-  Partner: ["Become Seller", "Affiliate", "Partnerships & Advertising"],
+  "Help Center": [
+    { label: "FAQs", href: "/faqs" },
+    { label: "Return Policy", href: "/policy" },
+    { label: "Terms & Conditions", href: "/terms" },
+  ],
+  Partner: [
+    { label: "Become Seller", href: "/seller" },
+    { label: "Affiliate Program", href: "/affiliate" },
+    { label: "Partnerships & Advertising", href: "/partenershipsandadvertising" },
+  ],
 };
 
 export function Footer() {
   return (
-    <footer className="w-full">
-      {/* Newsletter */}
-      {/* <div className="bg-orange-500 py-10 px-4">
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
-          <div className="text-center lg:text-left space-y-1">
-            <p className="text-white text-xl font-bold">
-              Subscribe & Get 10% OFF for first order
-            </p>
-            <p className="text-orange-100 text-sm">
-              Get latest beauty tips when you subscribe
-            </p>
-          </div>
+    <footer className="w-full bg-white border-t border-gray-100 mt-auto">
+      {/* Main Footer Content */}
+      <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-12 md:gap-8">
           
-      
-          <div className="flex items-center gap-2 w-full max-w-md lg:w-auto">
-            <Input
-              type="email"
-              placeholder="Enter your email address"
-              className="bg-white rounded-full w-full lg:w-80 h-12 px-5 text-black focus-visible:ring-0 focus-visible:ring-offset-0 border-none placeholder:text-gray-400"
-            />
-            <Button className="bg-black text-white hover:bg-gray-800 rounded-full h-12 px-6 font-semibold tracking-wide shrink-0 transition-colors">
-              SUBSCRIBE
-            </Button>
-          </div>
-        </div>
-      </div> */}
-
-      {/* Links */}
-      <div className="bg-white py-12 px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-6 gap-8">
-          {/* Brand */}
-          <div className="col-span-2">
-            <span className="">
-              <Image src="/zeek2.svg" alt="zeek logo" width={100} height={50} className="object-cover" />
-            </span>
-            <div className="text-sm text-gray-500 mt-2">
-              <p>Landmark House</p> 
-              <p>No. 52-54 Isaac John Street</p> 
-              <p>Ikeja GRA </p>
-              <p>Lagos</p>
+          {/* Brand & Info Section */}
+          <div className="col-span-1 md:col-span-2 space-y-6 flex flex-col items-center md:items-start text-left md:text-left">
+            <Link href="/">
+              <Image src="/zeek2.svg" alt="Zeek Logo" width={120} height={40} className="object-contain" />
+            </Link>
+            
+            <div className="space-y-3 text-sm text-gray-500">
+              <div className="flex items-start justify-center md:justify-start gap-3">
+                <MapPin className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+                <p>Landmark House, No. 52-54 Isaac John Street,<br />Ikeja GRA, Lagos, Nigeria.</p>
+              </div>
+              <div className="flex items-center justify-center md:justify-start gap-3">
+                <Phone className="w-4 h-4 text-orange-500" />
+                <p>+(+234) 911 049 7316</p>
+              </div>
+              <div className="flex items-center justify-center md:justify-start gap-3">
+                <Mail className="w-4 h-4 text-orange-500" />
+                <p>info@zeek.you</p>
+              </div>
             </div>
-            <p className="text-sm text-gray-500">hello@zeek.you</p>
+
+            {/* Social Links */}
+            <div className="flex items-center gap-4 pt-2">
+              <a href="https://x.com/zeekonline" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-orange-500 hover:text-white transition-all">
+                <FontAwesomeIcon icon={faXTwitter} className="w-4 h-4" />
+              </a>
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-orange-500 hover:text-white transition-all">
+                <FontAwesomeIcon icon={faFacebookF} className="w-4 h-4" />
+              </a>
+              <a href="https://instagram.com/zeek.you" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-orange-500 hover:text-white transition-all">
+                <FontAwesomeIcon icon={faInstagram} className="w-4 h-4" />
+              </a>
+            </div>
           </div>
 
-          {/* Link columns */}
+          {/* Link Columns */}
           {Object.entries(footerLinks).map(([heading, links]) => (
-            <div key={heading}>
-              <h4 className="font-semibold text-sm mb-3">{heading}</h4>
-              <ul className="space-y-2">
+            <div key={heading} className="col-span-1 md:col-span-1 flex flex-col items-center md:items-start text-center md:text-left">
+              <h4 className="font-bold text-gray-900 text-sm tracking-wider uppercase mb-5">
+                {heading}
+              </h4>
+              <ul className="space-y-4">
                 {links.map((link) => (
-                  <li key={link}>
+                  <li key={link.label}>
                     <Link
-                      href="#"
+                      href={link.href}
                       className="text-sm text-gray-500 hover:text-orange-500 transition-colors"
                     >
-                      {link}
+                      {link.label}
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
+
+          {/* New Column: Newsletter Hint/App Store (Optional) */}
+          {/* <div className="col-span-1 flex flex-col items-center md:items-start text-center md:text-left">
+            <h4 className="font-bold text-gray-900 text-sm tracking-wider uppercase mb-5">
+              Newsletter
+            </h4>
+            <p className="text-sm text-gray-500 mb-4">
+              Get the latest updates on new products and upcoming sales.
+            </p>
+            <Link href="/signup" className="text-sm font-bold text-orange-500 hover:underline">
+              Join Zeek Now →
+            </Link>
+          </div> */}
         </div>
       </div>
 
-      <div className="bg-white border-t border-gray-100 py-4 text-center text-xs text-gray-400">
-        Zeek © 2026.
+      {/* Bottom Bar */}
+      <div className="border-t border-gray-50 bg-gray-50/50 py-6">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-gray-400">
+            &copy; {new Date().getFullYear()} Zeek. All rights reserved.
+          </p>
+          <div className="flex items-center gap-6">
+            <Link href="/terms" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              Terms
+            </Link>
+            <Link href="/privacy" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              Privacy
+            </Link>
+            <Link href="/cookies" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              Cookies
+            </Link>
+          </div>
+        </div>
       </div>
     </footer>
   );
