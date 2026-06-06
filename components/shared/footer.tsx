@@ -18,7 +18,7 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="w-screen">
+    <footer className="w-full">
       {/* Newsletter */}
       {/* <div className="bg-orange-500 py-10 px-4">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">

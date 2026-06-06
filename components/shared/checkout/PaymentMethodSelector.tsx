@@ -38,7 +38,7 @@ export function PaymentMethodSelector({
   function formatCardNumber(value: string) {
     return value
       .replace(/\D/g, "")
-      .slice(0, 16)
+      .slice(0, 19)
       .replace(/(.{4})/g, "$1 ")
       .trim();
   }
@@ -85,7 +85,7 @@ export function PaymentMethodSelector({
               onChange={(e) =>
                 onCardFieldChange("cardNumber", formatCardNumber(e.target.value))
               }
-              maxLength={19}
+              maxLength={24}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm tracking-wider focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
              {cardBrand !== "unknown" && (

@@ -11,7 +11,7 @@ export type CardBrand =
 const BRAND_PATTERNS: [CardBrand, RegExp][] = [
   ["visa", /^4/],
   ["mastercard", /^(5[1-5]|2[2-7])/],
-  ["verve", /^(5060|5061|6500)/],
+  ["verve", /^((506(0|1))|(507(8|9))|(6500)|(6521)|(6506))/],
   ["american_express", /^3[47]/],
   ["discover", /^(6011|65|64[4-9])/],
 ];

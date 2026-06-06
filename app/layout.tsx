@@ -32,7 +32,7 @@ export default function RootLayout({
       className={cn("h-full", "antialiased", soraSans.variable, "font-sans")}
       suppressHydrationWarning
     >
-      <body className={`w-lvw  ${soraSans.className}`}>
+      <body className={cn("w-full overflow-x-hidden", soraSans.className)}>
         <AuthCartSync />
         {children}
         <Toaster richColors position="top-center" />

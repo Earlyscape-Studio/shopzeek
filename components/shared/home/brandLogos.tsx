@@ -12,7 +12,7 @@ const brands = [
 
 export function BrandLogos() {
   return (
-    <section className="py-12 border-y border-gray-100 bg-white w-screen">
+    <section className="py-12 border-y border-gray-100 bg-white w-full">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex flex-wrap justify-between items-center gap-8 md:gap-10 opacity-60">
           {brands.map((brand, index) => {
