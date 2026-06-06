@@ -24,7 +24,7 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="w-full bg-white border-t border-gray-100 mt-auto">
+    <footer className="w-full bg-white border-t-2 border-gray-300 mt-auto">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-6 gap-12 md:gap-8">
@@ -46,7 +46,7 @@ export function Footer() {
               </div>
               <div className="flex items-center justify-center md:justify-start gap-3">
                 <Mail className="w-4 h-4 text-orange-500" />
-                <p>info@zeek.you</p>
+                <p>hello@zeek.you</p>
               </div>
             </div>
 
