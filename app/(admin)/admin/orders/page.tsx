@@ -4,50 +4,60 @@ import Link from "next/link";
 import { Eye, Clock, PackageCheck, Truck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
 export default async function AdminOrdersPage() {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase    = createClient(cookieStore);
 
-  // 1. Fetch using the "*" wildcard to bypass the outdated TypeScript types
   const { data: rawOrders, error } = await supabase
     .from("orders")
     .select("*")
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Error fetching orders:", error);
-  }
+  if (error) console.error("Error fetching orders:", error);
 
-  // 2. Safely cast the orders to 'any[]' so TypeScript stops throwing red lines
-  // We completely removed the 'profiles' mapping here since it no longer exists!
-  const orders = rawOrders as any[] || [];
+  const orders = (rawOrders as any[]) || [];
 
-  // Helper function to render the correct status badge
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
       case "pending":
       case "pending_payment":
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+            <Clock className="w-3 h-3 mr-1" /> Pending
+          </Badge>
+        );
       case "paid":
       case "processing":
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100"><PackageCheck className="w-3 h-3 mr-1" /> Processing</Badge>;
+        return (
+          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+            <PackageCheck className="w-3 h-3 mr-1" /> Processing
+          </Badge>
+        );
       case "shipped":
-        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100"><Truck className="w-3 h-3 mr-1" /> Shipped</Badge>;
+        return (
+          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">
+            <Truck className="w-3 h-3 mr-1" /> Shipped
+          </Badge>
+        );
       case "completed":
       case "delivered":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Delivered</Badge>;
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+            Delivered
+          </Badge>
+        );
       case "cancelled":
       case "failed":
-        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" /> Cancelled</Badge>;
+        return (
+          <Badge variant="destructive">
+            <XCircle className="w-3 h-3 mr-1" /> Cancelled
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -55,13 +65,11 @@ export default async function AdminOrdersPage() {
 
   return (
     <div className="space-y-8 pb-10">
-      {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
         <p className="text-gray-500 mt-1">Manage and track customer purchases.</p>
       </div>
 
-      {/* Orders Data Table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
         <Table>
           <TableHeader className="bg-gray-50">
@@ -80,47 +88,55 @@ export default async function AdminOrdersPage() {
                 <TableRow key={order.id} className="hover:bg-gray-50">
                   <TableCell className="font-medium text-gray-900">
                     <div className="flex flex-col">
-                      <span className="truncate max-w-[150px] uppercase text-xs" title={order.id}>
-                        {order.id.split('-')[0]}
+                      <span
+                        className="truncate max-w-[150px] uppercase text-xs"
+                        title={order.id}
+                      >
+                        {order.id.split("-")[0]}
                       </span>
                       {order.payment_reference && (
-                        <span className="text-[10px] text-gray-400">Ref: {order.payment_reference}</span>
+                        <span className="text-[10px] text-gray-400">
+                          Ref: {order.payment_reference}
+                        </span>
                       )}
                     </div>
                   </TableCell>
 
                   <TableCell className="text-sm text-gray-500">
-                    {new Date(order.created_at).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
+                    {new Date(order.created_at).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </TableCell>
 
-                  {/* 3. Read directly from 'order' instead of 'order.profiles' */}
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium text-gray-900">
                         {order.customer_name || "Guest User"}
                       </span>
+                      {/* FIX: was order.customer_email — column is email */}
                       <span className="text-xs text-gray-500">
-                        {order.customer_email || "No email"}
+                        {order.email || "No email"}
                       </span>
                     </div>
                   </TableCell>
 
-                  <TableCell>
-                    {getStatusBadge(order.status)}
-                  </TableCell>
+                  <TableCell>{getStatusBadge(order.status)}</TableCell>
 
                   <TableCell className="text-right font-bold text-gray-900">
                     ₦{Number(order.total_amount).toLocaleString()}
                   </TableCell>
 
                   <TableCell className="text-center">
-                    <Button variant="ghost" size="sm" asChild className="text-[#FF5A00] hover:text-orange-700 hover:bg-orange-50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      asChild
+                      className="text-[#FF5A00] hover:text-orange-700 hover:bg-orange-50"
+                    >
                       <Link href={`/admin/orders/${order.id}`}>
                         <Eye className="w-4 h-4 mr-2" /> View
                       </Link>

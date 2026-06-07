@@ -5,14 +5,14 @@ import { cookies } from "next/headers";
 import { getFlutterwaveToken, FLW_BASE_URL } from "@/utils/flutterwave/flutterwave";
 import type { EncryptedCardData } from "@/utils/flutterwave/flutterwave-encrypt";
 import { randomUUID } from "crypto";
-import {supabaseAdmin} from "@/utils/supabase/admin"
+import { supabaseAdmin } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { validateCoupon } from "./coupon.actions";
 
 interface ShippingBreakdown {
   baseCost: number;
   vat: number;
-  total?: number
+  total?: number;
 }
 
 async function validateOrderTotal(
@@ -25,7 +25,6 @@ async function validateOrderTotal(
     let recalculatedSubtotal = 0;
     const productIds = cartItems.map((item) => item.product_id);
 
-    // 1. Fetch latest prices
     const { data: products } = await supabaseAdmin
       .from("products")
       .select("id, price, deal_price, deal_ends_at")
@@ -35,18 +34,17 @@ async function validateOrderTotal(
       return { valid: false, error: "Product information could not be verified." };
     }
 
-    // 2. Calculate subtotal using server-side prices
     for (const item of cartItems) {
       const product = products.find((p) => p.id === item.product_id);
       if (!product) return { valid: false, error: "One or more products in your cart are invalid." };
 
-      const isOnDeal = product.deal_price && product.deal_ends_at && new Date(product.deal_ends_at) > new Date();
+      const isOnDeal =
+        product.deal_price && product.deal_ends_at && new Date(product.deal_ends_at) > new Date();
       const activePrice = isOnDeal ? product.deal_price : product.price;
-      
+
       recalculatedSubtotal += activePrice * item.quantity;
     }
 
-    // 3. Handle Coupon
     let discount = 0;
     let couponData = null;
     if (couponCode) {
@@ -63,13 +61,17 @@ async function validateOrderTotal(
       }
     }
 
-    const shipping = shippingBreakdown?.total ?? ((shippingBreakdown?.baseCost ?? 0) + (shippingBreakdown?.vat ?? 0));
+    const shipping =
+      shippingBreakdown?.total ??
+      (shippingBreakdown?.baseCost ?? 0) + (shippingBreakdown?.vat ?? 0);
     const expectedTotal = Math.max(0, recalculatedSubtotal + shipping - discount);
 
-    // Allow for small rounding differences
     if (Math.abs(expectedTotal - providedTotal) > 1) {
       console.error(`Total mismatch: Expected ${expectedTotal}, got ${providedTotal}`);
-      return { valid: false, error: "Price mismatch. Your cart may have updated. Please refresh and try again." };
+      return {
+        valid: false,
+        error: "Price mismatch. Your cart may have updated. Please refresh and try again.",
+      };
     }
 
     return { valid: true, discount, coupon: couponData };
@@ -79,76 +81,52 @@ async function validateOrderTotal(
   }
 }
 
+// FIX: was `{p}firstName` (missing $) — first name was always blank in delivery address
+function formatDeliveryAddress(formData: FormData): string {
+  const useAlternate = formData.get("use_alternate_shipping") === "on";
+  const p = useAlternate ? "ship_" : "";
 
+  const firstName = (formData.get(`${p}firstName`) as string) ?? "";
+  const lastName  = (formData.get(`${p}lastName`)  as string) ?? "";
+  const address   = (formData.get(`${p}address`)   as string) ?? "";
+  const lga       = (formData.get(`${p}lga`)       as string) ?? "";
+  const city      = (formData.get(`${p}city`)      as string) ?? "";
+  const state     = (formData.get(`${p}state`)     as string) ?? "";
 
-function formatDeliveryAddress(formData: FormData): string{
-  const useAlternate = formData.get("use_alternate_shipping") === "on"
-  const p = useAlternate ? "ship_" : ""
-
-  const firstName = (formData.get(`{p}firstName`) as string) ?? ""
-  const lastName = (formData.get(`${p}lastName`) as string) ?? ""
-  const address = (formData.get(`${p}address`) as string) ?? ""
-  const lga = (formData.get(`${p}lga`) as string) ?? ""
-  const city = (formData.get(`${p}city`) as string) ?? ""
-  const state = (formData.get(`${p}state`) as string) ?? ""
-  
-  
-  
   return [
     `${firstName} ${lastName}`.trim(),
     address,
     [lga, city].filter(Boolean).join(", "),
     state.charAt(0).toUpperCase() + state.slice(1),
-    "Nigeria"
+    "Nigeria",
   ]
-  .filter(Boolean)
-  .join("\n")
+    .filter(Boolean)
+    .join("\n");
 }
-
-
-// function extractShippingColumns (formData: FormData){
-//   const useAlternate = formData.get("use_alternate_shipping") === "on"
-//   const p = useAlternate ? "ship_" : ""
-
-
-//   return {
-//     shipping_street: (formData.get(`${p}address`) as string) ?? "",
-//     shipping_city: (formData.get(`${p}city`) as string) ?? "",
-//     shipping_state: (formData.get(`${p}state`) as string) ?? "",
-//     shipping_country: "Nigeria",
-//     shipping_postal_code: (formData.get(`${p}zipcode`) as string) || null
-//   }
-// }
-
 
 async function saveCheckoutAddress(
   userId: string,
   formData: FormData,
   phone: string
 ): Promise<string | null> {
-  try{
+  try {
+    const useAlternate = formData.get("use_alternate_shipping") === "on";
+    const p = useAlternate ? "ship_" : "";
 
+    const firstName   = (formData.get(`${p}firstName`) as string) ?? "";
+    const lastName    = (formData.get(`${p}lastName`)  as string) ?? "";
+    const addressLine = (formData.get(`${p}address`)   as string) ?? "";
+    const city        = (formData.get(`${p}city`)      as string) ?? "";
+    const state       = (formData.get(`${p}state`)     as string) ?? "";
 
-    const useAlternate = formData.get("use_alternate_shipping") === "on"
-    const p = useAlternate ? "ship_" : ""
+    if (!addressLine) return null;
 
-
-    const firstName = (formData.get(`${p}firstName`) as string) ?? ""
-    const lastName = (formData.get(`${p}lastName`) as string) ?? ""
-    const addressLine = (formData.get(`${p}address`) as string) ?? ""
-    const city = (formData.get(`${p}city`) as string) ?? ""
-    const state = (formData.get(`${p}state`) as string) ?? ""
-
-
-    if (!addressLine) return null
-
-    const {count} = await supabaseAdmin
+    const { count } = await supabaseAdmin
       .from("addresses")
-      .select("id", {count: "exact", head: true})
-      .eq("user_id", userId)
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId);
 
-
-    const {data, error} = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from("addresses")
       .insert({
         user_id: userId,
@@ -159,26 +137,22 @@ async function saveCheckoutAddress(
         city,
         state: state.charAt(0).toUpperCase() + state.slice(1),
         country: "Nigeria",
-        is_default: (count ?? 0) === 0
+        is_default: (count ?? 0) === 0,
       })
       .select("id")
-      .single()
+      .single();
 
-
-    if(error) {
-      console.error("Failed to save checkout address", error.message)
-      return null
+    if (error) {
+      console.error("Failed to save checkout address", error.message);
+      return null;
     }
 
-
-    return data.id as string
-  }catch(err){
-    console.error("saveCheckoutAddress threw:", err)
-    return null
+    return data.id as string;
+  } catch (err) {
+    console.error("saveCheckoutAddress threw:", err);
+    return null;
   }
 }
-
-
 
 async function upsertFlutterwaveCustomer(
   accessToken: string,
@@ -205,20 +179,13 @@ async function upsertFlutterwaveCustomer(
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
     const lookupData = await lookupRes.json();
-    const record = Array.isArray(lookupData.data)
-      ? lookupData.data[0]
-      : lookupData.data;
-
+    const record = Array.isArray(lookupData.data) ? lookupData.data[0] : lookupData.data;
     if (!record?.id) throw new Error("Could not retrieve existing customer.");
     return record.id;
   }
 
   throw new Error(data.error?.message || "Failed to create customer record.");
 }
-
-
-
-
 
 export async function initCardPayment(
   formData: FormData,
@@ -229,21 +196,23 @@ export async function initCardPayment(
   couponCode?: string | null
 ) {
   try {
-    // Server-side safety check
-    const validation = await validateOrderTotal(cartItems, couponCode ?? null, totalAmount, shippingBreakdown);
+    const validation = await validateOrderTotal(
+      cartItems,
+      couponCode ?? null,
+      totalAmount,
+      shippingBreakdown
+    );
     if (!validation.valid) return { success: false, error: validation.error };
 
     const cookieStore = await cookies();
-    const supabase = await createClient(cookieStore);
-
+    const supabase    = await createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 
-    const email = formData.get("email") as string;
+    const email     = formData.get("email")     as string;
     const firstName = formData.get("firstName") as string;
-    const lastName = formData.get("lastName") as string;
-    const phone = (formData.get("phone") as string).replace(/\s+/g, "");
+    const lastName  = formData.get("lastName")  as string;
+    const phone     = (formData.get("phone") as string).replace(/\s+/g, "");
 
-    // 1. Create order
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -265,7 +234,6 @@ export async function initCardPayment(
 
     if (orderError) return { success: false, error: `Database Error: ${orderError.message}` };
 
-    // 2. Insert order items
     const orderItems = cartItems.map((item) => ({
       order_id: order.id,
       product_id: item.product_id,
@@ -273,31 +241,27 @@ export async function initCardPayment(
       unit_price: item.price,
     }));
 
-    const { error: itemsError } = await supabase
-      .from("order_items")
-      .insert(orderItems);
+    const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
 
-    if (itemsError) return { success: false, error: `Items Error: ${itemsError.message}` };
+    // FIX: rollback orphaned order if items insert fails
+    if (itemsError) {
+      await supabase.from("orders").delete().eq("id", order.id);
+      return { success: false, error: `Items Error: ${itemsError.message}` };
+    }
 
-    if(user?.id){
-      const addressId = await saveCheckoutAddress(user.id, formData, phone)
-
-      if(addressId){
-        await supabase.from("orders").update({address_id: addressId}).eq("id", order.id)
+    if (user?.id) {
+      const addressId = await saveCheckoutAddress(user.id, formData, phone);
+      if (addressId) {
+        await supabase.from("orders").update({ address_id: addressId }).eq("id", order.id);
       }
     }
 
-    // 3. Generate reference & get token
     const transactionRef = `FW-${order.id.slice(0, 8)}-${Date.now()}`;
-    const accessToken = await getFlutterwaveToken();
-    const customerId = await upsertFlutterwaveCustomer(
-      accessToken,
-      email,
-      firstName,
-      lastName
+    const accessToken    = await getFlutterwaveToken();
+    const customerId     = await upsertFlutterwaveCustomer(
+      accessToken, email, firstName, lastName
     );
 
-    // 4. Payload – amount in kobo, type standard_checkout
     const payload = {
       amount: totalAmount,
       currency: "NGN",
@@ -314,7 +278,7 @@ export async function initCardPayment(
           encrypted_cvv: encryptedCard.encrypted_cvv,
         },
       },
-      customer_id: customerId
+      customer_id: customerId,
     };
 
     const response = await fetch(`${FLW_BASE_URL}/orchestration/direct-charges`, {
@@ -329,22 +293,22 @@ export async function initCardPayment(
     });
 
     const flwData = await response.json();
-    // console.log("Flutterwave response:", flwData);
 
     if (!response.ok || flwData.status !== "success") {
-      return { success: false, error: flwData.error?.message || flwData.message || "Card charge failed" };
+      return {
+        success: false,
+        error: flwData.error?.message || flwData.message || "Card charge failed",
+      };
     }
 
-    // 5. Save payment reference on order
     await supabase
       .from("orders")
       .update({ payment_reference: transactionRef })
       .eq("id", order.id);
 
     const chargeStatus = flwData.data.status;
-    const nextAction = flwData.data.next_action;
+    const nextAction   = flwData.data.next_action;
 
-    // 6. Card approved instantly — no further auth needed
     if (chargeStatus === "succeeded") {
       return {
         success: true,
@@ -355,7 +319,7 @@ export async function initCardPayment(
         redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback?status=successful&tx_ref=${transactionRef}&transaction_id=${flwData.data.id}`,
         paymentInstruction: null,
       };
-    } 
+    }
 
     return {
       success: true,
@@ -367,12 +331,12 @@ export async function initCardPayment(
       paymentInstruction: nextAction?.payment_instruction?.note ?? null,
     };
   } catch (err: any) {
-    return { success: false, error: err.message || "An unexpected error occurred processing your card." };
+    return {
+      success: false,
+      error: err.message || "An unexpected error occurred processing your card.",
+    };
   }
 }
-
-
-//authorize card charge
 
 export async function authorizeCardCharge(
   chargeId: string,
@@ -383,15 +347,14 @@ export async function authorizeCardCharge(
   try {
     const accessToken = await getFlutterwaveToken();
 
-    
-    const body = 
+    const body =
       authorization.type === "pin"
         ? {
             authorization: {
               type: "pin",
               pin: {
                 nonce: authorization.nonce,
-                encrypted_pin: authorization.encryptedPin, 
+                encrypted_pin: authorization.encryptedPin,
               },
             },
           }
@@ -412,14 +375,16 @@ export async function authorizeCardCharge(
     });
 
     const data = await response.json();
-    // console.log("Authorization response", data);
 
     if (!response.ok || data.status !== "success") {
-      return { success: false, error: data.error?.message || data.message || "Authorization failed" };
+      return {
+        success: false,
+        error: data.error?.message || data.message || "Authorization failed",
+      };
     }
 
     const chargeStatus = data.data.status;
-    const nextAction = data.data.next_action;
+    const nextAction   = data.data.next_action;
 
     if (chargeStatus === "succeeded") {
       return {
@@ -437,19 +402,19 @@ export async function authorizeCardCharge(
       redirectUrl: nextAction?.redirect_url?.url ?? null,
     };
   } catch (err: any) {
-    return { success: false, error: err.message || "Authorization failed due to a network error." };
+    return {
+      success: false,
+      error: err.message || "Authorization failed due to a network error.",
+    };
   }
 }
 
-
 export async function verifyTransaction(txRef: string) {
-  try{
+  try {
     const accessToken = await getFlutterwaveToken();
     const response = await fetch(
       `${FLW_BASE_URL}/transactions?reference=${txRef}`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
+      { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
     if (!response.ok) {
@@ -457,21 +422,20 @@ export async function verifyTransaction(txRef: string) {
       return false;
     }
 
-    const data = await response.json();
+    const data        = await response.json();
     const transaction = Array.isArray(data.data) ? data.data[0] : data.data;
 
     if (!transaction) {
       console.warn("No transaction found for ref:", txRef);
       return false;
     }
-    
+
     return transaction?.status === "successful" || transaction?.status === "succeeded";
-  }catch(err){
+  } catch (err) {
     console.error("verifyTransaction threw:", err);
     return false;
   }
 }
-
 
 export async function initBankTransfer(
   formData: FormData,
@@ -480,24 +444,25 @@ export async function initBankTransfer(
   shippingBreakdown?: ShippingBreakdown,
   couponCode?: string | null
 ) {
-
-  console.log("bank transfer started")
-
+  console.log("bank transfer started");
 
   try {
-    // Server-side safety check
-    const validation = await validateOrderTotal(cartItems, couponCode ?? null, totalAmount, shippingBreakdown);
+    const validation = await validateOrderTotal(
+      cartItems,
+      couponCode ?? null,
+      totalAmount,
+      shippingBreakdown
+    );
     if (!validation.valid) return { success: false, error: validation.error };
 
     const cookieStore = await cookies();
-    const supabase = await createClient(cookieStore);
-
+    const supabase    = await createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
 
-    const email = formData.get("email") as string;
+    const email     = formData.get("email")     as string;
     const firstName = formData.get("firstName") as string;
-    const lastName = formData.get("lastName") as string;
-    const phone = ((formData.get("phone") as string) ?? "").replace(/\s+/g, "")
+    const lastName  = formData.get("lastName")  as string;
+    const phone     = ((formData.get("phone") as string) ?? "").replace(/\s+/g, "");
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -520,39 +485,34 @@ export async function initBankTransfer(
 
     if (orderError) return { success: false, error: `Order error: ${orderError.message}` };
 
-    // const rollbackOrder = async () => {
-    //   await supabase.from("orders").delete().eq("id", order.id);
-    // };
-
-    // Insert items
     const orderItems = cartItems.map((item) => ({
       order_id: order.id,
       product_id: item.product_id,
       quantity: item.quantity,
       unit_price: item.price,
     }));
-    await supabase.from("order_items").insert(orderItems);
 
+    const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
 
-    if (user?.id){
-      const addressId = await saveCheckoutAddress(user.id, formData, phone)
+    // FIX: rollback orphaned order if items insert fails
+    if (itemsError) {
+      await supabase.from("orders").delete().eq("id", order.id);
+      return { success: false, error: `Items Error: ${itemsError.message}` };
+    }
 
-      if (addressId){
-        await supabase.from("orders").update({ address_id: addressId }).eq("id", order.id)
+    if (user?.id) {
+      const addressId = await saveCheckoutAddress(user.id, formData, phone);
+      if (addressId) {
+        await supabase.from("orders").update({ address_id: addressId }).eq("id", order.id);
       }
     }
 
     const transactionRef = `FW-${order.id.slice(0, 8)}-${Date.now()}`;
-    const accessToken = await getFlutterwaveToken();
+    const accessToken    = await getFlutterwaveToken();
 
-    
+    let customerId: string | null = null;
 
-    
-
-    let customerId: string | null = null
-
-    try{
-      
+    try {
       const customerRes = await fetch(`${FLW_BASE_URL}/customers`, {
         method: "POST",
         headers: {
@@ -562,55 +522,42 @@ export async function initBankTransfer(
         body: JSON.stringify({
           email,
           name: { first: firstName, last: lastName },
-          phone_number: phone
+          phone_number: phone,
         }),
       });
 
       const customerData = await customerRes.json();
       console.log("Customer create response:", JSON.stringify(customerData));
 
-      
       if (customerRes.ok && customerData.status === "success") {
-          // Created fresh
-          customerId = customerData.data.id;
+        customerId = customerData.data.id;
       } else {
-          // Creation failed (exists, forbidden, or other) — try lookup by email
-          const lookupRes = await fetch(
-              `${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`,
-              { headers: { Authorization: `Bearer ${accessToken}` } }
-          );
-          const lookupData = await lookupRes.json();
-          const record = Array.isArray(lookupData.data)
-              ? lookupData.data[0]
-              : lookupData.data;
-
-          if (record?.id) {
-              customerId = record.id;
-          }
-          // If lookup also fails, customerId stays null — handled below
+        const lookupRes = await fetch(
+          `${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const lookupData = await lookupRes.json();
+        const record = Array.isArray(lookupData.data) ? lookupData.data[0] : lookupData.data;
+        if (record?.id) customerId = record.id;
       }
-
-    }catch(err) {
+    } catch (err) {
       console.warn("Customer resolution failed, will use inline email:", err);
     }
 
-   
-
     const payload: Record<string, any> = {
       reference: transactionRef,
-      amount: totalAmount,                
+      amount: totalAmount,
       currency: "NGN",
       account_type: "dynamic",
       meta: { order_id: order.id },
     };
 
     if (customerId) {
-        payload.customer_id = customerId;
+      payload.customer_id = customerId;
     } else {
-        // Inline fallback — supported by Flutterwave virtual accounts
-        payload.email = email;
-        payload.name  = `${firstName} ${lastName}`;
-        payload.phone_number = phone;
+      payload.email        = email;
+      payload.name         = `${firstName} ${lastName}`;
+      payload.phone_number = phone;
     }
 
     const response = await fetch(`${FLW_BASE_URL}/virtual-accounts`, {
@@ -621,33 +568,24 @@ export async function initBankTransfer(
         "X-Trace-Id": randomUUID(),
         "X-Idempotency-Key": transactionRef,
       },
-      body:  JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     const flwData = await response.json();
     console.log("Virtual account response:", flwData);
-    console.log("Virtual account validation errors:", JSON.stringify(flwData.error?.validation_errors, null, 2))
 
     if (!response.ok || flwData.status !== "success") {
+      // Rollback order since virtual account creation failed
+      await supabase.from("orders").delete().eq("id", order.id);
       return { success: false, error: flwData.message || "Bank transfer setup failed" };
     }
 
-    console.log("Virtual accounts URL:", `${FLW_BASE_URL}/virtual-accounts`)
-    
-    console.log("Access token present:", !!accessToken)
-    console.log("Payload:", JSON.stringify(payload))
-
-
-    
     await supabase
       .from("orders")
       .update({ payment_reference: transactionRef })
       .eq("id", order.id);
 
-
     const transferAmount = Number(flwData.data.amount);
-
-    console.log("expiration time", flwData.data.account_expiration_datetime)
 
     return {
       success: true,
@@ -660,110 +598,104 @@ export async function initBankTransfer(
         amount: flwData.data.amount,
         expires_at: flwData.data.account_expiration_datetime,
         note: `Transfer exactly ₦${transferAmount.toLocaleString("en-NG", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            })} to complete your payment.`
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} to complete your payment.`,
       },
     };
   } catch (err) {
-     console.error("an unexpected error occurred generating your bank account", err)
-     const message = err instanceof Error ? err.message : String(err)
-     return { success: false, error: message || "An unexpected error occurred generating your bank account" };
+    console.error("an unexpected error occurred generating your bank account", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      success: false,
+      error: message || "An unexpected error occurred generating your bank account",
+    };
   }
 }
-
-
-
 
 import { triggerOrderEmails, triggerDeliveryEmail } from "@/app/actions/email.actions";
 
 export async function verifyBankTransferPayment(
   txRef: string,
   orderId: string
-): Promise<{paid: boolean; pending: boolean}> {
-    try{
-      const cookieStore = await cookies()
-      const supabase = await createClient(cookieStore)
+): Promise<{ paid: boolean; pending: boolean }> {
+  try {
+    const cookieStore = await cookies();
+    const supabase    = await createClient(cookieStore);
 
+    const { data: order } = await supabase
+      .from("orders")
+      .select("status, total_amount")
+      .eq("id", orderId)
+      .single();
 
-      const {data: order} = await supabase
-        .from("orders")
-        .select("status, total_amount")
-        .eq("id", orderId)
-        .single()
+    if (order?.status === "paid" || order?.status === "delivered") {
+      return { paid: true, pending: false };
+    }
 
+    const accessToken = await getFlutterwaveToken();
+    const response = await fetch(
+      `${FLW_BASE_URL}/transactions?reference=${txRef}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
 
-      if(order?.status === "paid" || order?.status === "delivered"){
-        return {paid: true, pending: false}
-      }
+    if (!response.ok) {
+      console.error("Bank transfer verification failed:", response.status);
+      return { paid: false, pending: true };
+    }
 
-      const accessToken = await getFlutterwaveToken()
-      const response = await fetch(
-        `${FLW_BASE_URL}/transactions?reference=${txRef}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      )
+    const data        = await response.json();
+    const transaction = Array.isArray(data.data) ? data.data[0] : data.data;
 
-      if (!response.ok) {
-        console.error("Bank transfer verification failed:", response.status);
-        return {paid: false, pending: true}
-      }
+    if (!transaction) {
+      console.warn("No transaction found for bank transfer ref:", txRef);
+      return { paid: false, pending: true };
+    }
 
-      const data = await response.json()
-      const transaction = Array.isArray(data.data) ? data.data[0] : data.data
+    const isPaid =
+      transaction.status === "successful" || transaction.status === "succeeded";
 
-      if (!transaction) {
-        console.warn("No transaction found for bank transfer ref:", txRef);
-        return {paid: false, pending: true}
-      }
-
-
-      const isPaid = transaction.status === "successful" || transaction.status === "succeeded"
-
-
-      if(isPaid){
-        const { data: updatedOrder } = await supabase
+    if (isPaid) {
+      const { data: updatedOrder } = await supabase
         .from("orders")
         .update({
           status: "paid",
           paid_at: new Date().toISOString(),
-          flw_transaction_id: String(transaction.id)
+          flw_transaction_id: String(transaction.id),
         })
         .eq("id", orderId)
         .neq("status", "paid")
         .select("id");
 
-        if (updatedOrder && updatedOrder.length > 0) {
-          try {
-            await triggerOrderEmails(orderId);
-          } catch (emailError) {
-            console.error("Bank Transfer: Failed to trigger order emails", emailError);
-          }
+      if (updatedOrder && updatedOrder.length > 0) {
+        try {
+          await triggerOrderEmails(orderId);
+        } catch (emailError) {
+          console.error("Bank Transfer: Failed to trigger order emails", emailError);
         }
-
-        return {paid: true, pending: false}
       }
 
-      
-      return {paid: false, pending: true}
-    }catch(err){
-      console.error("verifyBankTransferPayment threw:", err)
-      return { paid: false, pending: true}
+      return { paid: true, pending: false };
     }
+
+    return { paid: false, pending: true };
+  } catch (err) {
+    console.error("verifyBankTransferPayment threw:", err);
+    return { paid: false, pending: true };
+  }
 }
-
-
 
 export async function updateOrderStatus(orderId: string, formData: FormData) {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase    = createClient(cookieStore);
 
-  const newStatus = formData.get("status") as string;
+  const newStatus    = formData.get("status")        as string;
   const deliveryDate = formData.get("delivery_date") as string;
-  const trackingUrl = formData.get("tracking_url") as string;
+  const trackingUrl  = formData.get("tracking_url")  as string;
 
   const updateData: any = { status: newStatus };
   if (deliveryDate) updateData.delivery_date = deliveryDate;
-  if (trackingUrl) updateData.tracking_url = trackingUrl;
+  if (trackingUrl)  updateData.tracking_url  = trackingUrl;
 
   const { error } = await supabase
     .from("orders")
@@ -775,7 +707,6 @@ export async function updateOrderStatus(orderId: string, formData: FormData) {
     throw new Error("Could not update status.");
   }
 
-  // Trigger delivery email if status is shipped
   if (newStatus === "shipped") {
     try {
       await triggerDeliveryEmail(orderId);
@@ -784,9 +715,6 @@ export async function updateOrderStatus(orderId: string, formData: FormData) {
     }
   }
 
-  // Instantly refresh the page data so the new status badge appears in the Admin UI
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/admin/orders");
 }
-
-

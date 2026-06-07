@@ -1,12 +1,18 @@
 "use client"
 
 
-import {CreditCard, Landmark} from "lucide-react"
+import { CreditCard, Landmark } from "lucide-react"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { cardBrandIcons } from "@/utils/flutterwave/card-brand-icons";
-import type {CardBrand} from "@/utils/flutterwave/card-utils"
+import type { CardBrand } from "@/utils/flutterwave/card-utils"
+import { Field, FieldLabel } from "@/components/ui/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 
 
 
@@ -18,7 +24,7 @@ export interface CardFields {
   expiryYear: string;
   cvv: string;
 }
- 
+
 interface PaymentMethodSelectorProps {
   selectedMethod: PaymentMethod;
   onMethodChange: (method: PaymentMethod) => void;
@@ -72,28 +78,33 @@ export function PaymentMethodSelector({
 
       {/* Card fields — conditionally rendered */}
       {selectedMethod === "card" && (
-        <div className="space-y-3 pt-1">
-          <div>
-            <Label className="block text-xs font-medium text-gray-600 mb-1.5">
-              Card Number
-            </Label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              placeholder="0000 0000 0000 0000"
-              value={cardFields.cardNumber}
-              onChange={(e) =>
-                onCardFieldChange("cardNumber", formatCardNumber(e.target.value))
-              }
-              maxLength={24}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm tracking-wider focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            />
-             {cardBrand !== "unknown" && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium capitalize bg-gray-100 px-2 py-0.5 rounded">
-                <FontAwesomeIcon icon={cardBrandIcons[cardBrand]} />
-              </span>
-            )}
-          </div>
+        <div className="space-y-3 pt-1 relative">
+          <Field>
+            <FieldLabel>Card Number</FieldLabel>
+
+            <InputGroup>
+              {/* Addon aligned to the start */}
+              {cardBrand !== "unknown" && (
+                <InputGroupAddon align="inline-start">
+                  <span className="text-xs font-medium capitalize bg-gray-100 px-2 py-0.5 rounded flex items-center justify-center">
+                    <FontAwesomeIcon icon={cardBrandIcons[cardBrand]} />
+                  </span>
+                </InputGroupAddon>
+              )}
+
+              <InputGroupInput
+                type="text"
+                inputMode="numeric"
+                placeholder="0000 0000 0000 0000"
+                value={cardFields.cardNumber}
+                onChange={(e) =>
+                  onCardFieldChange("cardNumber", formatCardNumber(e.target.value))
+                }
+                maxLength={24}
+                className="w-full py-2.5 border-gray-200 rounded-lg text-sm tracking-wider focus:ring-orange-500"
+              />
+            </InputGroup>
+          </Field>
 
           <div className="grid grid-cols-3 gap-3">
             <div>

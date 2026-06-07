@@ -4,38 +4,40 @@ import { DollarSign, ShoppingBag, PackageSearch, ArrowUpRight } from "lucide-rea
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow,
+} from "@/components/ui/table";
 
 export default async function AdminDashboardPage() {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase    = createClient(cookieStore);
 
-  // 1. Fetch Total Products
   const { count: productsCount } = await supabase
     .from("products")
     .select("*", { count: "exact", head: true });
 
-  // 2. Fetch Orders & Revenue
   const { data: orders } = await supabase
     .from("orders")
     .select("total_amount, status");
 
   const totalOrders = orders?.length || 0;
 
-  const totalRevenue = orders
-    ?.filter((o) => o.status === "paid" || o.status === "delivered")
-    .reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
+  const totalRevenue =
+    orders
+      ?.filter((o) => o.status === "paid" || o.status === "delivered")
+      .reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
 
   const { data: recentOrders } = await supabase
     .from("orders")
     .select(`
-      id, 
-      total_amount, 
-      status, 
+      id,
+      total_amount,
+      status,
       created_at,
       payment_reference,
       customer_name,
-      customer_email
+      email
     `)
     .order("created_at", { ascending: false })
     .limit(5);
@@ -45,14 +47,16 @@ export default async function AdminDashboardPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
         <p className="text-gray-500 mt-1">
-          Welcome back. Here is what's happening with your store today.
+          Welcome back. Here is what&apos;s happening with your store today.
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">
+              Total Revenue
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
@@ -64,7 +68,9 @@ export default async function AdminDashboardPage() {
 
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Orders</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">
+              Total Orders
+            </CardTitle>
             <ShoppingBag className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
@@ -74,11 +80,15 @@ export default async function AdminDashboardPage() {
 
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Products</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">
+              Total Products
+            </CardTitle>
             <PackageSearch className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{productsCount || 0}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {productsCount || 0}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -115,10 +125,9 @@ export default async function AdminDashboardPage() {
                       <span className="font-medium text-gray-900 text-sm">
                         {order.customer_name || "Guest User"}
                       </span>
-                      {order.customer_email && (
-                        <span className="text-xs text-gray-400">
-                          {order.customer_email}
-                        </span>
+                      {/* FIX: was order.customer_email — column is email */}
+                      {order.email && (
+                        <span className="text-xs text-gray-400">{order.email}</span>
                       )}
                     </div>
                   </TableCell>
@@ -130,12 +139,15 @@ export default async function AdminDashboardPage() {
                     })}
                   </TableCell>
                   <TableCell>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${order.status === "paid" || order.status === "delivered"
-                        ? "bg-green-100 text-green-700"
-                        : order.status === "shipped"
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        order.status === "paid" || order.status === "delivered"
+                          ? "bg-green-100 text-green-700"
+                          : order.status === "shipped"
                           ? "bg-purple-100 text-purple-700"
                           : "bg-orange-100 text-orange-700"
-                      }`}>
+                      }`}
+                    >
                       {order.status.toUpperCase()}
                     </span>
                   </TableCell>

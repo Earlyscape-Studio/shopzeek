@@ -1,89 +1,81 @@
-// components/storefront/checkout/BillingFields.tsx
-import {useState, useEffect} from "react"
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {Loader2} from "lucide-react"
+import { Loader2 } from "lucide-react";
 
+const LGAS_URL =
+  "https://temikeezy.github.io/nigeria-geojson-data/data/lgas.json";
 
-
-const LGAS_URL = "https://temikeezy.github.io/nigeria-geojson-data/data/lgas.json";
-
-
-let _cachedData: Record<string, string[]> | null = null
-
-let _inflightRequest: Promise<Record<string, string[]>> | null = null
-
+let _cachedData: Record<string, string[]> | null = null;
+let _inflightRequest: Promise<Record<string, string[]>> | null = null;
 
 async function getLgasData(): Promise<Record<string, string[]>> {
   if (_cachedData) return _cachedData;
 
   if (!_inflightRequest) {
     _inflightRequest = fetch(LGAS_URL)
-    .then((res) => {
-      if(!res.ok) throw new Error(`Failed to fetch LGAs data: ${res.status}`)
-        return res.json()
-    })
-    .then((data) => {
-      _cachedData = data
-      return data
-    })
-    .catch((err) => {
-      _inflightRequest = null
-      throw err
-    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to fetch LGAs data: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        _cachedData = data;
+        return data;
+      })
+      .catch((err) => {
+        _inflightRequest = null;
+        throw err;
+      });
   }
 
-  return _inflightRequest
+  return _inflightRequest;
 }
-
 
 interface Props {
-  state: string
-  lga: string
-  onStateChange: (value: string) => void
-  onLgaChange: (value: string) => void
-  namePrefix?: string
-  showContactFields?: boolean
+  state: string;
+  lga: string;
+  onStateChange: (value: string) => void;
+  onLgaChange: (value: string) => void;
+  namePrefix?: string;
+  showContactFields?: boolean;
 }
 
-
-export function BillingFields({ state, lga, onStateChange, onLgaChange, namePrefix = "", showContactFields = true }: Props) {
-
-  const n = namePrefix
-  const [lgasData, setLgasData] = useState<Record<string, string[]>>(_cachedData ?? {})
-  const [isLoading, setIsLoading] = useState(!_cachedData)
-  const [fetchError, setFetchError] = useState(false)
-
+export function BillingFields({
+  state,
+  lga,
+  onStateChange,
+  onLgaChange,
+  namePrefix = "",
+  showContactFields = true,
+}: Props) {
+  const n = namePrefix;
+  const [lgasData, setLgasData] = useState<Record<string, string[]>>(_cachedData ?? {});
+  const [isLoading, setIsLoading]   = useState(!_cachedData);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
-    if(_cachedData) return;
-
+    if (_cachedData) return;
     getLgasData()
-    .then((data) => {
-      setLgasData(data)
-      setIsLoading(false)
-    })
-    .catch(() => {
-      setIsLoading(false)
-      setFetchError(true)
-    })
-  }, [])
+      .then((data) => {
+        setLgasData(data);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setIsLoading(false);
+        setFetchError(true);
+      });
+  }, []);
 
-
-  const states = Object.keys(lgasData).sort()
-
-  const lgas: string[] = state ? (lgasData[state] ?? []) : []
+  const states = Object.keys(lgasData).sort();
+  const lgas: string[] = state ? (lgasData[state] ?? []) : [];
 
   const handleStateChange = (value: string) => {
-    onStateChange(value)
-    onLgaChange("")
-  }
+    onStateChange(value);
+    onLgaChange("");
+  };
 
   return (
     <div className="space-y-5">
@@ -109,8 +101,6 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange, namePref
         </div>
       </div>
 
-     
-
       {/* Address */}
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-gray-700">Address</label>
@@ -121,10 +111,9 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange, namePref
         />
       </div>
 
-      {/* Country / State / City / Zip */}
+      {/* Country / State / LGA / City / Zip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {
-          !namePrefix && (
+        {!namePrefix && (
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700">Country</label>
             <Select name="country" defaultValue="ng">
@@ -136,8 +125,7 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange, namePref
               </SelectContent>
             </Select>
           </div>
-          )
-        }
+        )}
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-gray-700">State</label>
@@ -145,31 +133,35 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange, namePref
             <LoadingSlot label="Loading states..." />
           ) : fetchError ? (
             <Input
-             name={`${n}state`}
-             value={state}
-             onChange={(e) => handleStateChange(e.target.value)}
-             placeholder="Enter state"
-             className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
-             required
-             />
+              name={`${n}state`}
+              value={state}
+              onChange={(e) => handleStateChange(e.target.value)}
+              placeholder="Enter state"
+              className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
+              required
+            />
           ) : (
             <>
-            <Input type="hidden" name={`${n}state`} value={state} />
-            <Select name={`${n}state`} value={state} onValueChange={handleStateChange}>
-            <SelectTrigger className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
-              <SelectValue placeholder="Select state" />
-            </SelectTrigger>
-            <SelectContent>
-              {states.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          </>
+              {/*
+                FIX: removed duplicate name from <Select>.
+                The hidden input is the reliable form submission vehicle.
+                The Select drives UI state via onValueChange only.
+              */}
+              <input type="hidden" name={`${n}state`} value={state} />
+              <Select value={state} onValueChange={handleStateChange}>
+                <SelectTrigger className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
+                  <SelectValue placeholder="Select state" />
+                </SelectTrigger>
+                <SelectContent>
+                  {states.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
           )}
-          
         </div>
 
         <div className="space-y-1.5">
@@ -180,18 +172,22 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange, namePref
             <DisabledSlot label="Select a state first" />
           ) : fetchError ? (
             <Input
-            id="lga"
-            name={`${n}lga`}
-            value={lga}
-            onChange={(e) => onLgaChange(e.target.value)}
-            className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
-            required
-            placeholder="Enter LGA"
-          />
+              name={`${n}lga`}
+              value={lga}
+              onChange={(e) => onLgaChange(e.target.value)}
+              className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
+              required
+              placeholder="Enter LGA"
+            />
           ) : (
             <>
-              <Input type="hidden" name={`${n}lga`} value={lga} />
-              <Select name={`${n}lga`} value={lga} onValueChange={onLgaChange} disabled={lgas.length === 0}>
+              {/* FIX: same pattern — hidden input owns the name, Select drives UI only */}
+              <input type="hidden" name={`${n}lga`} value={lga} />
+              <Select
+                value={lga}
+                onValueChange={onLgaChange}
+                disabled={lgas.length === 0}
+              >
                 <SelectTrigger className="h-11 border-gray-200 rounded-lg">
                   <SelectValue placeholder="Select LGA" />
                 </SelectTrigger>
@@ -205,7 +201,6 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange, namePref
               </Select>
             </>
           )}
-          
         </div>
 
         <div className="space-y-1.5">
@@ -253,14 +248,13 @@ export function BillingFields({ state, lga, onStateChange, onLgaChange, namePref
   );
 }
 
-
 function LoadingSlot({ label }: { label: string }) {
   return (
     <div className="h-11 border border-gray-200 rounded-lg bg-gray-50 flex items-center px-3 gap-2 text-sm text-gray-400">
       <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
       {label}
     </div>
-  )
+  );
 }
 
 function DisabledSlot({ label }: { label: string }) {
@@ -268,5 +262,5 @@ function DisabledSlot({ label }: { label: string }) {
     <div className="h-11 border border-gray-200 rounded-lg bg-gray-50 flex items-center px-3 text-sm text-gray-400 select-none">
       {label}
     </div>
-  )
+  );
 }

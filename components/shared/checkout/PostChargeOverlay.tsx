@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { X, Loader2, RefreshCw, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,43 +23,39 @@ interface PostChargeOverlayProps {
 
 const RETRY_COOLDOWN = 30;
 
-
-function useCountdown(expiresAt: string | null | undefined){
+function useCountdown(expiresAt: string | null | undefined) {
   const getInitialSeconds = () => {
-    if(expiresAt){
-      const expiry = new Date(expiresAt).getTime()
-      const remaining = Math.floor((expiry - Date.now()) / 1000)
-
-      if (remaining > 120) return remaining
-
+    if (expiresAt) {
+      const expiry    = new Date(expiresAt).getTime();
+      const remaining = Math.floor((expiry - Date.now()) / 1000);
+      // FIX: was `if (remaining > 120) return remaining` which showed 30 mins
+      // when the account had < 2 mins left. Now we use the real remaining time
+      // whenever it's positive, and fall back to 30 mins only when unknown.
+      if (remaining > 0) return remaining;
     }
-    return 30 * 60
+    return 30 * 60;
+  };
 
-  }
-  const [totalSeconds, setTotalSeconds] = useState(getInitialSeconds)
-
+  const [totalSeconds, setTotalSeconds] = useState(getInitialSeconds);
 
   useEffect(() => {
-    if (totalSeconds <= 0) return
-
+    if (totalSeconds <= 0) return;
     const id = setInterval(
       () => setTotalSeconds((s) => Math.max(0, s - 1)),
       1000
-    )
-    return () => clearInterval(id)
-  }, [totalSeconds])
+    );
+    return () => clearInterval(id);
+  }, [totalSeconds]);
 
-
-  const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0")
-  const ss = String(totalSeconds % 60).padStart(2, "0")
-
+  const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const ss = String(totalSeconds % 60).padStart(2, "0");
 
   return {
-    display: `${mm}:${ss}`,
+    display:   `${mm}:${ss}`,
     isExpired: totalSeconds === 0,
-    isUrgent: totalSeconds > 0 && totalSeconds < 5 * 60,
-    totalSeconds 
-  }
+    isUrgent:  totalSeconds > 0 && totalSeconds < 5 * 60,
+    totalSeconds,
+  };
 }
 
 export function PostChargeOverlay({
@@ -67,25 +63,17 @@ export function PostChargeOverlay({
   onClose,
   onVerifyBankTransfer,
 }: PostChargeOverlayProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-
-  // Retry / cooldown state
+  const [isLoading, setIsLoading]         = useState(false);
+  const [otpCode, setOtpCode]             = useState("");
   const [hasCheckedOnce, setHasCheckedOnce] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
-  
-
+  const [cooldown, setCooldown]           = useState(0);
 
   useEffect(() => {
     if (cooldown <= 0) return;
-    const id = setInterval(
-      () => setCooldown((s) => Math.max(0, s - 1)),
-      1000
-    );
+    const id = setInterval(() => setCooldown((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
   }, [cooldown]);
 
-  
   if (!state) return null;
 
   let bankDetails: {
@@ -93,7 +81,7 @@ export function PostChargeOverlay({
     account_number: string;
     account_name: string;
     amount: string;
-    expires_at?: string
+    expires_at?: string;
     note: string;
   } | null = null;
 
@@ -105,8 +93,6 @@ export function PostChargeOverlay({
     }
   }
 
-
-
   async function handleOtpSubmit() {
     if (!otpCode || !state?.chargeId) return;
     setIsLoading(true);
@@ -117,10 +103,10 @@ export function PostChargeOverlay({
       });
 
       if (result.success) {
-        if (result.chargeStatus === "successful") {
-          toast.success("Payment successful!");
-          window.location.href = `/order/success?reference=${state.orderId}`;
-        } else if (result.nextActionType === "redirect_url" && result.redirectUrl) {
+        // FIX: removed the dead `chargeStatus === "successful"` direct redirect.
+        // authorizeCardCharge returns nextActionType: "redirect_url" on success,
+        // so we always route through the callback for proper order status update.
+        if (result.nextActionType === "redirect_url" && result.redirectUrl) {
           window.location.href = result.redirectUrl;
         } else {
           toast.error("OTP accepted, but additional action needed.");
@@ -135,14 +121,11 @@ export function PostChargeOverlay({
       setIsLoading(false);
     }
   }
-  
 
   const handleBankTransferVerification = async () => {
     if (!onVerifyBankTransfer || !state.transactionRef || isLoading || cooldown > 0) return;
-
     setIsLoading(true);
     setHasCheckedOnce(true);
-
     try {
       await onVerifyBankTransfer(state.transactionRef);
     } finally {
@@ -163,7 +146,7 @@ export function PostChargeOverlay({
           <X className="h-5 w-5" />
         </button>
 
-        {/* ── OTP flow ── */}
+        {/* OTP flow */}
         {state.type === "requires_otp" && (
           <div className="p-6 text-center space-y-4">
             <h3 className="text-lg font-bold text-gray-900">Enter OTP</h3>
@@ -185,7 +168,9 @@ export function PostChargeOverlay({
               className="w-full bg-orange-500 hover:bg-orange-600"
             >
               {isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying…</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying…
+                </>
               ) : (
                 "Verify OTP"
               )}
@@ -193,7 +178,7 @@ export function PostChargeOverlay({
           </div>
         )}
 
-        {/* ── Bank transfer flow — structured ── */}
+        {/* Bank transfer — structured */}
         {state.type === "bank_transfer" && bankDetails && (
           <BankTransferContent
             bankDetails={bankDetails}
@@ -205,7 +190,7 @@ export function PostChargeOverlay({
           />
         )}
 
-        {/* ── Bank transfer flow — plain text fallback ── */}
+        {/* Bank transfer — plain text fallback */}
         {state.type === "bank_transfer" && !bankDetails && (
           <div className="p-6 text-center space-y-4">
             <h3 className="text-lg font-bold text-gray-900">Payment Instruction</h3>
@@ -216,7 +201,9 @@ export function PostChargeOverlay({
                 disabled={isButtonDisabled}
                 className="w-full bg-orange-500 hover:bg-orange-600"
               >
-                {cooldown > 0 ? `Check again in ${cooldown}s` : "Check Payment Status"}
+                {cooldown > 0
+                  ? `Check again in ${cooldown}s`
+                  : "Check Payment Status"}
               </Button>
             )}
           </div>
@@ -226,30 +213,29 @@ export function PostChargeOverlay({
   );
 }
 
-
 function BankTransferContent({
   bankDetails,
   hasCheckedOnce,
   isLoading,
   cooldown,
   isButtonDisabled,
-  onVerify
-} : {
+  onVerify,
+}: {
   bankDetails: {
-    bank_name: string
-    account_number: string
-    account_name: string
-    amount: string
-    expires_at?: string
-    note: string
-  }
-  hasCheckedOnce: boolean
-  isLoading: boolean
-  cooldown: number
-  isButtonDisabled: boolean
-  onVerify: () => void
+    bank_name: string;
+    account_number: string;
+    account_name: string;
+    amount: string;
+    expires_at?: string;
+    note: string;
+  };
+  hasCheckedOnce: boolean;
+  isLoading: boolean;
+  cooldown: number;
+  isButtonDisabled: boolean;
+  onVerify: () => void;
 }) {
-  const countdown = useCountdown(bankDetails.expires_at)
+  const countdown = useCountdown(bankDetails.expires_at);
 
   return (
     <div className="p-6 space-y-4">
@@ -257,7 +243,7 @@ function BankTransferContent({
         Bank Transfer Details
       </h3>
 
-       <div
+      <div
         className={`rounded-lg border px-4 py-3 text-center transition-colors ${
           countdown.isExpired
             ? "bg-red-50 border-red-200"
@@ -294,7 +280,6 @@ function BankTransferContent({
         )}
       </div>
 
-    
       <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-500">Bank</span>
@@ -324,17 +309,15 @@ function BankTransferContent({
         {bankDetails.note}
       </p>
 
-     
       {hasCheckedOnce && (
         <div className="bg-orange-50 border border-orange-100 rounded-lg px-4 py-3 text-sm text-orange-700">
           <p className="font-medium mb-0.5">Transfer not confirmed yet</p>
           <p className="text-orange-600/80 text-xs">
-            Bank transfers can take 1–3 minutes to reflect. Wait a moment then
-            check again.
+            Bank transfers can take 1–3 minutes to reflect. Wait a moment then check
+            again.
           </p>
         </div>
       )}
-
 
       <Button
         onClick={onVerify}
@@ -342,11 +325,17 @@ function BankTransferContent({
         className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60"
       >
         {isLoading ? (
-          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking…</>
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking…
+          </>
         ) : cooldown > 0 ? (
-          <><Clock className="mr-2 h-4 w-4" /> Check again in {cooldown}s</>
+          <>
+            <Clock className="mr-2 h-4 w-4" /> Check again in {cooldown}s
+          </>
         ) : hasCheckedOnce ? (
-          <><RefreshCw className="mr-2 h-4 w-4" /> Check Again</>
+          <>
+            <RefreshCw className="mr-2 h-4 w-4" /> Check Again
+          </>
         ) : (
           "I've sent the money"
         )}
@@ -358,5 +347,5 @@ function BankTransferContent({
         </p>
       )}
     </div>
-  )
+  );
 }

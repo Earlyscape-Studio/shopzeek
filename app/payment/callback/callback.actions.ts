@@ -3,16 +3,18 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { getFlutterwaveToken, FLW_BASE_URL } from "@/utils/flutterwave/flutterwave";
-
 import { triggerOrderEmails } from "@/app/actions/email.actions";
 
-export async function verifyPaymentCallback(txRef: string, transactionId?: string): Promise<
+export async function verifyPaymentCallback(
+  txRef: string,
+  transactionId?: string
+): Promise<
   | { verified: true; orderId: string }
   | { verified: false; pending: true }
   | { verified: false; pending: false; message: string }
 > {
   const cookieStore = await cookies();
-  const supabase = await createClient(cookieStore);
+  const supabase    = await createClient(cookieStore);
 
   // Check DB first — webhook may have already marked it paid
   const { data: order } = await supabase
@@ -30,34 +32,40 @@ export async function verifyPaymentCallback(txRef: string, transactionId?: strin
   }
 
   // Webhook hasn't fired yet — verify directly with Flutterwave
+  // FIX: was `${FLW_BASE_URL}/v4/transactions/${transactionId}/verify` which is
+  // a mixed-up v3 standard path. Use the consistent reference-based lookup
+  // that works with the F4B base URL across all other verification calls.
   const accessToken = await getFlutterwaveToken();
-  
-  // Prefer verification by transaction ID if available
-  const verifyUrl = transactionId 
-    ? `${FLW_BASE_URL}/v4/transactions/${transactionId}/verify`
-    : `${FLW_BASE_URL}/transactions?reference=${txRef}`;
+  const verifyUrl   = `${FLW_BASE_URL}/transactions?reference=${txRef}`;
 
   const response = await fetch(verifyUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` }
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!response.ok) {
-    return { verified: false, pending: false, message: "Could not verify payment with Flutterwave." };
+    return {
+      verified: false,
+      pending: false,
+      message: "Could not verify payment with Flutterwave.",
+    };
   }
 
-  const data = await response.json();
+  const data        = await response.json();
   const transaction = Array.isArray(data.data) ? data.data[0] : data.data;
 
   if (!transaction) {
     return { verified: false, pending: false, message: "Transaction not found." };
   }
 
-  const isSuccessful = transaction.status === "succeeded" || transaction.status === "successful";
+  const isSuccessful =
+    transaction.status === "succeeded" || transaction.status === "successful";
 
   if (isSuccessful) {
     // Guard against underpayment
     if (Number(transaction.amount) < Number(order.total_amount)) {
-      console.warn(`Payment amount mismatch for order ${order.id}. Expected ${order.total_amount}, got ${transaction.amount}`);
+      console.warn(
+        `Payment amount mismatch for order ${order.id}. Expected ${order.total_amount}, got ${transaction.amount}`
+      );
       return {
         verified: false,
         pending: false,
@@ -73,10 +81,9 @@ export async function verifyPaymentCallback(txRef: string, transactionId?: strin
         flw_transaction_id: String(transaction.id),
       })
       .eq("id", order.id)
-      .neq("status", "paid") // Only if not already marked paid
+      .neq("status", "paid")
       .select("id");
 
-    // If we were the ones to mark it as paid, trigger the email
     if (updatedOrder && updatedOrder.length > 0) {
       try {
         await triggerOrderEmails(order.id);
