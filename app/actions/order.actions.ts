@@ -8,12 +8,25 @@ import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { validateCoupon } from "./coupon.actions";
+import { triggerOrderEmails, triggerDeliveryEmail } from "@/app/actions/email.actions";
+
+
+
+
+
+
+
+
 
 interface ShippingBreakdown {
   baseCost: number;
   vat: number;
   total?: number;
 }
+
+
+
+
 
 async function validateOrderTotal(
   cartItems: any[],
@@ -81,6 +94,13 @@ async function validateOrderTotal(
   }
 }
 
+
+
+
+
+
+
+
 // FIX: was `{p}firstName` (missing $) — first name was always blank in delivery address
 function formatDeliveryAddress(formData: FormData): string {
   const useAlternate = formData.get("use_alternate_shipping") === "on";
@@ -103,6 +123,13 @@ function formatDeliveryAddress(formData: FormData): string {
     .filter(Boolean)
     .join("\n");
 }
+
+
+
+
+
+
+
 
 async function saveCheckoutAddress(
   userId: string,
@@ -154,6 +181,14 @@ async function saveCheckoutAddress(
   }
 }
 
+
+
+
+
+
+
+
+
 async function upsertFlutterwaveCustomer(
   accessToken: string,
   email: string,
@@ -186,6 +221,16 @@ async function upsertFlutterwaveCustomer(
 
   throw new Error(data.error?.message || "Failed to create customer record.");
 }
+
+
+
+
+
+
+
+
+
+
 
 export async function initCardPayment(
   formData: FormData,
@@ -371,6 +416,34 @@ export async function initCardPayment(
   }
 }
 
+
+
+
+
+
+
+
+
+export async function canclePendingOrder(orderId: string){
+  const cookieStore = await cookies()
+  const supabase = createClient(cookieStore)
+
+  await supabase
+   .from("orders")
+   .update({status: "cancelled"})
+   .eq("id", orderId)
+   .eq("status", "pending_payment")
+}
+
+
+
+
+
+
+
+
+
+
 export async function authorizeCardCharge(
   chargeId: string,
   authorization:
@@ -453,6 +526,15 @@ export async function authorizeCardCharge(
   }
 }
 
+
+
+
+
+
+
+
+
+
 export async function verifyTransaction(txRef: string) {
   try {
     const accessToken = await getFlutterwaveToken();
@@ -480,6 +562,16 @@ export async function verifyTransaction(txRef: string) {
     return false;
   }
 }
+
+
+
+
+
+
+
+
+
+
 
 export async function initBankTransfer(
   formData: FormData,
@@ -571,7 +663,7 @@ export async function initBankTransfer(
       });
 
       const customerData = await customerRes.json();
-      console.log("Customer create response:", JSON.stringify(customerData));
+      // console.log("Customer create response:", JSON.stringify(customerData));
 
       if (customerRes.ok && customerData.status === "success") {
         customerId = customerData.data.id;
@@ -657,7 +749,15 @@ export async function initBankTransfer(
   }
 }
 
-import { triggerOrderEmails, triggerDeliveryEmail } from "@/app/actions/email.actions";
+
+
+
+
+
+
+
+
+
 
 export async function verifyBankTransferPayment(
   txRef: string,
@@ -684,6 +784,9 @@ export async function verifyBankTransferPayment(
     );
 
     if (!response.ok) {
+      if(response.status !== 404) {
+        console.error("Bank transfer verification error", response.status)
+      }
       console.error("Bank transfer verification failed:", response.status);
       return { paid: false, pending: true };
     }
@@ -728,6 +831,18 @@ export async function verifyBankTransferPayment(
     return { paid: false, pending: true };
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 export async function updateOrderStatus(orderId: string, formData: FormData) {
   const cookieStore = await cookies();

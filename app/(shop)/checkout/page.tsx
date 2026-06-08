@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Home } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cart.store";
-import { initCardPayment, initBankTransfer, verifyBankTransferPayment } from "@/app/actions/order.actions";
+import { initCardPayment, initBankTransfer, verifyBankTransferPayment, cancelPendingOrder} from "@/app/actions/order.actions";
 import { encryptCardData } from "@/utils/flutterwave/flutterwave-encrypt";
 import { getDeliveryQuote } from "@/app/actions/logistics.actions";
 import { Textarea } from "@/components/ui/textarea";
@@ -177,8 +177,12 @@ export default function CheckoutPage() {
             });
             break;
 
-          case "require_pin":
+          case "requires_pin":
+            if(result.orderId) {
+              cancelPendingOrder(result.orderId).catch(console.error)
+            }
             toast.error("PIN-based cards are not supported yet. Try a different card.");
+            setIsProcessing(false)
             break;
 
           // FIX: payment_instruction now correctly passes transactionRef
