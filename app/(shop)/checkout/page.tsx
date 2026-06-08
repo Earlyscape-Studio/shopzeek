@@ -234,11 +234,16 @@ export default function CheckoutPage() {
 
   const handleBankTransferVerification = async (txRef: string) => {
     const orderId = postCharge?.orderId;
+
+    console.log("orderId", orderId)
+
     if (!orderId) return;
 
     setIsProcessing(true);
     try {
       const result = await verifyBankTransferPayment(txRef, orderId);
+      console.log("bank tranfer result", result)
+
       if (result.paid) {
         toast.success("Payment Confirmed! Redirecting...");
         // FIX: clear cart before navigating away
