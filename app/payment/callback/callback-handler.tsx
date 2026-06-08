@@ -27,8 +27,8 @@ export default function CallbackHandler() {
       return;
     }
 
-    if (status === "cancelled") {
-      setState({ status: "failed", message: "Payment was cancelled." });
+    if (status === "cancelled" || status === "failed") {
+      router.push(`/order/failed?reference=${txRef}`);
       return;
     }
 

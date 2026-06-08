@@ -224,8 +224,8 @@ export async function initCardPayment(
         status: "pending_payment",
         payment_method: "card",
         total_amount: totalAmount,
-        shipping_cost: shippingBreakdown?.baseCost ?? 0,
-        shipping_vat: shippingBreakdown?.vat ?? 0,
+        shipping_cost: Math.round(shippingBreakdown?.baseCost ?? 0),
+        shipping_vat: Math.round(shippingBreakdown?.vat ?? 0),
         discount_amount: validation.discount ?? 0,
         coupon_id: validation.coupon?.id ?? null,
       })
@@ -263,7 +263,7 @@ export async function initCardPayment(
     );
 
     const payload = {
-      amount: totalAmount,
+      amount: Math.round(totalAmount),
       currency: "NGN",
       reference: transactionRef,
       redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback`,
@@ -278,7 +278,12 @@ export async function initCardPayment(
           encrypted_cvv: encryptedCard.encrypted_cvv,
         },
       },
-      customer_id: customerId,
+       customer: {
+        id: customerId,
+        email,
+        name: { first: firstName, last: lastName },
+        phone_number: phone,
+      },
     };
 
     const response = await fetch(`${FLW_BASE_URL}/orchestration/direct-charges`, {
@@ -293,6 +298,8 @@ export async function initCardPayment(
     });
 
     const flwData = await response.json();
+    console.log("Flutterwave response:", JSON.stringify(flwData, null, 2));
+
 
     if (!response.ok || flwData.status !== "success") {
       return {
@@ -309,7 +316,33 @@ export async function initCardPayment(
     const chargeStatus = flwData.data.status;
     const nextAction   = flwData.data.next_action;
 
+    if(
+      chargeStatus === "failed" ||
+      chargeStatus === "declined" ||
+      chargeStatus === "error"
+    ){
+      return{
+        success: false,
+        error: flwData.data.processor_response || "Your payment was declined. Please try a different card."
+      }
+    }
+
     if (chargeStatus === "succeeded") {
+
+       await supabase
+        .from("orders")
+        .update({
+          status: "paid",
+          paid_at: new Date().toISOString(),
+          flw_transaction_id: String(flwData.data.id),
+        })
+        .eq("id", order.id);
+
+      try {
+        await triggerOrderEmails(order.id);
+      } catch (emailError) {
+        console.error("Failed to trigger order emails:", emailError);
+      }
       return {
         success: true,
         orderId: order.id,
@@ -385,6 +418,17 @@ export async function authorizeCardCharge(
 
     const chargeStatus = data.data.status;
     const nextAction   = data.data.next_action;
+
+    if (
+      chargeStatus === "failed" ||
+      chargeStatus === "decliend" ||
+      chargeStatus === "error"
+    ){
+      return{
+        success: false,
+        error: data.data.processor_response || "Your payment was declined. Please check your card details or try a different card."
+      }
+    }
 
     if (chargeStatus === "succeeded") {
       return {
@@ -475,8 +519,8 @@ export async function initBankTransfer(
         status: "pending_payment",
         payment_method: "bank_transfer",
         total_amount: totalAmount,
-        shipping_cost: shippingBreakdown?.baseCost ?? 0,
-        shipping_vat: shippingBreakdown?.vat ?? 0,
+        shipping_cost: Math.round(shippingBreakdown?.baseCost ?? 0),
+        shipping_vat: Math.round(shippingBreakdown?.vat ?? 0),
         discount_amount: validation.discount ?? 0,
         coupon_id: validation.coupon?.id ?? null,
       })
@@ -546,7 +590,7 @@ export async function initBankTransfer(
 
     const payload: Record<string, any> = {
       reference: transactionRef,
-      amount: totalAmount,
+      amount: Math.round(totalAmount),
       currency: "NGN",
       account_type: "dynamic",
       meta: { order_id: order.id },

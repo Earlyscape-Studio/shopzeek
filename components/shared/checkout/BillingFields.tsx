@@ -34,6 +34,15 @@ async function getLgasData(): Promise<Record<string, string[]>> {
   return _inflightRequest;
 }
 
+
+interface DefaultValues {
+  full_name?: string | null
+  address_line1?: string | null
+  city?: string | null
+  state?: string | null
+  phone?: string | null
+  email?: string | null
+}
 interface Props {
   state: string;
   lga: string;
@@ -41,6 +50,7 @@ interface Props {
   onLgaChange: (value: string) => void;
   namePrefix?: string;
   showContactFields?: boolean;
+  defaultValues?: DefaultValues | null
 }
 
 export function BillingFields({
@@ -50,6 +60,7 @@ export function BillingFields({
   onLgaChange,
   namePrefix = "",
   showContactFields = true,
+  defaultValues
 }: Props) {
   const n = namePrefix;
   const [lgasData, setLgasData] = useState<Record<string, string[]>>(_cachedData ?? {});
@@ -77,6 +88,9 @@ export function BillingFields({
     onLgaChange("");
   };
 
+  const savedFirstName = defaultValues?.full_name?.split(" ")[0] ?? ""
+  const savedLastName = defaultValues?.full_name?.split(" ").slice(1).join(" ") ?? ""
+
   return (
     <div className="space-y-5">
       {/* Name row */}
@@ -86,6 +100,7 @@ export function BillingFields({
           <Input
             name={`${n}firstName`}
             placeholder="First name"
+            defaultValue={!namePrefix ? savedFirstName : ""}
             className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
             required
           />
@@ -95,6 +110,7 @@ export function BillingFields({
           <Input
             name={`${n}lastName`}
             placeholder="Last name"
+            defaultValue={!namePrefix ? savedLastName : ""}
             className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
             required
           />
@@ -106,6 +122,7 @@ export function BillingFields({
         <label className="text-sm font-medium text-gray-700">Address</label>
         <Input
           name={`${n}address`}
+          defaultValue={!namePrefix ? (defaultValues?.address_line1 ?? "") : ""}
           className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
           required
         />
@@ -142,11 +159,7 @@ export function BillingFields({
             />
           ) : (
             <>
-              {/*
-                FIX: removed duplicate name from <Select>.
-                The hidden input is the reliable form submission vehicle.
-                The Select drives UI state via onValueChange only.
-              */}
+              
               <input type="hidden" name={`${n}state`} value={state} />
               <Select value={state} onValueChange={handleStateChange}>
                 <SelectTrigger className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
@@ -207,6 +220,7 @@ export function BillingFields({
           <label className="text-sm font-medium text-gray-700">City</label>
           <Input
             name={`${n}city`}
+            defaultValue={!namePrefix ? (defaultValues?.city ?? "") : ""}
             className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
             required
           />
@@ -229,6 +243,7 @@ export function BillingFields({
             <Input
               name="email"
               type="email"
+              defaultValue={defaultValues?.email ?? ""}
               className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
               required
             />
@@ -238,6 +253,7 @@ export function BillingFields({
             <Input
               name="phone"
               type="tel"
+              defaultValue={!namePrefix ? (defaultValues?.phone ?? "") : ""}
               className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
               required
             />

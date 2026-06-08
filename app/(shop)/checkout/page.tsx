@@ -10,7 +10,8 @@ import { encryptCardData } from "@/utils/flutterwave/flutterwave-encrypt";
 import { getDeliveryQuote } from "@/app/actions/logistics.actions";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
+import { getDefaultAddress } from "@/app/actions/address.actions"
+import {createClient} from "@/utils/supabase/client"
 import { toast } from "sonner";
 import {
   Breadcrumb,
@@ -50,8 +51,27 @@ export default function CheckoutPage() {
   const [shippingBreakdown, setShippingBreakdown]   = useState<{ baseCost: number; vat: number } |undefined>(undefined);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [cardBrand, setCardBrand]                   = useState<CardBrand>("unknown");
-
+  const [defaultAddress, setDefaultAddress] = useState<any>(null)
   const { items, coupon, clearCart } = useCartStore();
+
+
+  useEffect(() => {
+    getDefaultAddress().then((result) => {
+      if (result.success && result.data) {
+        const addr = result.data
+        setDefaultAddress(addr)
+
+        setSelectedState(addr.state ?? "")
+      }
+    })
+
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email && !defaultAddress) {
+        setDefaultAddress((prev: any) => ({ ...prev, email: user.email }));
+      }
+    });
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 0);
@@ -99,7 +119,7 @@ export default function CheckoutPage() {
     }
   }
 
-  const finalTotal = Math.max(0, subTotal + shipping + tax - discount);
+  const finalTotal = Math.round(Math.max(0, subTotal + shipping + tax - discount));
 
   const handleCardNumberChange = (value: string) => {
     setCardFields((prev) => ({ ...prev, cardNumber: value }));
@@ -321,12 +341,24 @@ export default function CheckoutPage() {
                 <div className="mt-6 pt-6 border-t border-gray-100 space-y-4">
                   <h3 className="text-sm font-semibold text-gray-900">Shipping Address</h3>
                   <BillingFields
+                    key={defaultAddress?.id ?? "empty"}
                     namePrefix="ship_"
                     showContactFields={false}
                     state={selectedShipState}
                     lga={selectedShipLga}
                     onStateChange={setSelectedShipState}
                     onLgaChange={setSelectedShipLga}
+                    defaultValues={
+                      defaultAddress ? {
+                        full_name: defaultAddress.full_name,
+                        address_line1: defaultAddress.address_line1,
+                        city: defaultAddress.city,
+                        state: defaultAddress.state,
+                        phone: defaultAddress.phone
+                      }
+                      :
+                      null
+                    }
                   />
                 </div>
               )}

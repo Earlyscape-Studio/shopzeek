@@ -23,6 +23,8 @@ export async function verifyPaymentCallback(
     .eq("payment_reference", txRef)
     .single();
 
+  console.log("Order found:", order)
+
   if (!order) {
     return { verified: false, pending: false, message: "Order not found." };
   }
@@ -36,26 +38,35 @@ export async function verifyPaymentCallback(
   // a mixed-up v3 standard path. Use the consistent reference-based lookup
   // that works with the F4B base URL across all other verification calls.
   const accessToken = await getFlutterwaveToken();
-  const verifyUrl   = `${FLW_BASE_URL}/transactions?reference=${txRef}`;
+  const verifyUrl = `${FLW_BASE_URL}/transactions?reference=${txRef}`;
 
-  const response = await fetch(verifyUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  let transaction = null
 
-  if (!response.ok) {
-    return {
-      verified: false,
-      pending: false,
-      message: "Could not verify payment with Flutterwave.",
-    };
+  for (let attempt = 0; attempt < 3; attempt++){
+    if(attempt > 0){
+      await new Promise((res) => setTimeout(res, 2000))
+    }
+
+    const response = await fetch(verifyUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+
+    if (response.ok) {
+      const data = await response.json();
+      const result = Array.isArray(data.data) ? data.data[0] : data.data;
+      if (result) {
+        transaction = result;
+        break;
+      }
+    }
   }
 
-  const data        = await response.json();
-  const transaction = Array.isArray(data.data) ? data.data[0] : data.data;
 
   if (!transaction) {
     return { verified: false, pending: false, message: "Transaction not found." };
   }
+  
 
   const isSuccessful =
     transaction.status === "succeeded" || transaction.status === "successful";
