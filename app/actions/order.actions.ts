@@ -424,7 +424,7 @@ export async function initCardPayment(
 
 
 
-export async function canclePendingOrder(orderId: string){
+export async function cancelPendingOrder(orderId: string){
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
 
