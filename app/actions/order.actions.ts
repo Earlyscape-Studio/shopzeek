@@ -421,7 +421,7 @@ export async function authorizeCardCharge(
 
     if (
       chargeStatus === "failed" ||
-      chargeStatus === "decliend" ||
+      chargeStatus === "declined" ||
       chargeStatus === "error"
     ){
       return{

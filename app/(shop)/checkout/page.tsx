@@ -56,21 +56,21 @@ export default function CheckoutPage() {
 
 
   useEffect(() => {
-    getDefaultAddress().then((result) => {
-      if (result.success && result.data) {
-        const addr = result.data
-        setDefaultAddress(addr)
-
-        setSelectedState(addr.state ?? "")
-      }
-    })
-
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email && !defaultAddress) {
-        setDefaultAddress((prev: any) => ({ ...prev, email: user.email }));
-      }
-    });
+    
+    Promise.all([
+      getDefaultAddress(),
+      supabase.auth.getUser()
+    ]).then(([addressResult, {data: {user}}]) => {
+      const addr = addressResult.success ? addressResult.data : null
+
+      setDefaultAddress({
+        ...(addr ?? {}),
+        email: user?.email ?? ""
+      })
+
+      if(addr?.state) setSelectedState(addr.state)
+    })
   }, [])
 
   useEffect(() => {

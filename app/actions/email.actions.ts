@@ -101,7 +101,7 @@ export async function sendDeliveryEmail(payload: DeliveryEmailPayload) {
 
 export async function triggerOrderEmails(orderId: string) {
   console.log("triggerOrderEmails called for order:", orderId)
-  
+
   try {
     const { data: fullOrder, error: fetchError } = await supabaseAdmin
     .from("orders")
