@@ -1,4 +1,4 @@
-import { getCoupons, toggleCouponStatus } from "@/app/actions/coupon.actions"
+import { getCoupons, toggleCouponStatus, toggleCouponStatusFromForm } from "@/app/actions/coupon.actions"
 import { CreateCouponSheet } from "@/components/shared/admin/createCouponSheet"
 import { DeleteCouponButton } from "@/components/shared/admin/deleteCouponButton"
 import { Badge } from "@/components/ui/badge"
@@ -138,9 +138,10 @@ export default async function CouponsPage() {
                       <div className="flex items-center justify-end gap-1">
                         {/* Toggle via server action form */}
                         <form
-                          action={async (formData: FormData) => {await toggleCouponStatus(coupon.id, coupon.is_active);
-                          }}
+                          action={toggleCouponStatusFromForm}
                         >
+                          <input type="hidden" name="id" value={coupon.id} />
+                          <input type="hidden" name="currentStatus" value={coupon.is_active.toString()} />
                           <Button
                             type="submit"
                             variant="ghost"

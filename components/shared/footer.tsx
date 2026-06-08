@@ -30,21 +30,21 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-6 gap-12 md:gap-8">
           
           {/* Brand & Info Section */}
-          <div className="col-span-1 md:col-span-2 space-y-6 flex flex-col items-center md:items-start text-left md:text-left">
+          <div className="col-span-1 md:col-span-2 space-y-6 flex flex-col items-start md:items-start text-left md:text-left">
             <Link href="/">
               <Image src="/zeek2.svg" alt="Zeek Logo" width={120} height={40} className="object-contain" />
             </Link>
             
             <div className="space-y-3 text-sm text-gray-500">
-              <div className="flex items-start justify-center md:justify-start gap-3">
+              <div className="flex items-start justify-start md:justify-start gap-3">
                 <MapPin className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
                 <p>Landmark House, No. 52-54 Isaac John Street,<br />Ikeja GRA, Lagos, Nigeria.</p>
               </div>
-              <div className="flex items-center justify-center md:justify-start gap-3">
+              <div className="flex items-start justify-start md:justify-start gap-3">
                 <Phone className="w-4 h-4 text-orange-500" />
                 <p>+(+234) 911 049 7316</p>
               </div>
-              <div className="flex items-center justify-center md:justify-start gap-3">
+              <div className="flex items-start justify-start md:justify-start gap-3">
                 <Mail className="w-4 h-4 text-orange-500" />
                 <p>hello@zeek.you</p>
               </div>
@@ -66,7 +66,7 @@ export function Footer() {
 
           {/* Link Columns */}
           {Object.entries(footerLinks).map(([heading, links]) => (
-            <div key={heading} className="col-span-1 md:col-span-1 flex flex-col items-center md:items-start text-center md:text-left">
+            <div key={heading} className="col-span-1 md:col-span-1 flex flex-col items-start md:items-start text-left md:text-left">
               <h4 className="font-bold text-gray-900 text-sm tracking-wider uppercase mb-5">
                 {heading}
               </h4>

@@ -130,6 +130,19 @@ export async function toggleCouponStatus(id: string, currentStatus: boolean) {
   }
 }
 
+export async function toggleCouponStatusFromForm(formData: FormData) {
+  const id = formData.get("id") as string;
+  const currentStatus = formData.get("currentStatus") === "true";
+
+  if (!id) {
+    console.error("Coupon ID is missing")
+    // return { success: false as const, error: "Coupon ID is missing." };
+    return
+  }
+
+  await toggleCouponStatus(id, currentStatus);
+}
+
 
 export async function deleteCoupon(id: string) {
   try{

@@ -102,7 +102,7 @@ export default async function OrderFailedPage({
             </span>{" "}
             or email{" "}
             <span className="font-medium text-gray-700">
-              contactcenter@zeek.com
+              hello@zeek.com
             </span>
           </p>
         </div>
