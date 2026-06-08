@@ -206,14 +206,17 @@ async function upsertFlutterwaveCustomer(
 
   const data = await res.json();
 
-  if (res.ok && data.status === "success") return data.data.id;
+  console.log("upsert data", data)
 
+  if (res.ok && data.status === "success") return data.data.id;
+  console.log("upsert data error code", data.error?.code)
   if (Number(data.error?.code) === 10409) {
     const lookupRes = await fetch(
       `${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
     const lookupData = await lookupRes.json();
+    console.log("upsert lookup data", lookupData)
     const record = Array.isArray(lookupData.data) ? lookupData.data[0] : lookupData.data;
     if (!record?.id) throw new Error("Could not retrieve existing customer.");
     return record.id;
@@ -306,6 +309,8 @@ export async function initCardPayment(
     const customerId     = await upsertFlutterwaveCustomer(
       accessToken, email, firstName, lastName
     );
+
+    console.log("card customerId", customerId)
 
     const payload = {
       amount: Math.round(totalAmount),

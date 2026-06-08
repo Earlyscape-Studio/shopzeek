@@ -158,7 +158,10 @@ export default function CheckoutPage() {
           coupon?.code
         );
 
+        console.log("card result", result)
+
         if (!result.success) {
+          console.log("card result error", result.error)
           toast.error(result.error ?? "Card payment failed");
           setIsProcessing(false);
           return;
@@ -246,7 +249,7 @@ export default function CheckoutPage() {
 
       if (result.paid) {
         toast.success("Payment Confirmed! Redirecting...");
-        // FIX: clear cart before navigating away
+        
         await clearCart();
         router.push(`/order/success?reference=${orderId}`);
       } else {
