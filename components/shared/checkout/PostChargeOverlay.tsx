@@ -13,6 +13,7 @@ export type PostChargeState = {
   orderId: string;
   instruction?: string;
   transactionRef?: string;
+  virtualAccountId?: string
 } | null;
 
 interface PostChargeOverlayProps {

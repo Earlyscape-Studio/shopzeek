@@ -45,7 +45,7 @@ async function getFezCredentials(): Promise<{
 
     const authData = await authResponse.json()
 
-    console.log("response", authData)
+    console.log("fez authData response", authData)
     // console.log("base url", FEZ_BASE_URL)
     // console.log("usr id", process.env.FEZ_USER_ID)
     // console.log("passwrd", process.env.FEZ_PASSWORD)
@@ -93,7 +93,7 @@ export async function getDeliveryQuote(
             body: JSON.stringify({ state, weight }),
         })
 
-        console.log("response", response)
+        console.log("fez delivery quote response", response)
 
         const data = await response.json()
 

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   // console.log("Webhook received:", payload.type, payload.data?.reference);
 
   // 2. Only handle successful charge completions
-  if (payload.event !== "charge.completed") {
+  if (payload.type !== "charge.completed") {
     return NextResponse.json({ received: true }, { status: 200 });
   }
 

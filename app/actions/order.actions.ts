@@ -210,7 +210,12 @@ async function upsertFlutterwaveCustomer(
 
   if (res.ok && data.status === "success") return data.data.id;
   console.log("upsert data error code", data.error?.code)
-  if (Number(data.error?.code) === 10409) {
+
+
+
+  const isAlreadyExists = data.error?.type === "CUSTOMER_ALREADY_EXISTS" || Number(data.error?.code) === 1203409
+
+  if (isAlreadyExists) {
     const lookupRes = await fetch(
       `${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -732,6 +737,7 @@ export async function initBankTransfer(
       success: true,
       orderId: order.id,
       transactionRef,
+      virtualAccountId: flwData.data.id,
       accountDetails: {
         bank_name: flwData.data.account_bank_name,
         account_number: flwData.data.account_number,
@@ -766,7 +772,8 @@ export async function initBankTransfer(
 
 export async function verifyBankTransferPayment(
   txRef: string,
-  orderId: string
+  orderId: string,
+  virtualAccountId: string
 ): Promise<{ paid: boolean; pending: boolean }> {
   try {
     const cookieStore = await cookies();
@@ -784,7 +791,7 @@ export async function verifyBankTransferPayment(
 
     const accessToken = await getFlutterwaveToken();
     const response = await fetch(
-      `${FLW_BASE_URL}/transactions?reference=${txRef}`,
+      `${FLW_BASE_URL}/charges?virtual_account_id=${virtualAccountId}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
@@ -792,12 +799,13 @@ export async function verifyBankTransferPayment(
       if(response.status !== 404) {
         console.error("Bank transfer verification error", response.status)
       }
-      console.error("Bank transfer verification failed:", response.status);
+      
       return { paid: false, pending: true };
     }
-
-    const data        = await response.json();
-    const transaction = Array.isArray(data.data) ? data.data[0] : data.data;
+  
+    const data = await response.json();
+    const charges = Array.isArray(data.data) ? data.data : []
+    const transaction = charges.find((c: any) => c.status === "succeeded" || c.status === "successful")
 
     if (!transaction) {
       console.warn("No transaction found for bank transfer ref:", txRef);

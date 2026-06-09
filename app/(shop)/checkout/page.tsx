@@ -223,6 +223,7 @@ export default function CheckoutPage() {
           instruction: JSON.stringify(result.accountDetails),
           orderId: result.orderId,
           transactionRef: result.transactionRef,
+          virtualAccountId: result.virtualAccountId
         });
       }
     } catch (err: unknown) {
@@ -237,14 +238,15 @@ export default function CheckoutPage() {
 
   const handleBankTransferVerification = async (txRef: string) => {
     const orderId = postCharge?.orderId;
+    const virtualAccountId = postCharge?.virtualAccountId
 
     console.log("orderId", orderId)
 
-    if (!orderId) return;
+    if (!orderId || !virtualAccountId) return;
 
     setIsProcessing(true);
     try {
-      const result = await verifyBankTransferPayment(txRef, orderId);
+      const result = await verifyBankTransferPayment(txRef, orderId, virtualAccountId);
       console.log("bank tranfer result", result)
 
       if (result.paid) {
