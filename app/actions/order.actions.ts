@@ -213,7 +213,7 @@ async function upsertFlutterwaveCustomer(
 
 
 
-  const isAlreadyExists = data.error?.type === "CUSTOMER_ALREADY_EXISTS" || Number(data.error?.code) === 1203409
+  const isAlreadyExists = data.error?.type === "CUSTOMER_ALREADY_EXISTS" || data.error?.type === "RESOURCE_CONFLICT" || Number(data.error?.code) === 10409 || Number(data.error?.code) === 1203409
 
   if (isAlreadyExists) {
     const lookupRes = await fetch(
