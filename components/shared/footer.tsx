@@ -16,8 +16,6 @@ const footerLinks = {
     { label: "Terms & Conditions", href: "/terms" },
   ],
   Partner: [
-    { label: "Become Seller", href: "/seller" },
-    { label: "Affiliate Program", href: "/affiliate" },
     { label: "Partnerships & Advertising", href: "/partenershipsandadvertising" },
   ],
 };
