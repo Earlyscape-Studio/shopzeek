@@ -81,3 +81,25 @@ export async function encryptCardData(card: {
             encrypted_cvv
         }
 }
+
+
+
+export async function encryptPin(
+    pin: string
+): Promise<{encryptedPin: string; nonce: string}> {
+    const encryptionKey = process.env.NEXT_PUBLIC_FLW_ENCRYPTION_KEY
+
+    if(!encryptionKey){
+        throw new Error("NEXT_PUBLIC_FLW_ENCRYPTION_KEY is not set. Add it to your .env file")
+    }
+
+
+
+    const nonce = generateNonce()
+
+    const encryptedPin = await encryptField(pin, encryptionKey, nonce)
+
+    return {encryptedPin, nonce}
+    
+    
+}

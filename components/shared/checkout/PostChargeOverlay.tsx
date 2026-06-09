@@ -6,9 +6,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authorizeCardCharge } from "@/app/actions/order.actions";
+import { encryptPin } from "@/utils/flutterwave/flutterwave-encrypt";
 
 export type PostChargeState = {
-  type: "requires_otp" | "bank_transfer";
+  type: "requires_otp" | "requires_pin" | "bank_transfer";
   chargeId?: string;
   orderId: string;
   instruction?: string;
@@ -59,15 +60,29 @@ function useCountdown(expiresAt: string | null | undefined) {
   };
 }
 
+
+
+
 export function PostChargeOverlay({
   state,
   onClose,
   onVerifyBankTransfer,
 }: PostChargeOverlayProps) {
-  const [isLoading, setIsLoading]         = useState(false);
-  const [otpCode, setOtpCode]             = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [pinCode, setPinCode] = useState("")
+  const [pinPhase, setPinPhase] = useState<"pin" | "otp"> ("pin")
   const [hasCheckedOnce, setHasCheckedOnce] = useState(false);
-  const [cooldown, setCooldown]           = useState(0);
+  const [cooldown, setCooldown] = useState(0);
+
+
+  useEffect(() => {
+    if(state?.type === "requires_pin"){
+      setPinPhase("pin")
+      setPinCode("")
+      setOtpCode("")
+    }
+  }, [state?.type])
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -94,19 +109,56 @@ export function PostChargeOverlay({
     }
   }
 
+
+  async function handlePinSubmit() {
+    if(!pinCode || !state?.chargeId) return;
+    setIsLoading(true)
+
+    try{
+      const {encryptedPin, nonce} = await encryptPin(pinCode)
+
+      const result = await authorizeCardCharge(state.chargeId, {
+        type: "pin",
+        encryptedPin,
+        nonce
+      })
+
+      if(!result.success){
+        toast.error(result.error ?? "PIN verification failed")
+        return
+      }
+
+
+      switch (result.nextActionType){
+        case "redirect_url":
+          if(result.redirectUrl) window.location.href = result.redirectUrl
+          break
+        case "requires_otp":
+          setPinPhase("otp")
+          setPinCode("")
+          break
+        default:
+          toast.error("Unexpected response after PIN. Please try again.")
+      }
+
+    }catch(err: any){
+      toast.error(err.message ?? "PIN submission failed")
+    }finally{
+      setIsLoading(false)
+    }
+  }
+
   async function handleOtpSubmit() {
-    if (!otpCode || !state?.chargeId) return;
+    const chargeId = state?.chargeId
+    if (!otpCode || !chargeId) return;
     setIsLoading(true);
     try {
-      const result = await authorizeCardCharge(state.chargeId, {
+      const result = await authorizeCardCharge(chargeId, {
         type: "otp",
         code: otpCode,
       });
 
       if (result.success) {
-        // FIX: removed the dead `chargeStatus === "successful"` direct redirect.
-        // authorizeCardCharge returns nextActionType: "redirect_url" on success,
-        // so we always route through the callback for proper order status update.
         if (result.nextActionType === "redirect_url" && result.redirectUrl) {
           window.location.href = result.redirectUrl;
         } else {
@@ -147,6 +199,67 @@ export function PostChargeOverlay({
           <X className="h-5 w-5" />
         </button>
 
+         {state.type === "requires_pin" && pinPhase === "pin" && (
+          <div className="p-6 text-center space-y-4">
+            <h3 className="text-lg font-bold text-gray-900">Enter Card PIN</h3>
+            <p className="text-sm text-gray-500">
+              Enter your 4-digit card PIN to authorise this payment.
+            </p>
+            <Input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              placeholder="••••"
+              value={pinCode}
+              onChange={(e) => setPinCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              className="text-center text-2xl tracking-[0.5em] h-14"
+            />
+            <Button
+              onClick={handlePinSubmit}
+              disabled={pinCode.length < 4 || isLoading}
+              className="w-full bg-orange-500 hover:bg-orange-600"
+            >
+              {isLoading ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying…</>
+              ) : (
+                "Submit PIN"
+              )}
+            </Button>
+            <p className="text-xs text-gray-400">
+              Your PIN is encrypted before leaving your device.
+            </p>
+          </div>
+        )}
+
+         {state.type === "requires_pin" && pinPhase === "otp" && (
+          <div className="p-6 text-center space-y-4">
+            <h3 className="text-lg font-bold text-gray-900">Enter OTP</h3>
+            <p className="text-sm text-gray-500">
+              An OTP has been sent to your registered phone number or email.
+            </p>
+            <Input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="000000"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value)}
+              className="text-center text-lg tracking-widest"
+            />
+            <Button
+              onClick={handleOtpSubmit}
+              disabled={otpCode.length < 4 || isLoading}
+              className="w-full bg-orange-500 hover:bg-orange-600"
+            >
+              {isLoading ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying…</>
+              ) : (
+                "Verify OTP"
+              )}
+            </Button>
+          </div>
+        )}
+
         {/* OTP flow */}
         {state.type === "requires_otp" && (
           <div className="p-6 text-center space-y-4">
@@ -169,9 +282,7 @@ export function PostChargeOverlay({
               className="w-full bg-orange-500 hover:bg-orange-600"
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying…
-                </>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying…</>
               ) : (
                 "Verify OTP"
               )}

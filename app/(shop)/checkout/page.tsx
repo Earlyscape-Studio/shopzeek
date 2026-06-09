@@ -181,15 +181,15 @@ export default function CheckoutPage() {
             break;
 
           case "requires_pin":
-            if(result.orderId) {
-              cancelPendingOrder(result.orderId).catch(console.error)
-            }
-            toast.error("PIN-based cards are not supported yet. Try a different card.");
-            setIsProcessing(false)
+            setPostCharge({
+              type: "requires_pin",
+              chargeId: result.chargeId!,
+              orderId: result.orderId,
+              transactionRef: result.transactionRef
+            })
             break;
 
-          // FIX: payment_instruction now correctly passes transactionRef
-          // so the bank-transfer-style overlay can verify payment properly
+          
           case "payment_instruction":
             setPostCharge({
               type: "bank_transfer",
