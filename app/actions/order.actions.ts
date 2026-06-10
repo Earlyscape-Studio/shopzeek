@@ -481,7 +481,7 @@ export async function authorizeCardCharge(
             },
           };
 
-    const response = await fetch(`${FLW_BASE_URL}/orchestration/charges/${chargeId}`, {
+    const response = await fetch(`${FLW_BASE_URL}/charges/${chargeId}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${accessToken}`,
