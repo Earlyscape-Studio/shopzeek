@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { getFlutterwaveToken, FLW_BASE_URL } from "@/utils/flutterwave/flutterwave";
 import { triggerOrderEmails } from "@/app/actions/email.actions";
+import {randomUUID} from "crypto"
 
 export async function verifyPaymentCallback(
   txRef: string,
@@ -33,12 +34,9 @@ export async function verifyPaymentCallback(
     return { verified: true, orderId: order.id };
   }
 
-  // Webhook hasn't fired yet — verify directly with Flutterwave
-  // FIX: was `${FLW_BASE_URL}/v4/transactions/${transactionId}/verify` which is
-  // a mixed-up v3 standard path. Use the consistent reference-based lookup
-  // that works with the F4B base URL across all other verification calls.
+
   const accessToken = await getFlutterwaveToken();
-  const verifyUrl = `${FLW_BASE_URL}/transactions?reference=${txRef}`;
+  const verifyUrl = `${FLW_BASE_URL}/charges/${transactionId}`;
 
   let transaction = null
 
@@ -48,12 +46,20 @@ export async function verifyPaymentCallback(
     }
 
     const response = await fetch(verifyUrl, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: { 
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "applications/json",
+        "X-Trace-Id": randomUUID(),
+        "X-Idempotency-Key": txRef
+      },
     });
+
+    console.log("callback response", response)
 
 
     if (response.ok) {
       const data = await response.json();
+      console.log("callback ok data", data)
       const result = Array.isArray(data.data) ? data.data[0] : data.data;
       if (result) {
         transaction = result;

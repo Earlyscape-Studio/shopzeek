@@ -317,13 +317,7 @@ export async function initCardPayment(
 
     console.log("card customerId", customerId)
 
-    const payload = {
-      amount: Math.round(totalAmount),
-      currency: "NGN",
-      reference: transactionRef,
-      redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback`,
-      meta: { order_id: order.id },
-      payment_method: {
+    const paymentMethod = {
         type: "card",
         card: {
           nonce: encryptedCard.nonce,
@@ -331,23 +325,42 @@ export async function initCardPayment(
           encrypted_expiry_month: encryptedCard.encrypted_expiry_month,
           encrypted_expiry_year: encryptedCard.encrypted_expiry_year,
           encrypted_cvv: encryptedCard.encrypted_cvv,
-        },
-      },
-       customer: {
-        id: customerId,
-        email,
-        name: { first: firstName, last: lastName },
-        phone_number: phone,
-      },
-    };
+        }
+      }
 
-    const response = await fetch(`${FLW_BASE_URL}/orchestration/direct-charges`, {
+    const paymentMethodResponse = await fetch(`${FLW_BASE_URL}/payment-methods`,{
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
         "X-Trace-Id": randomUUID(),
         "X-Idempotency-Key": transactionRef,
+      },
+      body: JSON.stringify(paymentMethod)
+    })
+
+    const cardPaymentMethodData = await paymentMethodResponse.json()
+    console.log("card payment method data", cardPaymentMethodData)
+    const paymentMethodId = cardPaymentMethodData.data.id
+
+    const payload = {
+      amount: Math.round(totalAmount),
+      currency: "NGN",
+      reference: transactionRef,
+      redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback`,
+      meta: { order_id: order.id },
+      customer_id: customerId,
+      payment_method_id: paymentMethodId
+    };
+
+    const response = await fetch(`${FLW_BASE_URL}/charges`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        "X-Trace-Id": randomUUID(),
+        "X-Idempotency-Key": transactionRef,
+        // "X-Scenario-Key": "scenario:auth_pin&issuer:approved"
       },
       body: JSON.stringify(payload),
     });

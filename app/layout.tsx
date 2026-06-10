@@ -13,7 +13,7 @@ const soraSans = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "The Zeek Fashion Co. | Your One Stop Shop",
+  title: "Zeek",
   description: "Premium Quality Products - Hair Care, Skin Care, Fragrances and more.",
   icons: {
     icon: "/favicon.ico",

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
   const payload = JSON.parse(rawBody);
   // console.log("Webhook received:", payload.type, payload.data?.reference);
-
+  console.log("webhook payload", payload)
   // 2. Only handle successful charge completions
   if (payload.type !== "charge.completed") {
     return NextResponse.json({ received: true }, { status: 200 });
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
 
   const { data } = payload;
 
+  console.log("webhook data", data)
   // 3. Only process successful payments
   if (data.status !== "succeeded" && data.status !== "successful") {
     return NextResponse.json({ received: true }, { status: 200 });
