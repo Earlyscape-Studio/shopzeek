@@ -490,9 +490,13 @@ export async function authorizeCardCharge(
       body: JSON.stringify(body),
     });
 
+    console.log("authorizeCharge response", response)
+
     const data = await response.json();
 
+
     if (!response.ok || data.status !== "success") {
+      console.error("authorizeCharge failed", data);
       return {
         success: false,
         error: data.error?.message || data.message || "Authorization failed",
@@ -507,6 +511,7 @@ export async function authorizeCardCharge(
       chargeStatus === "declined" ||
       chargeStatus === "error"
     ){
+      console.error("charge status value", data);
       return{
         success: false,
         error: data.data.processor_response || "Your payment was declined. Please check your card details or try a different card."

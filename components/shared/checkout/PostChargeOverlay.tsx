@@ -123,7 +123,10 @@ export function PostChargeOverlay({
         nonce
       })
 
+      console.log("pin result", result)
+
       if(!result.success){
+        console.log("pin result error", result.error)
         toast.error(result.error ?? "PIN verification failed")
         return
       }
@@ -142,6 +145,7 @@ export function PostChargeOverlay({
       }
 
     }catch(err: any){
+      console.log("handle pin submit error", err.message)
       toast.error(err.message ?? "PIN submission failed")
     }finally{
       setIsLoading(false)
