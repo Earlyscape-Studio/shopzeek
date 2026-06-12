@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import {revalidatePath} from "next/cache"
+import {supabaseAdmin} from "@/utils/supabase/admin"
 
 export async function validateCoupon(code: string) {
   try {
@@ -48,6 +49,36 @@ export async function validateCoupon(code: string) {
 
 
 // Admin
+
+export async function incrementCouponUsedCount(couponId: string): Promise<void>{
+  try{
+    const {data: coupon, error} = await supabaseAdmin
+    .from("coupons")
+    .select("used_count")
+    .eq("id", couponId)
+    .single()
+
+
+    if(error || !coupon){
+      console.error("Failed to fetch coupon for increment", error)
+      return
+    }
+
+    const {error: updateError} = await supabaseAdmin
+    .from("coupons")
+    .update({used_count: (coupon.used_count ?? 0) + 1})
+    .eq("id", couponId)
+
+
+
+    if(updateError){
+      console.error("Failed to increment coupon used_count: ", updateError)
+    }
+  }catch(err){
+    console.error("incrementCouponUsedCount threw:", err)
+  }
+
+}
 
 export async function getCoupons() {
   try{

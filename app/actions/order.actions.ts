@@ -32,7 +32,9 @@ async function validateOrderTotal(
   cartItems: any[],
   couponCode: string | null,
   providedTotal: number,
-  shippingBreakdown?: ShippingBreakdown
+  shippingBreakdown?: ShippingBreakdown,
+  userId?: string | null,
+  email?: string | null
 ): Promise<{ valid: boolean; error?: string; discount?: number; coupon?: any }> {
   try {
     let recalculatedSubtotal = 0;
@@ -64,6 +66,35 @@ async function validateOrderTotal(
       const couponRes = await validateCoupon(couponCode);
       if (couponRes.success && couponRes.coupon) {
         couponData = couponRes.coupon;
+
+        if(userId){
+          const {count} = await supabaseAdmin
+          .from("orders")
+          .select("*", {count: "exact", head: true})
+          .eq("user_id", userId)
+          .eq("coupon_id", couponData.id)
+          .in("status", ["paid", "processing", "shipped", "delivered"])
+
+          if((count ?? 0) > 0){
+            return {valid: false, error: "You have already used this coupon"}
+          }
+        }
+
+
+        if(email){
+          const {count: emailCount} = await supabaseAdmin
+          .from("orders")
+          .select("*", { count: "exact", head: true})
+          .eq("email", email.trim())
+          .eq("coupon_id", couponData.id)
+          .in("status", ["paid","processsing", "shipped", "delivered"])
+
+
+          if((emailCount ?? 0) > 0) {
+            return {valid: false, error:  "You have already used this coupon"}
+          }
+        }
+
         if (couponData.discount_type === "percentage") {
           discount = (recalculatedSubtotal * couponData.discount_value) / 100;
         } else {
@@ -248,14 +279,9 @@ export async function initCardPayment(
   shippingBreakdown?: ShippingBreakdown,
   couponCode?: string | null
 ) {
+
+  
   try {
-    const validation = await validateOrderTotal(
-      cartItems,
-      couponCode ?? null,
-      totalAmount,
-      shippingBreakdown
-    );
-    if (!validation.valid) return { success: false, error: validation.error };
 
     const cookieStore = await cookies();
     const supabase    = await createClient(cookieStore);
@@ -265,6 +291,19 @@ export async function initCardPayment(
     const firstName = formData.get("firstName") as string;
     const lastName  = formData.get("lastName")  as string;
     const phone     = (formData.get("phone") as string).replace(/\s+/g, "");
+
+
+    const validation = await validateOrderTotal(
+      cartItems,
+      couponCode ?? null,
+      totalAmount,
+      shippingBreakdown,
+      user?.id ?? null,
+      email
+    );
+    if (!validation.valid) return { success: false, error: validation.error };
+
+    
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -611,13 +650,8 @@ export async function initBankTransfer(
   console.log("bank transfer started");
 
   try {
-    const validation = await validateOrderTotal(
-      cartItems,
-      couponCode ?? null,
-      totalAmount,
-      shippingBreakdown
-    );
-    if (!validation.valid) return { success: false, error: validation.error };
+
+
 
     const cookieStore = await cookies();
     const supabase    = await createClient(cookieStore);
@@ -627,6 +661,20 @@ export async function initBankTransfer(
     const firstName = formData.get("firstName") as string;
     const lastName  = formData.get("lastName")  as string;
     const phone     = ((formData.get("phone") as string) ?? "").replace(/\s+/g, "");
+
+
+    const validation = await validateOrderTotal(
+      cartItems,
+      couponCode ?? null,
+      totalAmount,
+      shippingBreakdown,
+      user?.id ?? null,
+      email
+    );
+    
+    if (!validation.valid) return { success: false, error: validation.error };
+
+    
 
     const { data: order, error: orderError } = await supabase
       .from("orders")

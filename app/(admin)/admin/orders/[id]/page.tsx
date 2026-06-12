@@ -42,8 +42,18 @@ export default async function OrderDetailPage({
     phone:     (order as any).customer_phone,
   };
 
+
+
+  const rawAddress: string | null = (order as any).delivery_address ?? null
+  const addressLines = rawAddress ? rawAddress.split("\n").filter((line) =>  line.trim().length > 0) : []
+
+  const [shipName, shipStreet, shipLgaCity, shipState, shipCountry ] = addressLines
+
+
+
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-10">
+      <div className="max-w-5xl mx-auto space-y-6 pb-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -65,11 +75,11 @@ export default async function OrderDetailPage({
           {order.status}
         </Badge>
       </div>
-
+ 
       <div className="grid md:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="md:col-span-2 space-y-6">
-
+ 
           {/* Order Items */}
           <Card className="shadow-sm border-gray-200">
             <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
@@ -92,7 +102,6 @@ export default async function OrderDetailPage({
                       <h4 className="font-semibold text-gray-900">{item.products?.name}</h4>
                       <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                     </div>
-                    {/* FIX: was item.price * item.quantity — column is unit_price */}
                     <div className="font-bold text-gray-900">
                       ₦{(item.unit_price * item.quantity).toLocaleString()}
                     </div>
@@ -107,7 +116,7 @@ export default async function OrderDetailPage({
               </div>
             </CardContent>
           </Card>
-
+ 
           {/* Status Update Form */}
           <Card className="shadow-sm border-orange-100 bg-orange-50/30">
             <CardContent className="p-6">
@@ -176,7 +185,7 @@ export default async function OrderDetailPage({
             </CardContent>
           </Card>
         </div>
-
+ 
         {/* Right Column */}
         <div className="space-y-6">
           <Card className="shadow-sm border-gray-200">
@@ -209,7 +218,7 @@ export default async function OrderDetailPage({
               </div>
             </CardContent>
           </Card>
-
+ 
           <Card className="shadow-sm border-gray-200">
             <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -217,10 +226,16 @@ export default async function OrderDetailPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {order.shipping_address ? (
-                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {order.shipping_address}
-                </p>
+              {addressLines.length > 0 ? (
+                <div className="space-y-1 text-sm text-gray-700 leading-relaxed">
+                  {shipName && (
+                    <p className="font-semibold text-gray-900">{shipName}</p>
+                  )}
+                  {shipStreet && <p>{shipStreet}</p>}
+                  {shipLgaCity && <p>{shipLgaCity}</p>}
+                  {shipState && <p>{shipState}</p>}
+                  {shipCountry && <p>{shipCountry}</p>}
+                </div>
               ) : (
                 <p className="text-gray-400 italic">No address on file.</p>
               )}

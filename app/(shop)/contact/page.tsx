@@ -1,6 +1,7 @@
+import {useActionState} from "react"
 import Link from "next/link";
 import Image from "next/image"
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin, CheckCircle2 } from "lucide-react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faXTwitter, faFacebookF, faInstagram, faYoutube} from "@fortawesome/free-brands-svg-icons";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,32 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import {sendContactMessage} from "@/app/actions/contact.actions"
+
+//TODO: fix the radio button values to select more than just general inquiry
+
+
+const SUBJECTS = [
+  {value: "General Inquiry", label: "General Inquiry"},
+  { value: "Order Support",     label: "Order Support" },
+  { value: "Returns & Refunds", label: "Returns & Refunds" },
+  { value: "Partnerships",      label: "Partnerships" }
+]
+
+
+
 
 export default function ContactPage() {
+
+
+  const [state, action, pending] = useActionState(sendContactMessage, {
+    success: false,
+    error: null
+  })
+
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+   <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
       {/* Breadcrumbs */}
       <div className="mb-10">
         <Breadcrumb>
@@ -40,40 +63,39 @@ export default function ContactPage() {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-
+ 
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-[#FF5A00] mb-4">Contact Us</h1>
         <p className="text-gray-600 font-medium">Any question or remarks? Just write us a message!</p>
       </div>
-
+ 
       <div className="bg-white rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-2 md:p-4 border border-gray-100 flex flex-col lg:flex-row overflow-hidden relative">
-        
         {/* Left Orange Block */}
         <div className="bg-[#FF5A00] text-white p-10 rounded-lg lg:w-[400px] flex flex-col relative overflow-hidden shrink-0">
           <h3 className="text-2xl font-bold mb-2 z-10">Contact Information</h3>
           <p className="text-orange-100 mb-12 z-10">Say something to start a conversation!</p>
-
+ 
           <div className="space-y-8 z-10 flex-1">
             <div className="flex items-center gap-4">
               <Phone className="h-5 w-5 text-orange-200" />
-              <span>+(+234) 911 049 7316</span>
+              <span>(+234) 911 049 7316</span>
             </div>
             <div className="flex items-center gap-4">
               <Mail className="h-5 w-5 text-orange-200" />
-              <span>info@zeek.you</span>
+              <span>hello@zeek.you</span>
             </div>
             <div className="flex items-start gap-4">
               <MapPin className="h-6 w-6 text-orange-200 shrink-0" />
               <div className="flex flex-col">
-                <p>Landmark House</p> 
-                <p>No. 52-54 Isaac John Street</p> 
-                <p>Ikeja GRA </p>
+                <p>Landmark House</p>
+                <p>No. 52-54 Isaac John Street</p>
+                <p>Ikeja GRA</p>
                 <p>Lagos</p>
               </div>
             </div>
           </div>
-
-         <div className="flex items-center gap-4 mt-12 z-10">
+ 
+          <div className="flex items-center gap-4 mt-12 z-10">
             <a href="https://x.com/zeekonline" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
               <FontAwesomeIcon icon={faXTwitter} className="w-5 h-5" />
             </a>
@@ -83,77 +105,116 @@ export default function ContactPage() {
             <a href="https://www.instagram.com/zeek.you" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
               <FontAwesomeIcon icon={faInstagram} className="w-5 h-5" />
             </a>
-            {/* <a href="#" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
-              <FontAwesomeIcon icon={faYoutube} className="w-5 h-5" />
-            </a> */}
           </div>
-
+ 
           {/* Decorative Circles */}
-          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-orange-500 rounded-full opacity-50 z-0"></div>
-          <div className="absolute bottom-10 right-10 w-32 h-32 bg-orange-400 rounded-full opacity-50 z-0"></div>
+          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-orange-500 rounded-full opacity-50 z-0" />
+          <div className="absolute bottom-10 right-10 w-32 h-32 bg-orange-400 rounded-full opacity-50 z-0" />
         </div>
-
+ 
         {/* Right Form Block */}
         <div className="p-8 md:p-12 flex-1">
-          <form className="space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500">First Name</label>
-                <Input className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#FF5A00] bg-transparent" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500">Last Name</label>
-                <Input defaultValue="" className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#FF5A00] bg-transparent" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500">Email</label>
-                <Input type="email" className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#FF5A00] bg-transparent" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500">Phone Number</label>
-                <Input type="tel" defaultValue="" className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#FF5A00] bg-transparent text-gray-900 font-medium" />
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-4">
-              <label className="text-sm font-bold text-gray-900">Select Subject?</label>
-              <RadioGroup defaultValue="general1" className="flex flex-wrap gap-6">
-                {[1, 2, 3, 4].map((num) => (
-                  <div key={num} className="flex items-center space-x-2">
-                    <RadioGroupItem value={`general${num}`} id={`general${num}`} className="border-gray-300 text-[#FF5A00]" />
-                    <label htmlFor={`general${num}`} className="text-sm font-medium text-gray-600 cursor-pointer">
-                      General Inquiry
-                    </label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2 pt-4">
-              <label className="text-xs font-bold text-gray-500">Message</label>
-              <Textarea 
-                placeholder="Write your message.." 
-                className="border-0 border-b border-gray-300 rounded-none px-0 resize-none min-h-[60px] focus-visible:ring-0 focus-visible:border-[#FF5A00] bg-transparent" 
-              />
-            </div>
-
-            <div className="flex justify-end pt-4 relative">
-              <Button type="submit" className="bg-[#FF5A00] hover:bg-orange-600 text-white font-bold h-12 px-10 rounded-sm">
-                Send Message
+          {state.success ? (
+            <div className="h-full flex flex-col items-center justify-center gap-4 text-center py-16">
+              <CheckCircle2 className="h-16 w-16 text-green-500" />
+              <h3 className="text-2xl font-bold text-gray-900">Message Sent!</h3>
+              <p className="text-gray-500 max-w-sm">
+                Thanks for reaching out. We&apos;ll get back to you as soon as possible.
+              </p>
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+                className="mt-4 border-[#FF5A00] text-[#FF5A00] hover:bg-orange-50"
+              >
+                Send Another Message
               </Button>
-              
-              {/* Paper Airplane Decorative SVG (Optional aesthetic touch from your design) */}
-              <div className="absolute bottom-0 right-48 top-10 hidden md:block opacity-20 pointer-events-none">
-                 <Image
-                      src="/paper_plane.png"
-                      alt="paper plane image"
-                      width={200}
-                      height={300}
-                      className="object-contain -rotate-30"
-                   />
-              </div>
             </div>
-          </form>
+          ) : (
+            <form action={action} className="space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500">First Name *</label>
+                  <Input
+                    name="firstName"
+                    required
+                    className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#FF5A00] bg-transparent"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500">Last Name</label>
+                  <Input
+                    name="lastName"
+                    className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#FF5A00] bg-transparent"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500">Email *</label>
+                  <Input
+                    name="email"
+                    type="email"
+                    required
+                    className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#FF5A00] bg-transparent"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500">Phone Number</label>
+                  <Input
+                    name="phone"
+                    type="tel"
+                    className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#FF5A00] bg-transparent text-gray-900 font-medium"
+                  />
+                </div>
+              </div>
+ 
+              <div className="space-y-4 pt-4">
+                <label className="text-sm font-bold text-gray-900">Select Subject</label>
+                <RadioGroup name="subject" defaultValue={SUBJECTS[0].value} className="flex flex-wrap gap-6">
+                  {SUBJECTS.map((s) => (
+                    <div key={s.value} className="flex items-center space-x-2">
+                      <RadioGroupItem value={s.value} id={s.value} className="border-gray-300 text-[#FF5A00]" />
+                      <label htmlFor={s.value} className="text-sm font-medium text-gray-600 cursor-pointer">
+                        {s.label}
+                      </label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+ 
+              <div className="space-y-2 pt-4">
+                <label className="text-xs font-bold text-gray-500">Message *</label>
+                <Textarea
+                  name="message"
+                  required
+                  placeholder="Write your message.."
+                  className="border-0 border-b border-gray-300 rounded-none px-0 resize-none min-h-[60px] focus-visible:ring-0 focus-visible:border-[#FF5A00] bg-transparent"
+                />
+              </div>
+ 
+              {state.error && (
+                <p className="text-sm text-red-500 font-medium">{state.error}</p>
+              )}
+ 
+              <div className="flex justify-end pt-4 relative">
+                <Button
+                  type="submit"
+                  disabled={pending}
+                  className="bg-[#FF5A00] hover:bg-orange-600 text-white font-bold h-12 px-10 rounded-sm"
+                >
+                  {pending ? "Sending..." : "Send Message"}
+                </Button>
+ 
+                <div className="absolute bottom-0 right-48 top-10 hidden md:block opacity-20 pointer-events-none">
+                  <Image
+                    src="/paper_plane.png"
+                    alt="paper plane"
+                    width={200}
+                    height={300}
+                    className="object-contain -rotate-30"
+                  />
+                </div>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { AdminOrderNotificationEmail } from "@/components/emails/adminOrderNotif
 import { DeliveryScheduleEmail } from "@/components/emails/deliveryScheduleEmail";
 import { AbandonedCartEmail } from "@/components/emails/abandonedCartEmail";
 import { OrderEmailPayload, DeliveryEmailPayload, AbandonedCartEmailPayload } from "@/types/email";
+import {incrementCouponUsedCount} from "@/app/actions/coupon.actions"
 import { WelcomeEmail } from "@/components/emails/welcomeEmail";
 import { supabaseAdmin } from "@/utils/supabase/admin";
 
@@ -136,6 +137,14 @@ export async function triggerOrderEmails(orderId: string) {
       return { success: false, error: "Order not found" };
     }
 
+    if((fullOrder as any).coupon_id) {
+      try{
+        await incrementCouponUsedCount((fullOrder as any).coupon_id)
+      }catch(couponErr){
+        console.error("Failed to increment coupon count: ", couponErr)
+      }
+    }
+
     const addrLines = ((fullOrder.delivery_address as string) || "")
       .split("\n")
       .filter(Boolean);
@@ -249,3 +258,4 @@ export async function sendWelcomeEmail(email: string, firstName: string) {
     return { success: false, error };
   }
 }
+
