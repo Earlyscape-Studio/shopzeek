@@ -8,6 +8,9 @@ import { useCartStore } from "@/store/cart.store"
 import { useWishlistStore } from "@/store/wishlist.store"
 import { useAuthModal } from "@/store/auth-modal.store";
 import { createClient } from "@/utils/supabase/client";
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { proseMarkdownComponents } from "@/components/shared/admin/markdownComponents";
 
 
 
@@ -104,9 +107,17 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
       <div className="border-t border-gray-200 pt-8 space-y-6 mb-10">
         <div className="grid grid-cols-[140px_1fr] items-start">
           <span className="font-bold text-gray-900 text-lg">Brief Description</span>
-          <p className="text-gray-500 leading-relaxed">
-            {product.description || "Rejuvenate and refresh your skin with our products which provide a burst of hydration."}
-          </p>
+          <div className="text-gray-600 leading-relaxed">
+            {product.description ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={proseMarkdownComponents}>
+                {product.description}
+              </ReactMarkdown>
+            ) : (
+              <p className="text-gray-500 leading-relaxed">
+                Rejuvenate and refresh your skin with our products which provide a burst of hydration.
+              </p>
+            )}
+          </div>
         </div>
         {/* <div className="grid grid-cols-[140px_1fr] items-center">
           <span className="font-bold text-gray-900 text-lg">Size</span>

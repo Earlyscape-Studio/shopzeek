@@ -3,8 +3,9 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Search, User, Heart, Menu, LayoutDashboard, LogOut, ShoppingBag, X, User2 } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { User, Heart, Menu, LayoutDashboard, LogOut, ShoppingBag, X, User2 } from "lucide-react"
+import {SearchBar} from "@/components/shared/shop/searchBar"
+// import { Input } from "@/components/ui/input"
 import { CartNavIcon } from "@/components/shared/shop/navCartIcon"
 import { useAuthModal } from "@/store/auth-modal.store"
 import { useCartStore } from "@/store/cart.store"
@@ -40,18 +41,18 @@ const navLinks = [
 ]
 
 export function Nav() {
+
     const [mobileOpen, setMobileOpen] = useState(false)
-    const [searchQuery, setSearchQuery] = useState("")
     const [user, setUser] = useState<SupabaseUser | null>(null)
     const [profile, setProfile] = useState<{ full_name: string | null; role: string } | null>(null)
-
+ 
     const openAuthModal = useAuthModal((s) => s.open)
     const syncCartWithDB = useCartStore((s) => s.syncWithDB)
     const syncWishlistWithDB = useWishlistStore((s) => s.syncWithDB)
-
+ 
     const router = useRouter()
     const supabase = createClient()
-
+ 
     useEffect(() => {
         const fetchProfile = async (userId: string) => {
             const { data } = await supabase
@@ -61,12 +62,12 @@ export function Nav() {
                 .single()
             setProfile(data)
         }
-
+ 
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null)
             if (session?.user) fetchProfile(session.user.id)
         })
-
+ 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 setUser(session?.user ?? null)
@@ -79,10 +80,10 @@ export function Nav() {
                 }
             }
         )
-
+ 
         return () => subscription.unsubscribe()
     }, [syncCartWithDB, syncWishlistWithDB])
-
+ 
     const handleWishlistClick = async () => {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) {
@@ -91,38 +92,19 @@ export function Nav() {
             router.push("/wishlist")
         }
     }
-
-    // const handleSignOut = async () => {
-    //     await supabase.auth.signOut()
-    //     router.refresh()
-    // }
-
-    const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter" && searchQuery.trim()) {
-            router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
-        }
-    }
-
-    // Mobile search handler — closes drawer and navigates
-    const handleMobileSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter" && searchQuery.trim()) {
-            setMobileOpen(false)
-            router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`)
-        }
-    }
-
+ 
     const initials = profile?.full_name
         ?.split(" ")
         .map((n) => n[0])
         .join("")
         .toUpperCase()
         .slice(0, 2) ?? "U"
-
+ 
     const isAdmin = profile?.role === "admin"
-
+ 
     return (
         <header className="bg-white border-b border-gray-100 sticky top-0 z-40 flex flex-col">
-
+ 
             {/* Announcement bar */}
             {/* <div className="bg-[#FF5A00] text-white text-xs font-medium py-2 w-full flex items-center justify-center gap-2">
                 <span className="bg-white text-black px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide">
@@ -136,10 +118,10 @@ export function Nav() {
                     Register Now
                 </Link>
             </div> */}
-
+ 
             {/* Main navbar */}
             <div className="max-w-7xl w-full mx-auto px-4 flex items-center gap-4 h-16">
-
+ 
                 {/* Logo */}
                 <Link href="/">
                     <Image
@@ -150,22 +132,13 @@ export function Nav() {
                         className="object-cover"
                     />
                 </Link>
-
+ 
                 {/* Search */}
-                <div className="relative flex-1 max-w-xl hidden sm:block">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={handleSearch}
-                        placeholder="Search Brands, Products & Categories..."
-                        className="pl-10 rounded-full bg-gray-50 border-gray-200 focus-visible:ring-[#FF5A00]"
-                    />
-                </div>
-
+                <SearchBar className="flex-1 max-w-xl hidden sm:block" />
+ 
                 {/* Right actions */}
                 <div className="flex items-center gap-3 ml-auto">
-
+ 
                     {/* Auth — logged out */}
                     {!user && (
                         <Button
@@ -178,7 +151,7 @@ export function Nav() {
                             <span className="text-sm font-medium">Log In / Sign Up</span>
                         </Button>
                     )}
-
+ 
                     {/* Auth — logged in */}
                     {user && (
                         <DropdownMenu>
@@ -194,7 +167,7 @@ export function Nav() {
                                     </span>
                                 </button>
                             </DropdownMenuTrigger>
-
+ 
                             <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem asChild>
                                     <Link href="/profile" className="flex items-center gap-2">
@@ -202,14 +175,14 @@ export function Nav() {
                                         Profile
                                     </Link>
                                 </DropdownMenuItem>
-
+ 
                                 <DropdownMenuItem asChild>
                                     <Link href="/wishlist" className="flex items-center gap-2">
                                         <Heart className="h-4 w-4 text-gray-400" />
                                         Wishlist
                                     </Link>
                                 </DropdownMenuItem>
-
+ 
                                 {isAdmin && (
                                     <>
                                         <DropdownMenuSeparator />
@@ -225,9 +198,9 @@ export function Nav() {
                                         </DropdownMenuItem>
                                     </>
                                 )}
-
+ 
                                 <DropdownMenuSeparator />
-
+ 
                                 <DropdownMenuItem asChild>
                                     <button
                                         onClick={signOut}
@@ -241,9 +214,9 @@ export function Nav() {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     )}
-
+ 
                     <CartNavIcon />
-
+ 
                     <button
                         onClick={handleWishlistClick}
                         className="p-2 hover:opacity-80 transition-opacity"
@@ -251,7 +224,7 @@ export function Nav() {
                     >
                         <Heart className="h-5 w-5 text-gray-900" />
                     </button>
-
+ 
                     {/* ============================================
                         MOBILE MENU — replaced Sheet with Drawer
                         Everything above this line is unchanged
@@ -262,7 +235,7 @@ export function Nav() {
                                 <Menu className="h-5 w-5" />
                             </Button>
                         </DrawerTrigger>
-
+ 
                         <DrawerContent className="max-h-[90dvh]">
                             {/* Drawer header */}
                             <VisuallyHidden>
@@ -285,21 +258,15 @@ export function Nav() {
                                     </button>
                                 </DrawerClose>
                             </div>
-
+ 
                             {/* Search — visible in drawer since it's hidden in the main navbar on mobile */}
                             <div className="px-5 py-4 border-b border-gray-100">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                    <Input
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        onKeyDown={handleMobileSearch}
-                                        placeholder="Search products..."
-                                        className="pl-10 rounded-full bg-gray-50 border-gray-200 focus-visible:ring-[#FF5A00]"
-                                    />
-                                </div>
+                                <SearchBar
+                                    placeholder="Search products..."
+                                    onNavigate={() => setMobileOpen(false)}
+                                />
                             </div>
-
+ 
                             {/* Nav links */}
                             <nav className="flex flex-col px-5 py-3 overflow-y-auto">
                                 {navLinks.map(({ href, label }) => (
@@ -312,7 +279,7 @@ export function Nav() {
                                         </Link>
                                     </DrawerClose>
                                 ))}
-
+ 
                                 {/* Auth section */}
                                 {!user ? (
                                     <button
@@ -343,7 +310,7 @@ export function Nav() {
                                                 </p>
                                             </div>
                                         </div>
-
+ 
                                         <DrawerClose asChild>
                                             <Link
                                                 href="/profile"
@@ -362,7 +329,7 @@ export function Nav() {
                                                 Cart
                                             </Link>
                                         </DrawerClose>
-
+ 
                                         <DrawerClose asChild>
                                             <Link
                                                 href="/wishlist"
@@ -372,7 +339,7 @@ export function Nav() {
                                                 Wishlist
                                             </Link>
                                         </DrawerClose>
-
+ 
                                         {isAdmin && (
                                             <DrawerClose asChild>
                                                 <Link
@@ -384,7 +351,7 @@ export function Nav() {
                                                 </Link>
                                             </DrawerClose>
                                         )}
-
+ 
                                         <button
                                             onClick={() => {
                                                 setMobileOpen(false)
@@ -402,7 +369,7 @@ export function Nav() {
                     </Drawer>
                 </div>
             </div>
-
+ 
             {/* Secondary nav */}
             <div className="border-t border-gray-100 hidden sm:block w-full">
                 <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-10">

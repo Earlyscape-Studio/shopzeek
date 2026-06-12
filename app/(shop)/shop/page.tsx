@@ -132,19 +132,6 @@ export default async function ShopPage(props: {
               <SortDropdown currentSort={searchParams.sort ?? "popular"} />
             </Suspense>
           </div>
-          {/* <div className="flex items-center gap-3 mb-8">
-            <span className="text-sm font-medium text-gray-700">Sort by:</span>
-            <select
-              className="text-sm border border-gray-200 rounded-md px-3 py-2 w-48 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none"
-              defaultValue={searchParams.sort ?? "popular"}
-            >
-              <option value="popular">Most Popular</option>
-              <option value="newest">Newest</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-            </select>
-          </div> */}
-
           {products?.length ? (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-10">

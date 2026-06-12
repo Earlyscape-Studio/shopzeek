@@ -111,3 +111,56 @@ export async function deleteProduct(id: string) {
     return { success: false, error: error.message || "Failed to delete product" };
   }
 }
+
+export async function getProducts(filters: {
+  category?: string
+  search?: string
+  page?: number
+  limit?: number
+}) {
+  const cookieStore = await cookies()
+  const supabase = await createClient(cookieStore)
+
+
+
+  const page = filters.page || 1;
+  const limit = filters.limit || 12
+  const from = (page -1) * limit
+  const to = from + limit - 1
+
+
+
+  let query = supabase
+  .from("products")
+  .select("*", {count: "exact"})
+  .eq("is_published", true)
+
+
+
+
+  if(filters.search){
+    const cleanSearch = filters.search.trim()
+
+    query = query.or(`name.ilike.%${cleanSearch}%,description.ilike.%${cleanSearch}%,brand.ilike.%${cleanSearch}%`)
+  }
+
+  if(filters.category && filters.category !== "all"){
+    query = query.eq("category", filters.category)
+  }
+
+  query = query.order("created_at", {ascending: false}).range(from, to)
+
+  const {data, error, count}  = await query
+
+
+  if(error){
+    console.error("Error fetching products:", error)
+    return { success: false, data: [], count: 0}
+  }
+
+
+  return {success: true, error: null}
+  
+  
+}
+

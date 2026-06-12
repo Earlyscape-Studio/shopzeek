@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { MarkdownEditor } from "./markdownEditor";
 import { toast } from "sonner";
 
 export default function EditProductForm({ product }: { product: any }) {
@@ -104,12 +105,15 @@ export default function EditProductForm({ product }: { product: any }) {
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <textarea 
-                  id="description" 
-                  name="description" 
+                 <MarkdownEditor
+                  name="description"
                   defaultValue={product.description || ""}
-                  className="w-full min-h-[120px] rounded-md border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5A00]"
+                  placeholder="Describe your product... Supports **bold**, *italics*, lists, links, and more."
+                  rows={6}
                 />
+                <p className="text-xs text-gray-400">
+                  Markdown formatting is supported — use the toolbar or type it directly.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

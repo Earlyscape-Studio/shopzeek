@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { MarkdownEditor } from "@/components/shared/admin/markdownEditor";
 import { toast } from "sonner";
 
 export default function AddProductPage() {
@@ -105,12 +106,14 @@ export default function AddProductPage() {
 
                             <div className="space-y-2">
                                 <Label htmlFor="description">Description</Label>
-                                <textarea
-                                    id="description"
+                                <MarkdownEditor
                                     name="description"
-                                    className="w-full min-h-[120px] rounded-md border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5A00]"
-                                    placeholder="Describe your product..."
+                                    placeholder="Describe your product... Supports **bold**, *italics*, lists, links, and more."
+                                    rows={6}
                                 />
+                                <p className="text-xs text-gray-400">
+                                    Markdown formatting is supported — use the toolbar or type it directly.
+                                </p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
