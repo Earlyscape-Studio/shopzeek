@@ -46,7 +46,7 @@ export const WelcomeEmail = ({ firstName }: WelcomeEmailProps) => {
 
             Zero spam. Just the good stuff.
 
-            To kick things off, we want to treat you to 7% OFF your first order.
+            To kick things off, we want to treat you to 5% OFF your first order.
 
             Use code: ZEEKFAM at checkout.
           </Text>

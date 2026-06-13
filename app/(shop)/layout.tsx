@@ -5,6 +5,7 @@ import { AnnouncementBar } from "@/components/shared/announcementBar";
 import { Nav } from "@/components/shared/nav"
 import { Footer } from "@/components/shared/footer"
 import { AuthModal } from "@/components/shared/authModal";
+import { WhatsAppChatWidget } from "@/components/shared/whatsappChat";
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -18,6 +19,7 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
                 {children}
             </main>
             <Footer />
+            <WhatsAppChatWidget />
         </div>
     )
 }
