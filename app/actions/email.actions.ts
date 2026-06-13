@@ -2,6 +2,8 @@
 
 import { Resend } from "resend";
 import { OrderReceiptEmail } from "@/components/emails/orderReceiptEmail";
+import { renderToBuffer } from "@react-pdf/renderer";
+import { ReceiptDocument, type ReceiptData } from "@/components/shared/pdf/receiptDocument";
 import { AdminOrderNotificationEmail } from "@/components/emails/adminOrderNotificationEmail";
 import { DeliveryScheduleEmail } from "@/components/emails/deliveryScheduleEmail";
 import { AbandonedCartEmail } from "@/components/emails/abandonedCartEmail";
@@ -188,6 +190,33 @@ export async function triggerOrderEmails(orderId: string) {
 
 export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
   try {
+
+    const shippingTotal = (orderDetails.shippingCost ?? 0) + (orderDetails.shippingVat ?? 0);
+ 
+    const receiptData: ReceiptData = {
+      orderId: orderDetails.orderId,
+      orderDate: orderDetails.orderDate,
+      customerName: orderDetails.customerName,
+      email: orderDetails.email,
+      phone: orderDetails.phone,
+      paymentMethod: orderDetails.paymentMethod,
+      items: orderDetails.items,
+      shippingCost: shippingTotal,
+      discountAmount: orderDetails.discountAmount,
+      couponCode: orderDetails.couponCode,
+      totalAmount: orderDetails.totalAmount,
+      shippingAddress: orderDetails.shippingAddress,
+    };
+
+
+    let receiptPdfBuffer: Buffer | null = null;
+    try {
+      receiptPdfBuffer = await renderToBuffer(ReceiptDocument({ data: receiptData }));
+    } catch (pdfError) {
+      console.error("Failed to generate receipt PDF for email:", pdfError);
+    }
+
+
     const customerPromise = resend.emails.send({
       from: FROM_EMAIL,
       to: orderDetails.email,
@@ -198,7 +227,21 @@ export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
         orderDate: orderDetails.orderDate,
         totalAmount: orderDetails.totalAmount,
         orderDetailUrl: orderDetails.orderDetailUrl,
+        items: orderDetails.items,
+        shippingAddress: orderDetails.shippingAddress,
+        paymentMethod: orderDetails.paymentMethod,
+        shippingCost: shippingTotal,
+        discountAmount: orderDetails.discountAmount,
+        couponCode: orderDetails.couponCode,
       }),
+      attachments: receiptPdfBuffer
+        ? [
+            {
+              filename: `zeek-receipt-${orderDetails.orderId.slice(0, 8)}.pdf`,
+              content: receiptPdfBuffer,
+            },
+          ]
+        : undefined,
     });
 
     // 2. Send detailed profile to operational admin

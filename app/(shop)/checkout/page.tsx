@@ -131,6 +131,14 @@ export default function CheckoutPage() {
     if (items.length === 0) return;
     setIsProcessing(true);
 
+    const deliveryLga = showAlternateShipping ? selectedShipLga : selectedLga
+    if(!deliveryLga){
+      toast.error(showAlternateShipping ? "Please select an LGA for your shipping address before placing your order." : "Please select your LGA before placing your order")
+      return
+    }
+
+    setIsProcessing(true)
+
     try {
       const formData = new FormData(e.currentTarget);
 

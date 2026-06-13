@@ -6,8 +6,8 @@ import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 import { X, Send } from "lucide-react";
 
 // International format, no "+" or spaces — update if the support line changes.
-const WHATSAPP_NUMBER = "2349110497316";
-const DEFAULT_MESSAGE = "";
+const WHATSAPP_NUMBER = "09110497316";
+const DEFAULT_MESSAGE = "Thank you for contacting Zeek!. Please let us know how we can help you.";
 const PLACEHOLDER = "Hi Zeek! I'd like to ask about...";
 
 export function WhatsAppChatWidget() {

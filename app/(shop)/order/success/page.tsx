@@ -4,6 +4,8 @@ import Link from "next/link";
 import { CheckIcon, ShoppingBag, Home, Building2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { Button } from "@/components/ui/button";
+import { DownloadReceiptButton } from "@/components/shared/shop/downloadReceiptButton";
+import type { ReceiptData } from "@/components/shared/pdf/receiptDocument";
 
 export default async function OrderSuccessPage({
   searchParams,
@@ -16,15 +18,13 @@ export default async function OrderSuccessPage({
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  
-
-
   const { data: order } = await supabase
     .from("orders")
     .select(`
       *,
       addresses(*),
-      order_items(*, products(name, image_urls))
+      order_items(*, products(name, image_urls)),
+      coupon:coupons(code)
     `)
     .eq("id", reference)
     .single();
@@ -38,6 +38,60 @@ export default async function OrderSuccessPage({
       : "bg-orange-50 text-orange-600 border-orange-200";
 
   const shortRef = `ORD-${order.id.slice(0, 8)}`;
+
+  // Build the data needed for the downloadable PDF receipt. Prefer the
+  // saved `addresses` row (registered users); fall back to parsing the
+  // `delivery_address` text blob saved at checkout (guests).
+  let shippingAddressForReceipt: ReceiptData["shippingAddress"];
+
+  if (order.addresses) {
+    shippingAddressForReceipt = {
+      name: order.addresses.full_name,
+      street: [order.addresses.address_line1, order.addresses.address_line2]
+        .filter(Boolean)
+        .join(", "),
+      city: order.addresses.city,
+      state: order.addresses.state,
+      country: order.addresses.country ?? "Nigeria",
+    };
+  } else {
+    const lines = ((order.delivery_address as string) || "")
+      .split("\n")
+      .filter(Boolean);
+
+    if (lines.length > 0) {
+      shippingAddressForReceipt = {
+        name: lines[0] ?? "",
+        street: lines[1] ?? "",
+        city: lines[2] ?? "",
+        state: lines[3] ?? "",
+        country: lines[4] ?? "Nigeria",
+      };
+    }
+  }
+
+  const receiptData: ReceiptData = {
+    orderId: order.id,
+    orderDate: new Date(order.created_at).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }),
+    customerName: order.customer_name,
+    email: order.email,
+    phone: order.customer_phone,
+    paymentMethod: order.payment_method,
+    items: (order.order_items as any[]).map((item) => ({
+      name: item.products?.name ?? "Product",
+      quantity: item.quantity,
+      price: Number(item.unit_price),
+    })),
+    shippingCost: Number(order.shipping_cost ?? 0) + Number(order.shipping_vat ?? 0),
+    discountAmount: Number(order.discount_amount ?? 0),
+    couponCode: (order.coupon as any)?.code ?? null,
+    totalAmount: Number(order.total_amount),
+    shippingAddress: shippingAddressForReceipt,
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
@@ -150,6 +204,7 @@ export default async function OrderSuccessPage({
               Back to home
             </Link>
           </Button>
+          <DownloadReceiptButton data={receiptData} className="border-orange-200 text-orange-600 hover:bg-orange-50" />
         </div>
       </div>
     </div>

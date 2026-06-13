@@ -26,14 +26,14 @@ export default async function OrderDetailPage({
         quantity,
         unit_price,
         products ( name, image_urls )
-      )
+      ),
+      coupon:coupons ( code )
     `)
     .eq("id", id)
     .single();
 
   if (error || !order) notFound();
 
-  // FIX: was selecting `price` — column is `unit_price`
   const items = (order.order_items as any[]) || [];
 
   const customer = {
@@ -42,18 +42,36 @@ export default async function OrderDetailPage({
     phone:     (order as any).customer_phone,
   };
 
+  // Pricing breakdown
+  const subtotal = items.reduce(
+    (sum, item) => sum + Number(item.unit_price) * item.quantity,
+    0
+  );
+  const shippingTotal = Number(order.shipping_cost ?? 0) + Number(order.shipping_vat ?? 0);
+  const discountAmount = Number(order.discount_amount ?? 0);
+  const couponCode = (order as any).coupon?.code ?? null;
 
+  // FIX: the column written by checkout (formatDeliveryAddress) is
+  // `delivery_address`, not `shipping_address`. `shipping_address` doesn't
+  // exist on this table, so the admin page was always showing "No address
+  // on file." even though the customer's billing/shipping info (address,
+  // LGA/city, state, country) was saved correctly.
+  //
+  // The value is stored as newline-separated lines:
+  //   Line 1: Full name
+  //   Line 2: Street address
+  //   Line 3: LGA, City
+  //   Line 4: State
+  //   Line 5: Country
+  const rawAddress: string | null = (order as any).delivery_address ?? null;
+  const addressLines = rawAddress
+    ? rawAddress.split("\n").filter((line) => line.trim().length > 0)
+    : [];
 
-  const rawAddress: string | null = (order as any).delivery_address ?? null
-  const addressLines = rawAddress ? rawAddress.split("\n").filter((line) =>  line.trim().length > 0) : []
-
-  const [shipName, shipStreet, shipLgaCity, shipState, shipCountry ] = addressLines
-
-
-
+  const [shipName, shipStreet, shipLgaCity, shipState, shipCountry] = addressLines;
 
   return (
-      <div className="max-w-5xl mx-auto space-y-6 pb-10">
+    <div className="max-w-5xl mx-auto space-y-6 pb-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -75,11 +93,11 @@ export default async function OrderDetailPage({
           {order.status}
         </Badge>
       </div>
- 
+
       <div className="grid md:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="md:col-span-2 space-y-6">
- 
+
           {/* Order Items */}
           <Card className="shadow-sm border-gray-200">
             <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
@@ -108,15 +126,41 @@ export default async function OrderDetailPage({
                   </li>
                 ))}
               </ul>
-              <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
-                <span className="font-medium text-gray-600">Total Amount</span>
-                <span className="text-2xl font-bold text-[#FF5A00]">
-                  ₦{Number(order.total_amount).toLocaleString()}
-                </span>
+
+              {/* Pricing breakdown */}
+              <div className="p-6 border-t border-gray-100 bg-gray-50 space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">Subtotal</span>
+                  <span className="font-medium text-gray-900">
+                    ₦{subtotal.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">Shipping</span>
+                  <span className="font-medium text-gray-900">
+                    {shippingTotal > 0 ? `₦${shippingTotal.toLocaleString()}` : "Free"}
+                  </span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">
+                      Discount{couponCode ? ` (${couponCode})` : ""}
+                    </span>
+                    <span className="font-medium text-green-600">
+                      -₦{discountAmount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 mt-1 border-t border-gray-200">
+                  <span className="font-medium text-gray-600">Total Amount</span>
+                  <span className="text-2xl font-bold text-[#FF5A00]">
+                    ₦{Number(order.total_amount).toLocaleString()}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
- 
+
           {/* Status Update Form */}
           <Card className="shadow-sm border-orange-100 bg-orange-50/30">
             <CardContent className="p-6">
@@ -185,7 +229,7 @@ export default async function OrderDetailPage({
             </CardContent>
           </Card>
         </div>
- 
+
         {/* Right Column */}
         <div className="space-y-6">
           <Card className="shadow-sm border-gray-200">
@@ -218,7 +262,7 @@ export default async function OrderDetailPage({
               </div>
             </CardContent>
           </Card>
- 
+
           <Card className="shadow-sm border-gray-200">
             <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
               <CardTitle className="text-lg flex items-center gap-2">
