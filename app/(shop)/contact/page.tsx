@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image"
 import { Phone, Mail, MapPin, CheckCircle2 } from "lucide-react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faXTwitter, faFacebookF, faInstagram, faYoutube} from "@fortawesome/free-brands-svg-icons";
+import {faXTwitter, faFacebookF, faInstagram, faTiktok} from "@fortawesome/free-brands-svg-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -106,6 +106,9 @@ export default function ContactPage() {
             </a>
             <a href="https://www.instagram.com/zeek.you" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
               <FontAwesomeIcon icon={faInstagram} className="w-5 h-5" />
+            </a>
+            <a href="https://www.tiktok.com/@zeek.you" className="h-10 w-10 rounded-full bg-orange-400 hover:bg-white hover:text-[#FF5A00] flex items-center justify-center transition-colors">
+              <FontAwesomeIcon icon={faTiktok} className="w-5 h-5" />
             </a>
           </div>
  
