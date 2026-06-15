@@ -91,7 +91,7 @@ export function HeroBanner() {
                   Get the products at the best price.
                 </p>
                 <Button asChild className="bg-[#E65C2C] hover:bg-orange-700 text-white rounded-md px-10 py-6 text-lg font-bold shadow-lg">
-                  <Link href="/shop?brand=Bio-Oil">SHOP NOW</Link>
+                  <Link href="/shop?brand=Bio-Oil%2CBio+Oil">SHOP NOW</Link>
                 </Button>
               </div>
             </div>
@@ -122,7 +122,7 @@ export function HeroBanner() {
                   Trusted. True. The Original.
                 </p>
                 <Button asChild className="bg-[#8D2533] hover:bg-[#6b1b26] text-white rounded-md px-10 py-6 text-lg font-bold shadow-lg">
-                  <Link href="/shop?brand=ORS">SHOP NOW</Link>
+                  <Link href="/shop?brand=ORS+Olive+Oil">SHOP NOW</Link>
                 </Button>
               </div>
             </div>
