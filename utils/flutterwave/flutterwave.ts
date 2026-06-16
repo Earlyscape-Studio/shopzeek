@@ -12,8 +12,8 @@ const TOKEN_URL ="https://idp.flutterwave.com/realms/flutterwave/protocol/openid
 //   : 'https://developersandbox-api.flutterwave.com'
 
 
-export const FLW_BASE_URL = 'https://f4bexperience.flutterwave.com'
-// export const FLW_BASE_URL = 'https://developersandbox-api.flutterwave.com'
+// export const FLW_BASE_URL = 'https://f4bexperience.flutterwave.com'
+export const FLW_BASE_URL = 'https://developersandbox-api.flutterwave.com'
 
 interface TokenCache {
     accessToken: string

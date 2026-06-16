@@ -1,44 +1,37 @@
-"use server"
+"use server";
 
-import {Resend} from "resend"
+import { Resend } from "resend";
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
-export interface ContactFormState{
-    success: boolean
-    error: string | null
+export interface ContactFormState {
+  success: boolean;
+  error: string | null;
 }
 
-
 export async function sendContactMessage(
-    prevState: ContactFormState | undefined,
-    formData: FormData
+  prevState: ContactFormState | undefined,
+  formData: FormData
 ): Promise<ContactFormState> {
-    const firstName = (formData.get("firstName") as string)?.trim();
-    const lastName  = (formData.get("lastName")  as string)?.trim();
-    const email     = (formData.get("email")     as string)?.trim();
-    const phone     = (formData.get("phone")     as string)?.trim();
-    const subject   = (formData.get("subject")   as string)?.trim();
-    const message   = (formData.get("message")   as string)?.trim();
+  const firstName = (formData.get("firstName") as string)?.trim();
+  const lastName  = (formData.get("lastName")  as string)?.trim();
+  const email     = (formData.get("email")     as string)?.trim();
+  const phone     = (formData.get("phone")     as string)?.trim();
+  const subject   = (formData.get("subject")   as string)?.trim();
+  const message   = (formData.get("message")   as string)?.trim();
 
+  if (!firstName || !email || !message) {
+    return { success: false, error: "Please fill in your name, email, and message." };
+  }
 
-
-
-    if(!firstName || !email || !message){
-        return {success: false, error: "Please fill in your name email and message"}
-    }
-
-
-
-    try{
-        const {error} = await resend.emails.send({
-            from: "Zeek Contact Form <hello@zeek.you>",
-            to: "hello@zeek.you",
-            replyTo: email,
-            subject: `[Contact] ${subject || "General Inquiry"} - ${firstName} ${lastName ?? ""}`.trim(),
-            html: `
-             <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#fff;border:1px solid #e4e4e7;border-radius:8px;">
+  try {
+    const { error } = await resend.emails.send({
+      from: "Zeek Contact Form <hello@zeek.you>",
+      to:   "hello@zeek.you",
+      replyTo: email,
+      subject: `[Contact] ${subject || "General Inquiry"} — ${firstName} ${lastName ?? ""}`.trim(),
+      html: `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#fff;border:1px solid #e4e4e7;border-radius:8px;">
           <h2 style="color:#FF5A00;margin:0 0 24px;">New Contact Form Message</h2>
           <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
             <tr>
@@ -60,18 +53,17 @@ export async function sendContactMessage(
             Sent via the Zeek contact form. Reply directly to respond to ${firstName}.
           </p>
         </div>
-            `
-        })
+      `,
+    });
 
-
-        if(error){
-            console.error("Contact email error: ", error)
-            return {success: false,  error: "Failed to send your message please try again."}
-        }
-        
-        return {success: true, error: null}
-    }catch(err){
-        console.log("sendContactMessage threw: ", err)
-        return {success: false, error: "Something went wrong please try again later."}
+    if (error) {
+      console.error("Contact email error:", error);
+      return { success: false, error: "Failed to send your message. Please try again." };
     }
+
+    return { success: true, error: null };
+  } catch (err) {
+    console.error("sendContactMessage threw:", err);
+    return { success: false, error: "Something went wrong. Please try again later." };
+  }
 }

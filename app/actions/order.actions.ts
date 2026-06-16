@@ -10,31 +10,19 @@ import { revalidatePath } from "next/cache";
 import { validateCoupon } from "./coupon.actions";
 import { triggerOrderEmails, triggerDeliveryEmail } from "@/app/actions/email.actions";
 
-
-
-
-
-
-
-
-
 interface ShippingBreakdown {
   baseCost: number;
   vat: number;
   total?: number;
 }
 
-
-
-
-
 async function validateOrderTotal(
   cartItems: any[],
   couponCode: string | null,
   providedTotal: number,
   shippingBreakdown?: ShippingBreakdown,
-  userId?: string | null,
-  email?: string | null
+  userId?: string | null,         // ← per-user coupon check (logged-in)
+  email?: string | null           // ← per-email coupon check (guest + logged-in)
 ): Promise<{ valid: boolean; error?: string; discount?: number; coupon?: any }> {
   try {
     let recalculatedSubtotal = 0;
@@ -67,31 +55,34 @@ async function validateOrderTotal(
       if (couponRes.success && couponRes.coupon) {
         couponData = couponRes.coupon;
 
-        if(userId){
-          const {count} = await supabaseAdmin
-          .from("orders")
-          .select("*", {count: "exact", head: true})
-          .eq("user_id", userId)
-          .eq("coupon_id", couponData.id)
-          .in("status", ["paid", "processing", "shipped", "delivered"])
+        // Per-user coupon check: reject if this logged-in user has already paid
+        // with this coupon before.
+        if (userId) {
+          const { count } = await supabaseAdmin
+            .from("orders")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .eq("coupon_id", couponData.id)
+            .in("status", ["paid", "processing", "shipped", "delivered"]);
 
-          if((count ?? 0) > 0){
-            return {valid: false, error: "You have already used this coupon"}
+          if ((count ?? 0) > 0) {
+            return { valid: false, error: "You have already used this coupon." };
           }
         }
 
+        // Per-email coupon check: catches guest checkouts (no user_id) and
+        // logged-in users checking out under an email tied to a prior order.
+        // Case-insensitive match since emails are stored as typed.
+        if (email) {
+          const { count: emailCount } = await supabaseAdmin
+            .from("orders")
+            .select("*", { count: "exact", head: true })
+            .ilike("email", email.trim())
+            .eq("coupon_id", couponData.id)
+            .in("status", ["paid", "processing", "shipped", "delivered"]);
 
-        if(email){
-          const {count: emailCount} = await supabaseAdmin
-          .from("orders")
-          .select("*", { count: "exact", head: true})
-          .eq("email", email.trim())
-          .eq("coupon_id", couponData.id)
-          .in("status", ["paid","processsing", "shipped", "delivered"])
-
-
-          if((emailCount ?? 0) > 0) {
-            return {valid: false, error:  "You have already used this coupon"}
+          if ((emailCount ?? 0) > 0) {
+            return { valid: false, error: "You have already used this coupon." };
           }
         }
 
@@ -125,14 +116,6 @@ async function validateOrderTotal(
   }
 }
 
-
-
-
-
-
-
-
-// FIX: was `{p}firstName` (missing $) — first name was always blank in delivery address
 function formatDeliveryAddress(formData: FormData): string {
   const useAlternate = formData.get("use_alternate_shipping") === "on";
   const p = useAlternate ? "ship_" : "";
@@ -154,13 +137,6 @@ function formatDeliveryAddress(formData: FormData): string {
     .filter(Boolean)
     .join("\n");
 }
-
-
-
-
-
-
-
 
 async function saveCheckoutAddress(
   userId: string,
@@ -212,14 +188,6 @@ async function saveCheckoutAddress(
   }
 }
 
-
-
-
-
-
-
-
-
 async function upsertFlutterwaveCustomer(
   accessToken: string,
   email: string,
@@ -237,14 +205,13 @@ async function upsertFlutterwaveCustomer(
 
   const data = await res.json();
 
-  console.log("upsert data", data)
-
   if (res.ok && data.status === "success") return data.data.id;
-  console.log("upsert data error code", data.error?.code)
 
-
-
-  const isAlreadyExists = data.error?.type === "CUSTOMER_ALREADY_EXISTS" || data.error?.type === "RESOURCE_CONFLICT" || Number(data.error?.code) === 10409 || Number(data.error?.code) === 1203409
+  const isAlreadyExists =
+    data.error?.type === "CUSTOMER_ALREADY_EXISTS" ||
+    data.error?.type === "RESOURCE_CONFLICT" ||
+    Number(data.error?.code) === 10409 ||
+    Number(data.error?.code) === 1203409;
 
   if (isAlreadyExists) {
     const lookupRes = await fetch(
@@ -252,7 +219,6 @@ async function upsertFlutterwaveCustomer(
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
     const lookupData = await lookupRes.json();
-    console.log("upsert lookup data", lookupData)
     const record = Array.isArray(lookupData.data) ? lookupData.data[0] : lookupData.data;
     if (!record?.id) throw new Error("Could not retrieve existing customer.");
     return record.id;
@@ -260,16 +226,6 @@ async function upsertFlutterwaveCustomer(
 
   throw new Error(data.error?.message || "Failed to create customer record.");
 }
-
-
-
-
-
-
-
-
-
-
 
 export async function initCardPayment(
   formData: FormData,
@@ -279,10 +235,7 @@ export async function initCardPayment(
   shippingBreakdown?: ShippingBreakdown,
   couponCode?: string | null
 ) {
-
-  
   try {
-
     const cookieStore = await cookies();
     const supabase    = await createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
@@ -292,7 +245,8 @@ export async function initCardPayment(
     const lastName  = formData.get("lastName")  as string;
     const phone     = (formData.get("phone") as string).replace(/\s+/g, "");
 
-
+    // Pass userId and email so validateOrderTotal can enforce per-user and
+    // per-email coupon limits (covers logged-in users and guest checkouts)
     const validation = await validateOrderTotal(
       cartItems,
       couponCode ?? null,
@@ -302,8 +256,6 @@ export async function initCardPayment(
       email
     );
     if (!validation.valid) return { success: false, error: validation.error };
-
-    
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -317,7 +269,7 @@ export async function initCardPayment(
         payment_method: "card",
         total_amount: totalAmount,
         shipping_cost: Math.round(shippingBreakdown?.baseCost ?? 0),
-        shipping_vat: Math.round(shippingBreakdown?.vat ?? 0),
+        shipping_vat:  Math.round(shippingBreakdown?.vat     ?? 0),
         discount_amount: validation.discount ?? 0,
         coupon_id: validation.coupon?.id ?? null,
       })
@@ -327,15 +279,13 @@ export async function initCardPayment(
     if (orderError) return { success: false, error: `Database Error: ${orderError.message}` };
 
     const orderItems = cartItems.map((item) => ({
-      order_id: order.id,
+      order_id:   order.id,
       product_id: item.product_id,
-      quantity: item.quantity,
+      quantity:   item.quantity,
       unit_price: item.price,
     }));
 
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-
-    // FIX: rollback orphaned order if items insert fails
     if (itemsError) {
       await supabase.from("orders").delete().eq("id", order.id);
       return { success: false, error: `Items Error: ${itemsError.message}` };
@@ -350,24 +300,9 @@ export async function initCardPayment(
 
     const transactionRef = `FW-${order.id.slice(0, 8)}-${Date.now()}`;
     const accessToken    = await getFlutterwaveToken();
-    const customerId     = await upsertFlutterwaveCustomer(
-      accessToken, email, firstName, lastName
-    );
+    const customerId     = await upsertFlutterwaveCustomer(accessToken, email, firstName, lastName);
 
-    console.log("card customerId", customerId)
-
-    const paymentMethod = {
-        type: "card",
-        card: {
-          nonce: encryptedCard.nonce,
-          encrypted_card_number: encryptedCard.encrypted_card_number,
-          encrypted_expiry_month: encryptedCard.encrypted_expiry_month,
-          encrypted_expiry_year: encryptedCard.encrypted_expiry_year,
-          encrypted_cvv: encryptedCard.encrypted_cvv,
-        }
-      }
-
-    const paymentMethodResponse = await fetch(`${FLW_BASE_URL}/payment-methods`,{
+    const paymentMethodResponse = await fetch(`${FLW_BASE_URL}/payment-methods`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -375,12 +310,20 @@ export async function initCardPayment(
         "X-Trace-Id": randomUUID(),
         "X-Idempotency-Key": transactionRef,
       },
-      body: JSON.stringify(paymentMethod)
-    })
+      body: JSON.stringify({
+        type: "card",
+        card: {
+          nonce: encryptedCard.nonce,
+          encrypted_card_number: encryptedCard.encrypted_card_number,
+          encrypted_expiry_month: encryptedCard.encrypted_expiry_month,
+          encrypted_expiry_year: encryptedCard.encrypted_expiry_year,
+          encrypted_cvv: encryptedCard.encrypted_cvv,
+        },
+      }),
+    });
 
-    const cardPaymentMethodData = await paymentMethodResponse.json()
-    console.log("card payment method data", cardPaymentMethodData)
-    const paymentMethodId = cardPaymentMethodData.data.id
+    const cardPaymentMethodData = await paymentMethodResponse.json();
+    const paymentMethodId = cardPaymentMethodData.data.id;
 
     const payload = {
       amount: Math.round(totalAmount),
@@ -389,7 +332,7 @@ export async function initCardPayment(
       redirect_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/callback`,
       meta: { order_id: order.id },
       customer_id: customerId,
-      payment_method_id: paymentMethodId
+      payment_method_id: paymentMethodId,
     };
 
     const response = await fetch(`${FLW_BASE_URL}/charges`, {
@@ -407,7 +350,6 @@ export async function initCardPayment(
     const flwData = await response.json();
     console.log("Flutterwave response:", JSON.stringify(flwData, null, 2));
 
-
     if (!response.ok || flwData.status !== "success") {
       return {
         success: false,
@@ -423,20 +365,21 @@ export async function initCardPayment(
     const chargeStatus = flwData.data.status;
     const nextAction   = flwData.data.next_action;
 
-    if(
+    if (
       chargeStatus === "failed" ||
       chargeStatus === "declined" ||
       chargeStatus === "error"
-    ){
-      return{
+    ) {
+      return {
         success: false,
-        error: flwData.data.processor_response || "Your payment was declined. Please try a different card."
-      }
+        error:
+          flwData.data.processor_response ||
+          "Your payment was declined. Please try a different card.",
+      };
     }
 
     if (chargeStatus === "succeeded") {
-
-       await supabase
+      await supabase
         .from("orders")
         .update({
           status: "paid",
@@ -450,6 +393,7 @@ export async function initCardPayment(
       } catch (emailError) {
         console.error("Failed to trigger order emails:", emailError);
       }
+
       return {
         success: true,
         orderId: order.id,
@@ -467,7 +411,7 @@ export async function initCardPayment(
       chargeId: flwData.data.id,
       transactionRef,
       nextActionType: nextAction?.type ?? null,
-      redirectUrl: nextAction?.redirect_url?.url ?? null,
+      redirectUrl:    nextAction?.redirect_url?.url ?? null,
       paymentInstruction: nextAction?.payment_instruction?.note ?? null,
     };
   } catch (err: any) {
@@ -478,33 +422,16 @@ export async function initCardPayment(
   }
 }
 
-
-
-
-
-
-
-
-
-export async function cancelPendingOrder(orderId: string){
-  const cookieStore = await cookies()
-  const supabase = createClient(cookieStore)
+export async function cancelPendingOrder(orderId: string) {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
 
   await supabase
-   .from("orders")
-   .update({status: "cancelled"})
-   .eq("id", orderId)
-   .eq("status", "pending_payment")
+    .from("orders")
+    .update({ status: "cancelled" })
+    .eq("id", orderId)
+    .eq("status", "pending_payment");
 }
-
-
-
-
-
-
-
-
-
 
 export async function authorizeCardCharge(
   chargeId: string,
@@ -542,13 +469,9 @@ export async function authorizeCardCharge(
       body: JSON.stringify(body),
     });
 
-    console.log("authorizeCharge response", response)
-
     const data = await response.json();
 
-
     if (!response.ok || data.status !== "success") {
-      console.error("authorizeCharge failed", data);
       return {
         success: false,
         error: data.error?.message || data.message || "Authorization failed",
@@ -562,12 +485,13 @@ export async function authorizeCardCharge(
       chargeStatus === "failed" ||
       chargeStatus === "declined" ||
       chargeStatus === "error"
-    ){
-      console.error("charge status value", data);
-      return{
+    ) {
+      return {
         success: false,
-        error: data.data.processor_response || "Your payment was declined. Please check your card details or try a different card."
-      }
+        error:
+          data.data.processor_response ||
+          "Your payment was declined. Please check your card details or try a different card.",
+      };
     }
 
     if (chargeStatus === "succeeded") {
@@ -583,7 +507,7 @@ export async function authorizeCardCharge(
       success: true,
       chargeStatus: data.data.status,
       nextActionType: nextAction?.type ?? null,
-      redirectUrl: nextAction?.redirect_url?.url ?? null,
+      redirectUrl:    nextAction?.redirect_url?.url ?? null,
     };
   } catch (err: any) {
     return {
@@ -592,15 +516,6 @@ export async function authorizeCardCharge(
     };
   }
 }
-
-
-
-
-
-
-
-
-
 
 export async function verifyTransaction(txRef: string) {
   try {
@@ -630,16 +545,6 @@ export async function verifyTransaction(txRef: string) {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
 export async function initBankTransfer(
   formData: FormData,
   cartItems: any[],
@@ -650,9 +555,6 @@ export async function initBankTransfer(
   console.log("bank transfer started");
 
   try {
-
-
-
     const cookieStore = await cookies();
     const supabase    = await createClient(cookieStore);
     const { data: { user } } = await supabase.auth.getUser();
@@ -662,7 +564,8 @@ export async function initBankTransfer(
     const lastName  = formData.get("lastName")  as string;
     const phone     = ((formData.get("phone") as string) ?? "").replace(/\s+/g, "");
 
-
+    // Pass userId and email so validateOrderTotal can enforce per-user and
+    // per-email coupon limits (covers logged-in users and guest checkouts)
     const validation = await validateOrderTotal(
       cartItems,
       couponCode ?? null,
@@ -671,10 +574,7 @@ export async function initBankTransfer(
       user?.id ?? null,
       email
     );
-    
     if (!validation.valid) return { success: false, error: validation.error };
-
-    
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -688,7 +588,7 @@ export async function initBankTransfer(
         payment_method: "bank_transfer",
         total_amount: totalAmount,
         shipping_cost: Math.round(shippingBreakdown?.baseCost ?? 0),
-        shipping_vat: Math.round(shippingBreakdown?.vat ?? 0),
+        shipping_vat:  Math.round(shippingBreakdown?.vat     ?? 0),
         discount_amount: validation.discount ?? 0,
         coupon_id: validation.coupon?.id ?? null,
       })
@@ -698,15 +598,13 @@ export async function initBankTransfer(
     if (orderError) return { success: false, error: `Order error: ${orderError.message}` };
 
     const orderItems = cartItems.map((item) => ({
-      order_id: order.id,
+      order_id:   order.id,
       product_id: item.product_id,
-      quantity: item.quantity,
+      quantity:   item.quantity,
       unit_price: item.price,
     }));
 
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-
-    // FIX: rollback orphaned order if items insert fails
     if (itemsError) {
       await supabase.from("orders").delete().eq("id", order.id);
       return { success: false, error: `Items Error: ${itemsError.message}` };
@@ -739,7 +637,6 @@ export async function initBankTransfer(
       });
 
       const customerData = await customerRes.json();
-      // console.log("Customer create response:", JSON.stringify(customerData));
 
       if (customerRes.ok && customerData.status === "success") {
         customerId = customerData.data.id;
@@ -779,7 +676,7 @@ export async function initBankTransfer(
         "Content-Type": "application/json",
         "X-Trace-Id": randomUUID(),
         "X-Idempotency-Key": transactionRef,
-        // "X-Scenario-Key": "scenario:successful"
+        "X-Scenario-Key": "scenario:successful"
       },
       body: JSON.stringify(payload),
     });
@@ -788,7 +685,6 @@ export async function initBankTransfer(
     console.log("Virtual account response:", flwData);
 
     if (!response.ok || flwData.status !== "success") {
-      // Rollback order since virtual account creation failed
       await supabase.from("orders").delete().eq("id", order.id);
       return { success: false, error: flwData.message || "Bank transfer setup failed" };
     }
@@ -806,11 +702,11 @@ export async function initBankTransfer(
       transactionRef,
       virtualAccountId: flwData.data.id,
       accountDetails: {
-        bank_name: flwData.data.account_bank_name,
+        bank_name:      flwData.data.account_bank_name,
         account_number: flwData.data.account_number,
-        account_name: flwData.data.note,
-        amount: flwData.data.amount,
-        expires_at: flwData.data.account_expiration_datetime,
+        account_name:   flwData.data.note,
+        amount:         flwData.data.amount,
+        expires_at:     flwData.data.account_expiration_datetime,
         note: `Transfer exactly ₦${transferAmount.toLocaleString("en-NG", {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
@@ -818,7 +714,7 @@ export async function initBankTransfer(
       },
     };
   } catch (err) {
-    console.error("an unexpected error occurred generating your bank account", err);
+    console.error("Unexpected error generating bank account:", err);
     const message = err instanceof Error ? err.message : String(err);
     return {
       success: false,
@@ -826,16 +722,6 @@ export async function initBankTransfer(
     };
   }
 }
-
-
-
-
-
-
-
-
-
-
 
 export async function verifyBankTransferPayment(
   txRef: string,
@@ -857,30 +743,29 @@ export async function verifyBankTransferPayment(
     }
 
     const accessToken = await getFlutterwaveToken();
-    const response = await fetch(
+    const response    = await fetch(
       `${FLW_BASE_URL}/charges?virtual_account_id=${virtualAccountId}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
     if (!response.ok) {
-      if(response.status !== 404) {
-        console.error("Bank transfer verification error", response.status)
+      if (response.status !== 404) {
+        console.error("Bank transfer verification error", response.status);
       }
-      
       return { paid: false, pending: true };
     }
-  
-    const data = await response.json();
-    const charges = Array.isArray(data.data) ? data.data : []
-    const transaction = charges.find((c: any) => c.status === "succeeded" || c.status === "successful")
+
+    const data      = await response.json();
+    const charges   = Array.isArray(data.data) ? data.data : [];
+    const transaction = charges.find(
+      (c: any) => c.status === "succeeded" || c.status === "successful"
+    );
 
     if (!transaction) {
-      console.warn("No transaction found for bank transfer ref:", txRef);
       return { paid: false, pending: true };
     }
 
-    const isPaid =
-      transaction.status === "successful" || transaction.status === "succeeded";
+    const isPaid = transaction.status === "successful" || transaction.status === "succeeded";
 
     if (isPaid) {
       const { data: updatedOrder } = await supabase
@@ -894,6 +779,7 @@ export async function verifyBankTransferPayment(
         .neq("status", "paid")
         .select("id");
 
+      // triggerOrderEmails also increments coupon used_count (idempotent via above guard)
       if (updatedOrder && updatedOrder.length > 0) {
         try {
           await triggerOrderEmails(orderId);
@@ -911,18 +797,6 @@ export async function verifyBankTransferPayment(
     return { paid: false, pending: true };
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 export async function updateOrderStatus(orderId: string, formData: FormData) {
   const cookieStore = await cookies();

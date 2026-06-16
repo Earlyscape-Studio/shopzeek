@@ -1,4 +1,4 @@
-
+import * as React from "react";
 import {
   Body,
   Container,
@@ -12,8 +12,8 @@ import {
   Text,
   Section,
   Button,
-} from '@react-email/components';
-import { OrderEmailPayload } from '@/types/email';
+} from "@react-email/components";
+import { OrderEmailPayload } from "@/types/email";
 
 export const AdminOrderNotificationEmail = ({
   orderId,
@@ -26,15 +26,15 @@ export const AdminOrderNotificationEmail = ({
   shippingAddress,
   discountAmount,
   couponCode,
-}: Omit<OrderEmailPayload, 'shippingCost' | 'shippingVat' | 'orderDate' | 'orderDetailUrl'>) => {
+}: Omit<OrderEmailPayload, "shippingCost" | "shippingVat" | "orderDate" | "orderDetailUrl">) => {
   return (
-     <Html lang="en" dir="ltr">
+    <Html lang="en" dir="ltr">
       <Head />
       <Preview>🎉 New Order — {customerName} · ₦{totalAmount.toLocaleString()}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={heading}>New Order Alert 🎉</Heading>
- 
+
           {/* Customer meta */}
           <Section style={metaSection}>
             <Text style={metaText}><strong>Order ID:</strong> {orderId}</Text>
@@ -48,7 +48,7 @@ export const AdminOrderNotificationEmail = ({
               </Text>
             )}
           </Section>
- 
+
           {/* Shipping address */}
           <Heading as="h3" style={subHeading}>Shipping Address</Heading>
           <Section style={addressSection}>
@@ -70,9 +70,9 @@ export const AdminOrderNotificationEmail = ({
             )}
             <Text style={addressText}>{shippingAddress.country}</Text>
           </Section>
- 
+
           <Hr style={hr} />
- 
+
           {/* Items */}
           <Heading as="h3" style={subHeading}>Items Ordered</Heading>
           {items.map((item, index) => (
@@ -86,9 +86,9 @@ export const AdminOrderNotificationEmail = ({
               </Column>
             </Row>
           ))}
- 
+
           <Hr style={hr} />
- 
+
           {/* Totals */}
           {discountAmount > 0 && (
             <Row style={{ marginBottom: "8px" }}>
@@ -108,9 +108,9 @@ export const AdminOrderNotificationEmail = ({
               <Text style={totalValue}>₦{totalAmount.toLocaleString()}</Text>
             </Column>
           </Row>
- 
+
           <Hr style={hr} />
- 
+
           {/* Admin CTA */}
           <Section style={{ textAlign: "center" as const, marginTop: "16px" }}>
             <Button

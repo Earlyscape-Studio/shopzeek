@@ -1,16 +1,16 @@
 "use server";
 
 import { Resend } from "resend";
-import { OrderReceiptEmail } from "@/components/emails/orderReceiptEmail";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ReceiptDocument, type ReceiptData } from "@/components/shared/pdf/receiptDocument";
+import { OrderReceiptEmail } from "@/components/emails/orderReceiptEmail";
 import { AdminOrderNotificationEmail } from "@/components/emails/adminOrderNotificationEmail";
 import { DeliveryScheduleEmail } from "@/components/emails/deliveryScheduleEmail";
 import { AbandonedCartEmail } from "@/components/emails/abandonedCartEmail";
 import { OrderEmailPayload, DeliveryEmailPayload, AbandonedCartEmailPayload } from "@/types/email";
-import {incrementCouponUsedCount} from "@/app/actions/coupon.actions"
 import { WelcomeEmail } from "@/components/emails/welcomeEmail";
 import { supabaseAdmin } from "@/utils/supabase/admin";
+import { incrementCouponUsedCount } from "@/app/actions/coupon.actions";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = "zeek Orders <hello@zeek.you>";
@@ -63,11 +63,13 @@ export async function triggerDeliveryEmail(orderId: string) {
       customerName: order.customer_name,
       email: order.email,
       estimatedDeliveryDate: new Date(order.delivery_date).toLocaleDateString("en-GB", {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long'
+        weekday: "long",
+        day: "numeric",
+        month: "long",
       }),
-      trackingUrl: order.tracking_url || `${process.env.NEXT_PUBLIC_BASE_URL}/order/success?reference=${orderId}`,
+      trackingUrl:
+        order.tracking_url ||
+        `${process.env.NEXT_PUBLIC_BASE_URL}/order/success?reference=${orderId}`,
     };
 
     return await sendDeliveryEmail(payload);
@@ -103,47 +105,50 @@ export async function sendDeliveryEmail(payload: DeliveryEmailPayload) {
 }
 
 export async function triggerOrderEmails(orderId: string) {
-  console.log("triggerOrderEmails called for order:", orderId)
+  console.log("triggerOrderEmails called for order:", orderId);
 
   try {
     const { data: fullOrder, error: fetchError } = await supabaseAdmin
-    .from("orders")
-    .select(`
-      id,
-      email,
-      customer_name,
-      phone:customer_phone,
-      payment_method,
-      total_amount,
-      shipping_cost,
-      shipping_vat,
-      discount_amount,
-      delivery_address,
-      created_at,
-      coupon:coupons (
-        code
-      ),
-      order_items (
-        quantity,
-        unit_price,
-        products (
-          name
+      .from("orders")
+      .select(`
+        id,
+        email,
+        customer_name,
+        coupon_id,
+        phone:customer_phone,
+        payment_method,
+        total_amount,
+        shipping_cost,
+        shipping_vat,
+        discount_amount,
+        delivery_address,
+        created_at,
+        coupon:coupons (
+          code
+        ),
+        order_items (
+          quantity,
+          unit_price,
+          products (
+            name
+          )
         )
-      )
-    `)
-    .eq("id", orderId)
-    .single();
+      `)
+      .eq("id", orderId)
+      .single();
 
     if (fetchError || !fullOrder) {
       console.error("Failed to fetch order details for email:", fetchError);
       return { success: false, error: "Order not found" };
     }
 
-    if((fullOrder as any).coupon_id) {
-      try{
-        await incrementCouponUsedCount((fullOrder as any).coupon_id)
-      }catch(couponErr){
-        console.error("Failed to increment coupon count: ", couponErr)
+    // Increment coupon usage count exactly once, here, guarded by the caller's
+    // idempotency check (.neq("status", "paid")).
+    if ((fullOrder as any).coupon_id) {
+      try {
+        await incrementCouponUsedCount((fullOrder as any).coupon_id);
+      } catch (couponErr) {
+        console.error("Failed to increment coupon count:", couponErr);
       }
     }
 
@@ -161,7 +166,7 @@ export async function triggerOrderEmails(orderId: string) {
       orderDetailUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/order/success?reference=${fullOrder.id}`,
       email: fullOrder.email,
       customerName: fullOrder.customer_name,
-      phone: fullOrder.phone || "",
+      phone: (fullOrder as any).phone || "",
       paymentMethod: fullOrder.payment_method as any,
       totalAmount: fullOrder.total_amount,
       shippingCost: fullOrder.shipping_cost,
@@ -174,9 +179,10 @@ export async function triggerOrderEmails(orderId: string) {
         price: item.unit_price,
       })),
       shippingAddress: {
+        // name: addrLines[0] || fullOrder.customer_name,
         street: addrLines[1] || "",
-        city:   addrLines[2] || "",
-        state:  addrLines[3] || "",
+        city: addrLines[2] || "",
+        state: addrLines[3] || "",
         country: addrLines[4] || "Nigeria",
       },
     };
@@ -190,9 +196,10 @@ export async function triggerOrderEmails(orderId: string) {
 
 export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
   try {
-
     const shippingTotal = (orderDetails.shippingCost ?? 0) + (orderDetails.shippingVat ?? 0);
- 
+
+    // Build the same data shape used by the order-success download button so
+    // the emailed PDF and the one customers can download look identical.
     const receiptData: ReceiptData = {
       orderId: orderDetails.orderId,
       orderDate: orderDetails.orderDate,
@@ -208,19 +215,21 @@ export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
       shippingAddress: orderDetails.shippingAddress,
     };
 
-
     let receiptPdfBuffer: Buffer | null = null;
     try {
+      // ReceiptDocument is a plain .tsx component — call it directly to get
+      // the React element (avoids needing JSX syntax in this .ts file).
       receiptPdfBuffer = await renderToBuffer(ReceiptDocument({ data: receiptData }));
     } catch (pdfError) {
       console.error("Failed to generate receipt PDF for email:", pdfError);
     }
 
-
+    // Customer receipt — now includes items, address, totals breakdown, and
+    // a downloadable PDF copy of the same receipt.
     const customerPromise = resend.emails.send({
       from: FROM_EMAIL,
       to: orderDetails.email,
-      subject: "Cha-ching! We got your order! 🛍️",
+      subject: "Cha-ching! Your order is confirmed 🛍️",
       react: OrderReceiptEmail({
         customerName: orderDetails.customerName,
         orderId: orderDetails.orderId,
@@ -244,13 +253,11 @@ export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
         : undefined,
     });
 
-    // 2. Send detailed profile to operational admin
+    // Admin notification — full operational detail
     const adminPromise = resend.emails.send({
       from: FROM_EMAIL,
       to: ADMIN_EMAIL,
-      subject: `🎉 [New Order] ${
-        orderDetails.customerName
-      } - ₦${orderDetails.totalAmount.toLocaleString()}`,
+      subject: `🎉 [New Order] ${orderDetails.customerName} — ₦${orderDetails.totalAmount.toLocaleString()}`,
       react: AdminOrderNotificationEmail({
         orderId: orderDetails.orderId,
         customerName: orderDetails.customerName,
@@ -265,18 +272,14 @@ export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
       }),
     });
 
-    const [customerRes, adminRes] = await Promise.all([
-      customerPromise,
-      adminPromise,
-    ]);
+    const [customerRes, adminRes] = await Promise.all([customerPromise, adminPromise]);
 
-    if (customerRes.error)
-      console.error("Customer email error:", customerRes.error);
-    if (adminRes.error) console.error("Admin email error:", adminRes.error);
+    if (customerRes.error) console.error("Customer email error:", customerRes.error);
+    if (adminRes.error)    console.error("Admin email error:", adminRes.error);
 
     return { success: !customerRes.error };
   } catch (err) {
-    console.error("unexpected error sending emails:", err);
+    console.error("Unexpected error sending emails:", err);
     return { success: false, error: err };
   }
 }
@@ -286,7 +289,7 @@ export async function sendWelcomeEmail(email: string, firstName: string) {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: "You’re officially on the VIP list\! 🎉",
+      subject: "You're officially on the VIP list! 🎉",
       react: WelcomeEmail({ firstName }),
     });
 
@@ -301,4 +304,3 @@ export async function sendWelcomeEmail(email: string, firstName: string) {
     return { success: false, error };
   }
 }
-

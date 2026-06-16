@@ -1,39 +1,36 @@
-import {Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
-
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 export interface ReceiptItem {
-    name: string
-    quantity: number
-    price: number
+  name: string;
+  quantity: number;
+  price: number;
 }
-
 
 export interface ReceiptShippingAddress {
-    name?: string
-    street: string
-    city: string
-    state: string
-    country: string
+  name?: string;
+  street: string;
+  city: string;
+  state: string;
+  country: string;
 }
 
-export interface ReceiptData{
-    orderId: string
-    orderDate: string
-    customerName: string
-    email: string
-    phone?: string
-    paymentMethod: string
-    items: ReceiptItem[];
-    shippingCost: number;
-    discountAmount: number;
-    couponCode?: string | null;
-    totalAmount: number;
-    shippingAddress?: ReceiptShippingAddress;
+export interface ReceiptData {
+  orderId: string;
+  orderDate: string;
+  customerName: string;
+  email: string;
+  phone?: string;
+  paymentMethod: string;
+  items: ReceiptItem[];
+  shippingCost: number;
+  discountAmount: number;
+  couponCode?: string | null;
+  totalAmount: number;
+  shippingAddress?: ReceiptShippingAddress;
 }
-
 
 const ORANGE = "#FF5A00";
- 
+
 const styles = StyleSheet.create({
   page: {
     padding: 36,
@@ -156,7 +153,7 @@ const styles = StyleSheet.create({
   },
   footerText: { fontSize: 9, color: "#a1a1aa", marginBottom: 2 },
 });
- 
+
 // "₦" is unreliable across PDF base fonts without registering a custom font,
 // so receipts use "NGN" — keeps things crisp without extra font dependencies.
 const formatCurrency = (value: number) =>
@@ -164,20 +161,20 @@ const formatCurrency = (value: number) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
- 
+
 export function ReceiptDocument({ data }: { data: ReceiptData }) {
   const subtotal = data.items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
- 
+
   const paymentLabel =
     data.paymentMethod === "card"
       ? "Debit / Credit Card"
       : data.paymentMethod === "bank_transfer"
       ? "Bank Transfer"
       : data.paymentMethod;
- 
+
   return (
     <Document title={`Zeek Receipt - ${data.orderId}`}>
       <Page size="A4" style={styles.page}>
@@ -196,7 +193,7 @@ export function ReceiptDocument({ data }: { data: ReceiptData }) {
             <Text style={styles.headerValue}>{data.orderDate}</Text>
           </View>
         </View>
- 
+
         {/* Meta */}
         <View style={styles.metaRow}>
           <View style={styles.metaCol}>
@@ -218,7 +215,7 @@ export function ReceiptDocument({ data }: { data: ReceiptData }) {
             <Text style={[styles.metaValue, { color: "#16a34a" }]}>Paid</Text>
           </View>
         </View>
- 
+
         {/* Items table */}
         <Text style={styles.sectionTitle}>Items Ordered</Text>
         <View style={styles.table}>
@@ -241,7 +238,7 @@ export function ReceiptDocument({ data }: { data: ReceiptData }) {
             </View>
           ))}
         </View>
- 
+
         {/* Totals */}
         <View style={styles.totalsBox}>
           <View style={styles.totalsRow}>
@@ -271,7 +268,7 @@ export function ReceiptDocument({ data }: { data: ReceiptData }) {
             </Text>
           </View>
         </View>
- 
+
         {/* Shipping address */}
         {data.shippingAddress && (
           <>
@@ -296,7 +293,7 @@ export function ReceiptDocument({ data }: { data: ReceiptData }) {
             </View>
           </>
         )}
- 
+
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Thank you for shopping with Zeek!</Text>
