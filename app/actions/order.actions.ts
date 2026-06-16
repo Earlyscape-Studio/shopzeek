@@ -779,6 +779,7 @@ export async function initBankTransfer(
         "Content-Type": "application/json",
         "X-Trace-Id": randomUUID(),
         "X-Idempotency-Key": transactionRef,
+        // "X-Scenario-Key": "scenario:successful"
       },
       body: JSON.stringify(payload),
     });
