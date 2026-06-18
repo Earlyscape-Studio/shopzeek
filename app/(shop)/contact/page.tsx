@@ -59,7 +59,7 @@ export default function ContactPage() {
 
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-[#FF5A00] mb-4">Contact Us</h1>
-        <p className="text-gray-600 font-medium">Any question or remarks? Just write us a message!</p>
+        <p className="text-gray-600 font-medium">Any questions or remarks? Just write us a message!</p>
       </div>
 
       <div className="bg-white rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-2 md:p-4 border border-gray-100 flex flex-col lg:flex-row overflow-hidden relative">

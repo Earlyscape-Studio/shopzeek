@@ -11,6 +11,8 @@ import {
   Column,
   Text,
   Section,
+  Img,
+  Tailwind,
   Button,
 } from "@react-email/components";
 import { OrderEmailPayload } from "@/types/email";
@@ -27,6 +29,9 @@ export const AdminOrderNotificationEmail = ({
   discountAmount,
   couponCode,
 }: Omit<OrderEmailPayload, "shippingCost" | "shippingVat" | "orderDate" | "orderDetailUrl">) => {
+
+  // const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+
   return (
     <Html lang="en" dir="ltr">
       <Head />

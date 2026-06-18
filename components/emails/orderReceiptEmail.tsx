@@ -11,6 +11,8 @@ import {
   Button,
   Row,
   Column,
+  Img,
+  Tailwind
 } from "@react-email/components";
 
 interface OrderItem {
@@ -63,6 +65,8 @@ export const OrderReceiptEmail = ({
       ? "Bank Transfer"
       : paymentMethod ?? "Online Payment";
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+
   return (
     <Html lang="en" dir="ltr">
       <Head />
@@ -70,7 +74,16 @@ export const OrderReceiptEmail = ({
       <Body style={main}>
         <Container style={container}>
           {/* Header */}
-          <Heading style={heading}>zeek</Heading>
+          <Heading style={heading}>
+            <Tailwind>
+              <Img
+                alt="zeek logo"
+                width={250}
+                height={150}
+                src={`${baseUrl}/static/zeek1.svg`} 
+                />
+            </Tailwind>
+          </Heading>
           <Text style={subheader}>Order Confirmation</Text>
 
           <Text style={paragraph}>

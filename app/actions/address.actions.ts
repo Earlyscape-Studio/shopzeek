@@ -117,7 +117,7 @@ export async function getLastOrderBillingInfo(): Promise<ActionResponse<BillingD
 
 
     const lines = (order.delivery_address as string)
-      .split(" \n")
+      .split("\n")
       .map((l: string) => l.trim())
       .filter(Boolean)
 
