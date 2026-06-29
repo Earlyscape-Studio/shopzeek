@@ -15,7 +15,6 @@ import {
 } from '@react-email/components';
 
 
-//TODO: update with zeek logo in this page
 
 
 
@@ -26,13 +25,25 @@ interface WelcomeEmailProps {
 
 
 export const WelcomeEmail = ({ firstName }: WelcomeEmailProps) => {
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+
   return (
     <Html lang="en" dir="ltr">
       <Head />
       <Preview>Welcome to zeek, {firstName}!</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>zeek</Heading>
+          <Heading style={heading}>
+            <Tailwind>
+              <Img
+                alt="zeek logo"
+                width={250}
+                height={150}
+                src={`${baseUrl}/static/zeek1.svg`} 
+                />
+            </Tailwind>
+          </Heading>
 
           <Text style={paragraph}>Hi {firstName},</Text>
           <Text style={paragraph}>
@@ -68,7 +79,7 @@ export const WelcomeEmail = ({ firstName }: WelcomeEmailProps) => {
             className=""
             width={150}
             height={80}
-            src="/zeek1.svg"
+            src={`${baseUrl}/static/zeek1.svg`} 
             />
           </Tailwind>
 

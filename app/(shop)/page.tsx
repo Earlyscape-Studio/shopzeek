@@ -3,7 +3,6 @@ import { createClient } from "@/utils/supabase/server";
 import { HeroBanner } from "@/components/shared/home/heroBanner";
 import { BrandLogos } from "@/components/shared/home/brandLogos";
 import { CategoryCards } from "@/components/shared/home/categoryCards";
-// import { BestDealsSection } from "@/components/shared/home/bestDealsCarousel"; 
 import { ProductCarousel } from "@/components/shared/home/ProductCarousel";
 import { PromoBanner } from "@/components/shared/home/promoBanner";
 
@@ -11,7 +10,6 @@ export default async function HomePage() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // Keeping your optimized Promise.all data fetching perfectly intact!
   const [{ data: deals }, { data: featured }, { data: newIn }] =
     await Promise.all([
       supabase
@@ -20,19 +18,24 @@ export default async function HomePage() {
         .eq("is_published", true)
         .not("deal_ends_at", "is", null)
         .gt("deal_ends_at", new Date().toISOString())
+        .eq("is_deal_active", true)
         .order("deal_ends_at", { ascending: true })
         .limit(8),
+
       supabase
         .from("products")
         .select("*")
         .eq("is_published", true)
         .eq("is_featured", true)
+        .order("created_at", { ascending: false })
         .limit(8),
+
       supabase
         .from("products")
         .select("*")
         .eq("is_published", true)
         .eq("is_new", true)
+        .order("created_at", { ascending: false })
         .limit(8),
     ]);
 
@@ -41,21 +44,15 @@ export default async function HomePage() {
       <HeroBanner />
       <BrandLogos />
       <CategoryCards />
-      
-      {/* Replaced with the new dedicated component */}
-      {/* <BestDealsSection
-        products={deals ?? []}
-        bgClass="bg-[#FFF5F0]" 
-      /> */}
-      
+
       <ProductCarousel
         title="Featured Products"
         products={featured ?? []}
         bgClass="bg-white"
       />
-      
+
       <PromoBanner />
-      
+
       <ProductCarousel
         title="New in Store"
         products={newIn ?? []}

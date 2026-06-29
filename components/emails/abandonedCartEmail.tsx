@@ -9,6 +9,8 @@ import {
   Section,
   Text,
   Button,
+  Img,
+  Tailwind
 } from '@react-email/components';
 
 interface AbandonedCartProps {
@@ -22,13 +24,25 @@ export const AbandonedCartEmail = ({
   items,
   cartUrl,
 }: AbandonedCartProps) => {
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+
   return (
     <Html lang="en" dir="ltr">
       <Head />
       <Preview>Did you forget something awesome? 👀</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>zeek</Heading>
+          <Heading style={heading}>
+            <Tailwind>
+              <Img
+                alt="zeek logo"
+                width={250}
+                height={150}
+                src={`${baseUrl}/static/zeek1.svg`} 
+                />
+            </Tailwind>
+          </Heading>
           <div style={spacer} />
           <Text style={paragraph}>Hey {customerName},</Text>
           <Text style={paragraph}>

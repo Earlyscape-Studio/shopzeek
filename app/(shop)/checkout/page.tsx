@@ -2,26 +2,23 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 import Link from "next/link";
-import { Home } from "lucide-react";
+import { Home, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cart.store";
-import { initCardPayment, initBankTransfer, verifyBankTransferPayment, cancelPendingOrder} from "@/app/actions/order.actions";
+import { initCardPayment, initBankTransfer, verifyBankTransferPayment } from "@/app/actions/order.actions";
 import { encryptCardData } from "@/utils/flutterwave/flutterwave-encrypt";
 import { getDeliveryQuote } from "@/app/actions/logistics.actions";
+import { getLastOrderBillingInfo, type BillingDefaults } from "@/app/actions/address.actions";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getDefaultAddress } from "@/app/actions/address.actions"
-import {createClient} from "@/utils/supabase/client"
+import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
+  Breadcrumb, BreadcrumbItem, BreadcrumbLink,
+  BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { BillingFields } from "@/components/shared/checkout/BillingFields";
+import { BillingSummaryCard } from "@/components/shared/checkout/BillingSummaryCard";
 import { CheckoutOrderSummary } from "@/components/shared/checkout/CheckoutOrderSummary";
 import { PaymentMethodSelector } from "@/components/shared/checkout/PaymentMethodSelector";
 import type { CardFields } from "@/components/shared/checkout/PaymentMethodSelector";
@@ -31,60 +28,65 @@ import { detectCardBrand, type CardBrand } from "@/utils/flutterwave/card-utils"
 type PaymentMethod = "card" | "bank_transfer";
 
 export default function CheckoutPage() {
-  const router    = useRouter();
-  const [isMounted, setIsMounted]                   = useState(false);
-  const [isProcessing, setIsProcessing]             = useState(false);
-  const [selectedState, setSelectedState]           = useState("");
-  const [selectedLga, setSelectedLga]               = useState("");
+  const router = useRouter();
+
+  const [isMounted, setIsMounted]         = useState(false);
+  const [isProcessing, setIsProcessing]   = useState(false);
+
+  // Billing address state
+  const [defaultBilling, setDefaultBilling]       = useState<BillingDefaults | null>(null);
+  const [showBillingForm, setShowBillingForm]     = useState(false); // false = show summary card
+
+  // Controlled state for the BillingFields selects (needed for shipping quote)
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedLga, setSelectedLga]     = useState("");
+
+  // Alternate shipping
   const [showAlternateShipping, setShowAlternateShipping] = useState(false);
-  const [selectedShipState, setSelectedShipState]   = useState("");
-  const [selectedShipLga, setSelectedShipLga]       = useState("");
-  const [paymentMethod, setPaymentMethod]           = useState<PaymentMethod>("bank_transfer");
-  const [cardFields, setCardFields]                 = useState<CardFields>({
-    cardNumber: "",
-    expiryMonth: "",
-    expiryYear: "",
-    cvv: "",
+  const [selectedShipState, setSelectedShipState] = useState("");
+  const [selectedShipLga, setSelectedShipLga]     = useState("");
+
+  // Payment
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bank_transfer");
+  const [cardFields, setCardFields]       = useState<CardFields>({
+    cardNumber: "", expiryMonth: "", expiryYear: "", cvv: "",
   });
-  const [postCharge, setPostCharge]                 = useState<PostChargeState>(null);
-  const [shipping, setShipping]                     = useState(0);
-  const [shippingBreakdown, setShippingBreakdown]   = useState<{ baseCost: number; vat: number } |undefined>(undefined);
+  const [postCharge, setPostCharge]       = useState<PostChargeState>(null);
+  const [cardBrand, setCardBrand]         = useState<CardBrand>("unknown");
+
+  // Shipping
+  const [shipping, setShipping]                   = useState(0);
+  const [shippingBreakdown, setShippingBreakdown] = useState<{ baseCost: number; vat: number } | undefined>(undefined);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
-  const [cardBrand, setCardBrand]                   = useState<CardBrand>("unknown");
-  const [defaultAddress, setDefaultAddress] = useState<any>(null)
+
   const { items, coupon, clearCart } = useCartStore();
 
-
+  // ─── Load billing defaults from last order ───────────────────────────────
   useEffect(() => {
-    const supabase = createClient();
-    
-    Promise.all([
-      getDefaultAddress(),
-      supabase.auth.getUser()
-    ]).then(([addressResult, {data: {user}}]) => {
-      const addr = addressResult.success ? addressResult.data : null
-
-      setDefaultAddress({
-        ...(addr ?? {}),
-        email: user?.email ?? ""
-      })
-
-      if(addr?.state) setSelectedState(addr.state)
-    })
-  }, [])
+    getLastOrderBillingInfo().then((result) => {
+      if (result.success && result.data) {
+        const b = result.data;
+        setDefaultBilling(b);
+        setShowBillingForm(false);           // summary card by default
+        if (b.state) setSelectedState(b.state);
+        if (b.lga)   setSelectedLga(b.lga);
+      } else {
+        setShowBillingForm(true);            // new user — show the form
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
 
+  // ─── Shipping cost calculation ────────────────────────────────────────────
   useEffect(() => {
     const deliveryState = showAlternateShipping && selectedShipState
-      ? selectedShipState
-      : selectedState;
+      ? selectedShipState : selectedState;
     const deliveryLga = showAlternateShipping && selectedShipLga
-      ? selectedShipLga
-      : selectedLga;
+      ? selectedShipLga : selectedLga;
 
     if (!deliveryState || !deliveryLga) return;
 
@@ -107,37 +109,45 @@ export default function CheckoutPage() {
 
   if (!isMounted) return <div className="min-h-screen" />;
 
-  const subTotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
+  // ─── Totals ────────────────────────────────────────────────────────────────
+  const subTotal = items.reduce((t, i) => t + i.price * i.quantity, 0);
   const tax      = 0;
 
   let discount = 0;
   if (coupon) {
-    if (coupon.discount_type === "percentage") {
-      discount = (subTotal * coupon.discount_value) / 100;
-    } else {
-      discount = coupon.discount_value;
-    }
+    discount = coupon.discount_type === "percentage"
+      ? (subTotal * coupon.discount_value) / 100
+      : coupon.discount_value;
   }
 
   const finalTotal = Math.round(Math.max(0, subTotal + shipping + tax - discount));
 
+  // ─── Helpers ───────────────────────────────────────────────────────────────
   const handleCardNumberChange = (value: string) => {
     setCardFields((prev) => ({ ...prev, cardNumber: value }));
     setCardBrand(detectCardBrand(value));
   };
 
+  // Derive first/last name from stored full_name for hidden inputs
+  const billingFirstName = defaultBilling?.full_name?.split(" ")[0] ?? "";
+  const billingLastName  = defaultBilling?.full_name?.split(" ").slice(1).join(" ") ?? "";
+
+  // ─── Form submission ───────────────────────────────────────────────────────
   const handlePlaceOrder = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (items.length === 0) return;
-    setIsProcessing(true);
 
-    const deliveryLga = showAlternateShipping ? selectedShipLga : selectedLga
-    if(!deliveryLga){
-      toast.error(showAlternateShipping ? "Please select an LGA for your shipping address before placing your order." : "Please select your LGA before placing your order")
-      return
+    const deliveryLga = showAlternateShipping ? selectedShipLga : selectedLga;
+    if (!deliveryLga) {
+      toast.error(
+        showAlternateShipping
+          ? "Please select an LGA for your shipping address before placing your order."
+          : "Please select your LGA before placing your order."
+      );
+      return;
     }
 
-    setIsProcessing(true)
+    setIsProcessing(true);
 
     try {
       const formData = new FormData(e.currentTarget);
@@ -152,24 +162,14 @@ export default function CheckoutPage() {
 
         const encryptedCard = await encryptCardData({
           cardNumber: cardNumber.replace(/\s/g, ""),
-          expiryMonth,
-          expiryYear,
-          cvv,
+          expiryMonth, expiryYear, cvv,
         });
 
         const result = await initCardPayment(
-          formData,
-          items,
-          finalTotal,
-          encryptedCard,
-          shippingBreakdown,
-          coupon?.code
+          formData, items, finalTotal, encryptedCard, shippingBreakdown, coupon?.code
         );
 
-        console.log("card result", result)
-
         if (!result.success) {
-          console.log("card result error", result.error)
           toast.error(result.error ?? "Card payment failed");
           setIsProcessing(false);
           return;
@@ -179,49 +179,25 @@ export default function CheckoutPage() {
           case "redirect_url":
             if (result.redirectUrl) window.location.href = result.redirectUrl;
             break;
-
           case "requires_otp":
-            setPostCharge({
-              type: "requires_otp",
-              chargeId: result.chargeId!,
-              orderId: result.orderId,
-            });
+            setPostCharge({ type: "requires_otp", chargeId: result.chargeId!, orderId: result.orderId });
             break;
-
           case "requires_pin":
-            setPostCharge({
-              type: "requires_pin",
-              chargeId: result.chargeId!,
-              orderId: result.orderId,
-              transactionRef: result.transactionRef
-            })
+            setPostCharge({ type: "requires_pin", chargeId: result.chargeId!, orderId: result.orderId, transactionRef: result.transactionRef });
             break;
-
-          
           case "payment_instruction":
-            setPostCharge({
-              type: "bank_transfer",
-              instruction: result.paymentInstruction ?? "",
-              orderId: result.orderId,
-              transactionRef: result.transactionRef,
-            });
+            setPostCharge({ type: "bank_transfer", instruction: result.paymentInstruction ?? "", orderId: result.orderId, transactionRef: result.transactionRef });
             break;
-
           default:
             toast.error("Unexpected response from payment provider");
         }
       } else {
         const result = await initBankTransfer(
-          formData,
-          items,
-          finalTotal,
-          shippingBreakdown,
-          coupon?.code
+          formData, items, finalTotal, shippingBreakdown, coupon?.code
         );
 
         if (!result.success) {
           toast.error(result.error ?? "Bank transfer setup failed");
-          console.log("bank transfer error:", result.error);
           setIsProcessing(false);
           return;
         }
@@ -231,35 +207,27 @@ export default function CheckoutPage() {
           instruction: JSON.stringify(result.accountDetails),
           orderId: result.orderId,
           transactionRef: result.transactionRef,
-          virtualAccountId: result.virtualAccountId
+          virtualAccountId: result.virtualAccountId,
         });
       }
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : String(err ?? "Something went wrong. Please try again.");
+      const message = err instanceof Error ? err.message : String(err ?? "Something went wrong.");
       toast.error(message);
-      console.log(message);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleBankTransferVerification = async (txRef: string) => {
-    const orderId = postCharge?.orderId;
-    const virtualAccountId = postCharge?.virtualAccountId
-
-    console.log("orderId", orderId)
-
+    const orderId          = postCharge?.orderId;
+    const virtualAccountId = postCharge?.virtualAccountId;
     if (!orderId || !virtualAccountId) return;
 
     setIsProcessing(true);
     try {
       const result = await verifyBankTransferPayment(txRef, orderId, virtualAccountId);
-      console.log("bank tranfer result", result)
-
       if (result.paid) {
         toast.success("Payment Confirmed! Redirecting...");
-        
         await clearCart();
         router.push(`/order/success?reference=${orderId}`);
       } else {
@@ -267,12 +235,12 @@ export default function CheckoutPage() {
       }
     } catch (err: any) {
       toast.error(err.message ?? "Verification failed");
-      console.log(err.message);
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="bg-gray-50 min-h-screen">
       {postCharge && (
@@ -289,20 +257,14 @@ export default function CheckoutPage() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link
-                    href="/"
-                    className="flex items-center gap-1.5 text-gray-500 hover:text-orange-500 transition-colors"
-                  >
-                    <Home className="w-3.5 h-3.5" />
-                    Home
+                  <Link href="/" className="flex items-center gap-1.5 text-gray-500 hover:text-orange-500 transition-colors">
+                    <Home className="w-3.5 h-3.5" /> Home
                   </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage className="text-orange-500 font-medium">
-                  Checkout
-                </BreadcrumbPage>
+                <BreadcrumbPage className="text-orange-500 font-medium">Checkout</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -310,35 +272,88 @@ export default function CheckoutPage() {
 
         <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {/* Billing & Shipping */}
+
+            {/* ── Billing & Shipping ── */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 md:p-8">
-              <h2 className="text-lg font-bold text-gray-900 mb-6 pb-4 border-b border-gray-100">
-                Billing & Shipping Information
-              </h2>
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                <h2 className="text-lg font-bold text-gray-900">
+                  Billing & Shipping Information
+                </h2>
+                {/* "Change" only shown when the summary card is visible */}
+                {!showBillingForm && defaultBilling && (
+                  <button
+                    type="button"
+                    onClick={() => setShowBillingForm(true)}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-[#FF5A00] hover:text-orange-600 transition-colors"
+                  >
+                    <Pencil size={13} /> Change
+                  </button>
+                )}
+              </div>
+
+              {/* Always present — controls which address is used for delivery */}
               <input
                 type="hidden"
                 name="use_alternate_shipping"
                 value={showAlternateShipping ? "on" : "off"}
               />
-              <BillingFields
-                state={selectedState}
-                lga={selectedLga}
-                onStateChange={setSelectedState}
-                onLgaChange={setSelectedLga}
-              />
-              <div className="bg-gray-50 rounded-lg p-4 mt-4 border border-gray-100 flex items-center justify-between">
+
+              {/* ── RETURNING USER: summary card + hidden inputs ── */}
+              {!showBillingForm && defaultBilling ? (
+                <>
+                  {/*
+                    These hidden inputs carry the billing values into formData
+                    so formatDeliveryAddress / saveCheckoutAddress / validateOrderTotal
+                    all receive the correct data without the user having to re-type anything.
+                  */}
+                  <input type="hidden" name="firstName" value={billingFirstName} />
+                  <input type="hidden" name="lastName"  value={billingLastName} />
+                  <input type="hidden" name="address"   value={defaultBilling.address_line1} />
+                  <input type="hidden" name="lga"       value={defaultBilling.lga} />
+                  <input type="hidden" name="city"      value={defaultBilling.city} />
+                  <input type="hidden" name="state"     value={defaultBilling.state} />
+                  <input type="hidden" name="email"     value={defaultBilling.email} />
+                  <input type="hidden" name="phone"     value={defaultBilling.phone} />
+                  <input type="hidden" name="country"   value="ng" />
+
+                  <BillingSummaryCard billing={defaultBilling} />
+                </>
+              ) : (
+                /* ── NEW USER / "Change" clicked: show full form ── */
+                <BillingFields
+                  state={selectedState}
+                  lga={selectedLga}
+                  onStateChange={setSelectedState}
+                  onLgaChange={setSelectedLga}
+                  defaultValues={
+                    defaultBilling
+                      ? {
+                          full_name:    defaultBilling.full_name,
+                          address_line1: defaultBilling.address_line1,
+                          city:         defaultBilling.city,
+                          state:        defaultBilling.state,
+                          phone:        defaultBilling.phone,
+                          email:        defaultBilling.email,
+                        }
+                      : null
+                  }
+                />
+              )}
+
+              {/* Delivery cost display */}
+              <div className="bg-gray-50 rounded-lg p-4 mt-6 border border-gray-100 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-900">Delivery Cost</p>
                   <p className="text-xs text-gray-500">
-                    {shipping > 0
-                      ? `₦${shipping.toLocaleString()} (includes VAT)`
-                      : "Enter state to calculate"}
+                    {shipping > 0 ? `₦${shipping.toLocaleString()} (includes VAT)` : "Select state & LGA to calculate"}
                   </p>
                 </div>
                 {isCalculatingShipping && (
-                  <span className="text-sm text-gray-500">Calculating...</span>
+                  <span className="text-sm text-gray-500 animate-pulse">Calculating...</span>
                 )}
               </div>
+
+              {/* Alternate shipping toggle */}
               <div className="flex items-center gap-2.5 mt-6 pt-6 border-t border-gray-100">
                 <Checkbox
                   id="different-address"
@@ -352,41 +367,27 @@ export default function CheckoutPage() {
                   }}
                   className="border-gray-300 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
                 />
-                <label
-                  htmlFor="different-address"
-                  className="text-sm text-gray-600 cursor-pointer select-none"
-                >
+                <label htmlFor="different-address" className="text-sm text-gray-600 cursor-pointer select-none">
                   Ship to a different address
                 </label>
               </div>
+
               {showAlternateShipping && (
                 <div className="mt-6 pt-6 border-t border-gray-100 space-y-4">
                   <h3 className="text-sm font-semibold text-gray-900">Shipping Address</h3>
                   <BillingFields
-                    key={defaultAddress?.id ?? "empty"}
                     namePrefix="ship_"
                     showContactFields={false}
                     state={selectedShipState}
                     lga={selectedShipLga}
                     onStateChange={setSelectedShipState}
                     onLgaChange={setSelectedShipLga}
-                    defaultValues={
-                      defaultAddress ? {
-                        full_name: defaultAddress.full_name,
-                        address_line1: defaultAddress.address_line1,
-                        city: defaultAddress.city,
-                        state: defaultAddress.state,
-                        phone: defaultAddress.phone
-                      }
-                      :
-                      null
-                    }
                   />
                 </div>
               )}
             </div>
 
-            {/* Payment Method */}
+            {/* ── Payment Method ── */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 md:p-8">
               <h2 className="text-lg font-bold text-gray-900 mb-6 pb-4 border-b border-gray-100">
                 Payment Method
@@ -396,25 +397,21 @@ export default function CheckoutPage() {
                 onMethodChange={setPaymentMethod}
                 cardFields={cardFields}
                 onCardFieldChange={(field, value) => {
-                  if (field === "cardNumber") {
-                    handleCardNumberChange(value);
-                  } else {
-                    setCardFields((prev) => ({ ...prev, [field]: value }));
-                  }
+                  if (field === "cardNumber") handleCardNumberChange(value);
+                  else setCardFields((prev) => ({ ...prev, [field]: value }));
                 }}
                 cardBrand={cardBrand}
               />
             </div>
 
-            {/* Additional Information */}
+            {/* ── Order notes ── */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 md:p-8">
               <h2 className="text-lg font-bold text-gray-900 mb-6 pb-4 border-b border-gray-100">
                 Additional Information
               </h2>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
-                  Order Notes{" "}
-                  <span className="text-gray-400 font-normal">(Optional)</span>
+                  Order Notes <span className="text-gray-400 font-normal">(Optional)</span>
                 </label>
                 <Textarea
                   name="notes"
@@ -425,7 +422,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Order Summary */}
+          {/* ── Order Summary ── */}
           <div className="lg:col-span-1">
             <CheckoutOrderSummary
               items={items}

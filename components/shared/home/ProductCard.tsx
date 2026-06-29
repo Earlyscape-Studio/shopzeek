@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Star, ShoppingCart, Heart } from "lucide-react";
+import { ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart.store";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,53 +11,50 @@ import { createClient } from "@/utils/supabase/client";
 import { useWishlistStore } from "@/store/wishlist.store";
 import { useAuthModal } from "@/store/auth-modal.store";
 
-
 type Props = { product: Product };
 
 export function ProductCard({ product }: Props) {
   const addItem = useCartStore((state) => state.addItem);
-
-  const supabase = createClient()
+  const supabase = createClient();
   const openAuthModal = useAuthModal((s) => s.open);
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } =
+    useWishlistStore();
+  const isWishlisted = isInWishlist(product.id);
 
-  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore()
-  const isWishlisted = isInWishlist(product.id)
-
+  // is_deal_active defaults to true for backward compat (undefined = not yet migrated)
   const isOnDeal =
     product.deal_price &&
     product.deal_ends_at &&
-    new Date(product.deal_ends_at) > new Date();
+    new Date(product.deal_ends_at) > new Date() &&
+    product.is_deal_active !== false;
 
   const imageBgColor = isOnDeal ? "bg-[#FFEBE3]" : "bg-[#F3F4F6]";
-  const activePrice = product.deal_price ?? product.price;
-  
-  // Calculate percentage off
-  const percentOff = isOnDeal 
-    ? Math.round(((product.price - product.deal_price!) / product.price) * 100) 
-    : 0;
+  const activePrice = isOnDeal ? (product.deal_price ?? product.price) : product.price;
+
+  const percentOff =
+    isOnDeal && product.deal_price
+      ? Math.round(((product.price - product.deal_price) / product.price) * 100)
+      : 0;
 
   const handleQuickAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     addItem({
       product_id: product.id,
       name: product.name ?? "Unknown Product",
       price: activePrice ?? 0,
       image_url: product.image_urls?.[0] ?? "/placeholder.png",
       quantity: 1,
-      slug: product.slug ?? ""
+      slug: product.slug ?? "",
     });
   };
 
-
-   const handleQuickAddToWishlist = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-
-    const { data: { session } } = await supabase.auth.getSession();
-
+  const handleQuickAddToWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) {
       openAuthModal("signin");
       return;
@@ -73,9 +70,10 @@ export function ProductCard({ product }: Props) {
     <Link href={`/shop/${product.slug ?? ""}`} className="group block h-full focus:outline-none">
       <Card className="h-full bg-white hover:bg-[#FFDFD2] transition-all duration-300 border border-transparent hover:border-orange-100 shadow-sm hover:shadow-md rounded-2xl overflow-hidden">
         <CardContent className="p-4 flex flex-col h-full">
-          
           {/* Image Container */}
-          <div className={`${imageBgColor} rounded-xl relative h-56 w-full mb-4 overflow-hidden shrink-0 group/image`}>
+          <div
+            className={`${imageBgColor} rounded-xl relative h-56 w-full mb-4 overflow-hidden shrink-0 group/image`}
+          >
             <Image
               src={product.image_urls?.[0] ?? "/placeholder.png"}
               alt={product.name ?? "Product"}
@@ -84,25 +82,29 @@ export function ProductCard({ product }: Props) {
               className="object-contain p-4 group-hover/image:scale-105 transition-transform duration-500 mix-blend-multiply"
               priority={false}
             />
-            
-            {/* MODIFIED: Mobile-first visibility wrapper 
-              - Mobile: opacity-100, positioned cleanly at the bottom
-              - Desktop (md:): Hidden by default (opacity-0, translate-y-4), reveals seamlessly on image hover
-            */}
+
+            {/* Deal badge */}
+            {isOnDeal && percentOff > 0 && (
+              <span className="absolute top-3 left-3 z-10 bg-[#FF5A00] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide shadow-sm">
+                {percentOff}% OFF
+              </span>
+            )}
+
+            {/* Quick action buttons */}
             <div className="absolute bottom-4 flex flex-row items-center justify-center left-0 right-0 px-4 z-20 transition-all duration-300 opacity-100 translate-y-4 md:opacity-0 md:translate-y-4 md:group-hover/image:opacity-100 md:group-hover/image:translate-y-0">
-              <Button 
+              <Button
                 onClick={handleQuickAddToCart}
                 className="w- bg-[#FF5A00] hover:bg-orange-600 text-white font-bold uppercase tracking-widest text-xs h-10 rounded-sm shadow-lg px-3 md:px-5 flex items-center justify-center gap-2"
               >
-                <ShoppingCart size={12} /> <span className="hidden md:block"> Add to Cart </span>
+                <ShoppingCart size={12} />
+                <span className="hidden md:block">Add to Cart</span>
               </Button>
-
               <Button
                 onClick={handleQuickAddToWishlist}
                 variant="outline"
                 className={`w-10 h-10 p-0 shrink-0 rounded-sm shadow-lg transition-colors border-transparent ${
-                  isWishlisted 
-                    ? "bg-[#FF5A00] text-white hover:bg-orange-600" 
+                  isWishlisted
+                    ? "bg-[#FF5A00] text-white hover:bg-orange-600"
                     : "bg-white text-gray-600 hover:text-[#FF5A00]"
                 }`}
               >
@@ -111,12 +113,11 @@ export function ProductCard({ product }: Props) {
             </div>
           </div>
 
-          {/* Content Container */}
+          {/* Content */}
           <div className="space-y-1 flex-1 flex flex-col">
             <h3 className="text-sm font-medium text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2 mb-2">
               {product.name ?? "Unnamed Product"}
             </h3>
-
             <div className="mt-auto">
               <div className="flex items-center gap-2 pt-1 mb-1">
                 <span className="text-base font-bold text-[#FF5A00]">

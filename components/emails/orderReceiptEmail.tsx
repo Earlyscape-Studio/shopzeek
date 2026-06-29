@@ -10,15 +10,15 @@ import {
   Text,
   Button,
   Row,
-  Column
-} from '@react-email/components';
+  Column,
+  Img,
+  Tailwind
+} from "@react-email/components";
 
-
-
-interface OrderItem{
-  name: string
-  quantity: number
-  price: number
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
 }
 
 interface ShippingAddress {
@@ -30,11 +30,11 @@ interface ShippingAddress {
 }
 
 interface OrderReceiptProps {
-  customerName: string
-  orderId: string
-  orderDate: string
-  totalAmount: number
-  orderDetailUrl: string
+  customerName: string;
+  orderId: string;
+  orderDate: string;
+  totalAmount: number;
+  orderDetailUrl: string;
   items?: OrderItem[];
   shippingAddress?: ShippingAddress;
   paymentMethod?: string;
@@ -42,7 +42,6 @@ interface OrderReceiptProps {
   discountAmount?: number;
   couponCode?: string | null;
 }
-
 
 export const OrderReceiptEmail = ({
   customerName,
@@ -57,8 +56,7 @@ export const OrderReceiptEmail = ({
   discountAmount = 0,
   couponCode,
 }: OrderReceiptProps) => {
-  const subtotal = totalAmount - shippingCost + discountAmount
-
+  const subtotal = totalAmount - shippingCost + discountAmount;
 
   const paymentLabel =
     paymentMethod === "card"
@@ -67,7 +65,7 @@ export const OrderReceiptEmail = ({
       ? "Bank Transfer"
       : paymentMethod ?? "Online Payment";
 
-
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
 
   return (
     <Html lang="en" dir="ltr">
@@ -76,9 +74,18 @@ export const OrderReceiptEmail = ({
       <Body style={main}>
         <Container style={container}>
           {/* Header */}
-          <Heading style={heading}>zeek</Heading>
+          <Heading style={heading}>
+            <Tailwind>
+              <Img
+                alt="zeek logo"
+                width={250}
+                height={150}
+                src={`${baseUrl}/static/zeek1.svg`} 
+                />
+            </Tailwind>
+          </Heading>
           <Text style={subheader}>Order Confirmation</Text>
- 
+
           <Text style={paragraph}>
             You did it, {customerName}!
           </Text>
@@ -86,7 +93,7 @@ export const OrderReceiptEmail = ({
             Your payment went through and your order is confirmed. Our team is already
             getting your items ready for delivery.
           </Text>
- 
+
           {/* Order meta */}
           <Section style={metaBox}>
             <Row>
@@ -110,7 +117,7 @@ export const OrderReceiptEmail = ({
               </Column>
             </Row>
           </Section>
- 
+
           {/* Items */}
           {items.length > 0 && (
             <>
@@ -131,7 +138,7 @@ export const OrderReceiptEmail = ({
               ))}
             </>
           )}
- 
+
           {/* Totals */}
           <Hr style={hr} />
           <Section style={totalsBox}>
@@ -178,7 +185,7 @@ export const OrderReceiptEmail = ({
               </Column>
             </Row>
           </Section>
- 
+
           {/* Shipping address */}
           {shippingAddress && (
             <>
@@ -200,9 +207,9 @@ export const OrderReceiptEmail = ({
               </Section>
             </>
           )}
- 
+
           <Hr style={hr} />
- 
+
           {/* CTA */}
           <Text style={paragraph}>
             We&apos;ll send you another update as soon as your order ships.
@@ -212,7 +219,7 @@ export const OrderReceiptEmail = ({
               VIEW ORDER DETAILS
             </Button>
           </Section>
- 
+
           <Text style={footerText}>
             Happy Shopping 🛍️<br />
             <strong>The Zeek Team 🧡</strong>
@@ -220,11 +227,10 @@ export const OrderReceiptEmail = ({
         </Container>
       </Body>
     </Html>
-  )
-}
+  );
+};
 
-
-
+// Styles
 const main = { backgroundColor: "#f6f9fc", fontFamily: "sans-serif", padding: "10px 0" };
 const container = { backgroundColor: "#ffffff", padding: "40px", borderRadius: "8px", margin: "40px auto", maxWidth: "600px", border: "1px solid #e6ebf1" };
 const heading = { color: "#FF5A00", textAlign: "center" as const, margin: "0 0 4px 0", fontSize: "28px", fontWeight: "bold" };
@@ -259,5 +265,3 @@ const button = {
   padding: "14px 0",
 };
 const footerText = { fontSize: "15px", color: "#333", lineHeight: "1.6", marginTop: "24px", borderTop: "1px solid #f0f0f0", paddingTop: "20px" };
-
-

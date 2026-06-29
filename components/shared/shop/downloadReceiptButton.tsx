@@ -16,7 +16,8 @@ export function DownloadReceiptButton({ data, className }: DownloadReceiptButton
   const handleDownload = async () => {
     setIsGenerating(true);
     try {
-      
+      // Dynamically import so @react-pdf/renderer's browser bundle is only
+      // loaded when the user actually requests a download.
       const [{ pdf }, { ReceiptDocument }] = await Promise.all([
         import("@react-pdf/renderer"),
         import("@/components/shared/pdf/receiptDocument"),
