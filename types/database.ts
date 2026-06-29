@@ -18,6 +18,7 @@ export type Profile = {
     role: UserRole
     avatar_url: string | null
     create_at: string
+    flw_customer_id: string | null
 }
 
 
@@ -34,6 +35,7 @@ export type Product = {
     is_published: boolean
     is_featured: boolean
     is_new: boolean
+    is_deal_active: boolean
     deal_price: number | null
     deal_ends_at: string | null
     created_at: string
@@ -150,7 +152,7 @@ export type InsertCoupon = Omit<Coupon, "id" | "used_count" | "created_at">
 export type InsertBlogPost = Omit<BlogPost, "id" | "created_at" | "updated_at">
 
 
-export type UpdateProdcut = Partial<InsertProduct>
+export type UpdateProduct = Partial<InsertProduct>
 
 export type UpdateOrder = Partial<Omit<InsertOrder, "user_id">>
 

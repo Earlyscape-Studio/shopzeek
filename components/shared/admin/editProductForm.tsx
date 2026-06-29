@@ -14,14 +14,14 @@ import { MarkdownEditor } from "./markdownEditor";
 import { toast } from "sonner";
 
 export default function EditProductForm({ product }: { product: any }) {
-  const router = useRouter()
+  const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  
-  // Show the existing image by default
-  const [imagePreview, setImagePreview] = useState<string | null>(product.image_urls?.[0] || null);
-  
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    product.image_urls?.[0] || null
+  );
+
   const supabase = createClient();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,7 +39,6 @@ export default function EditProductForm({ product }: { product: any }) {
     const formData = new FormData(e.currentTarget);
     let finalImageUrl = "";
 
-    // Only hit the Supabase Storage bucket if they selected a NEW file
     if (imageFile) {
       setIsUploading(true);
       const fileExt = imageFile.name.split(".").pop();
@@ -60,19 +59,18 @@ export default function EditProductForm({ product }: { product: any }) {
       const { data: publicUrlData } = supabase.storage
         .from("product-images")
         .getPublicUrl(uploadData.path);
-        
+
       finalImageUrl = publicUrlData.publicUrl;
     }
 
     formData.append("image_url", finalImageUrl);
 
-    const result = await updateProduct(product.id, formData)
+    const result = await updateProduct(product.id, formData);
 
-     if (result.success) {
-      // Pass the product ID to the server action
+    if (result.success) {
       toast.success("Product updated successfully!");
-      router.push("/admin/products")
-    } else{
+      router.push("/admin/products");
+    } else {
       toast.error(`Failed to update product: ${result.error}`);
       setIsSubmitting(false);
     }
@@ -93,8 +91,7 @@ export default function EditProductForm({ product }: { product: any }) {
       </div>
 
       <form onSubmit={handleSubmit} className="grid md:grid-cols-3 gap-6">
-        
-        {/* Left Column: Form Details */}
+        {/* Left Column */}
         <div className="md:col-span-2 space-y-6">
           <Card className="shadow-sm border-gray-200">
             <CardContent className="p-6 space-y-4">
@@ -105,32 +102,48 @@ export default function EditProductForm({ product }: { product: any }) {
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                 <MarkdownEditor
+                <MarkdownEditor
                   name="description"
                   defaultValue={product.description || ""}
-                  placeholder="Describe your product... Supports **bold**, *italics*, lists, links, and more."
+                  placeholder="Describe your product..."
                   rows={6}
                 />
-                <p className="text-xs text-gray-400">
-                  Markdown formatting is supported — use the toolbar or type it directly.
-                </p>
+                <p className="text-xs text-gray-400">Markdown formatting is supported.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Standard Price (₦) *</Label>
-                  <Input id="price" name="price" type="number" min="0" defaultValue={product.price} required />
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    min="0"
+                    defaultValue={product.price}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="stock_count">Current Stock *</Label>
-                  <Input id="stock_count" name="stock_count" type="number" min="0" defaultValue={product.stock_count} required />
+                  <Input
+                    id="stock_count"
+                    name="stock_count"
+                    type="number"
+                    min="0"
+                    defaultValue={product.stock_count}
+                    required
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
-                  <Input id="category" name="category" defaultValue={product.category || ""} />
+                  <Input
+                    id="category"
+                    name="category"
+                    defaultValue={product.category || ""}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="brand">Brand</Label>
@@ -140,42 +153,81 @@ export default function EditProductForm({ product }: { product: any }) {
             </CardContent>
           </Card>
 
-          {/* New Deal Settings! */}
+          {/* Deal section */}
           <Card className="shadow-sm border-gray-200 bg-orange-50/50">
             <CardContent className="p-6 space-y-4">
-              <h3 className="font-bold text-[#FF5A00]">Active Deals & Discounts</h3>
-              <p className="text-xs text-gray-500 mb-4">Set a lower price and an expiration date to show a sale tag on the storefront.</p>
-              
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-[#FF5A00]">Active Deals & Discounts</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Set a lower price and expiry date to display a sale badge on the storefront.
+                  </p>
+                </div>
+              </div>
+
+              {/* Deal visible toggle */}
+              <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-orange-100">
+                <input
+                  type="checkbox"
+                  id="is_deal_active"
+                  name="is_deal_active"
+                  defaultChecked={product.is_deal_active !== false}
+                  className="w-4 h-4 accent-[#FF5A00]"
+                />
+                <Label htmlFor="is_deal_active" className="cursor-pointer text-sm">
+                  Show deal badge on storefront
+                </Label>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="deal_price">Deal Price (₦)</Label>
-                  <Input id="deal_price" name="deal_price" type="number" min="0" defaultValue={product.deal_price || ""} placeholder="Leave blank for no deal" />
+                  <Input
+                    id="deal_price"
+                    name="deal_price"
+                    type="number"
+                    min="0"
+                    defaultValue={product.deal_price || ""}
+                    placeholder="Leave blank to remove deal"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="deal_ends_at">Deal Expiration</Label>
-                  <Input id="deal_ends_at" name="deal_ends_at" type="datetime-local" defaultValue={product.deal_ends_at ? new Date(product.deal_ends_at).toISOString().slice(0, 16) : ""} />
+                  <Input
+                    id="deal_ends_at"
+                    name="deal_ends_at"
+                    type="datetime-local"
+                    defaultValue={
+                      product.deal_ends_at
+                        ? new Date(product.deal_ends_at).toISOString().slice(0, 16)
+                        : ""
+                    }
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: Image & Publishing */}
+        {/* Right Column */}
         <div className="space-y-6">
           <Card className="shadow-sm border-gray-200">
             <CardContent className="p-6 space-y-4">
               <h3 className="font-bold text-gray-900">Product Image</h3>
-              
               <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors relative">
-                <input 
-                  type="file" 
-                  accept="image/*" 
+                <input
+                  type="file"
+                  accept="image/*"
                   onChange={handleImageChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
                 {imagePreview ? (
                   <div className="relative group">
-                    <img src={imagePreview} alt="Preview" className="mx-auto h-40 object-contain rounded-md" />
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="mx-auto h-40 object-contain rounded-md"
+                    />
                     <div className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md text-sm font-bold">
                       Click to Replace
                     </div>
@@ -192,20 +244,42 @@ export default function EditProductForm({ product }: { product: any }) {
 
           <Card className="shadow-sm border-gray-200">
             <CardContent className="p-6 space-y-4">
-              <h3 className="font-bold text-gray-900">Visibility</h3>
+              <h3 className="font-bold text-gray-900">Visibility & Flags</h3>
+
               <div className="flex items-center gap-2">
-                <input type="checkbox" id="is_published" name="is_published" defaultChecked={product.is_published} className="w-4 h-4 text-[#FF5A00]" />
-                <Label htmlFor="is_published" className="cursor-pointer">Publish to Store</Label>
+                <input
+                  type="checkbox"
+                  id="is_published"
+                  name="is_published"
+                  defaultChecked={product.is_published}
+                  className="w-4 h-4 accent-[#FF5A00]"
+                />
+                <Label htmlFor="is_published" className="cursor-pointer">
+                  Publish to Store
+                </Label>
               </div>
 
-              <Button 
-                type="submit" 
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="is_new"
+                  name="is_new"
+                  defaultChecked={product.is_new}
+                  className="w-4 h-4 accent-[#FF5A00]"
+                />
+                <Label htmlFor="is_new" className="cursor-pointer">
+                  Show in &quot;New in Store&quot;
+                </Label>
+              </div>
+
+              <Button
+                type="submit"
                 disabled={isSubmitting}
                 className="w-full bg-gray-900 hover:bg-black text-white font-bold h-12 mt-4"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
-                    <Loader2 className="animate-spin" size={16} /> 
+                    <Loader2 className="animate-spin" size={16} />
                     {isUploading ? "Uploading..." : "Saving..."}
                   </span>
                 ) : (
