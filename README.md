@@ -45,9 +45,9 @@ Zeek is a high-performance, full-stack e-commerce platform custom-built for **Ze
 ## 🛠️ Getting Started
 
 ### Prerequisites
-Make sure you have Node.js installed and use **pnpm** as the package manager to avoid lockfile conflicts:
+Make sure you have Node.js installed and use **npm** as the package manager to avoid lockfile conflicts:
 ```bash
-npm install -g pnpm
+npm install -g npm
 
 git clone <repository-url>
 cd shopzeek
