@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image"
 import { Mail, Phone, MapPin } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faXTwitter, faFacebookF, faInstagram } from "@fortawesome/free-brands-svg-icons";
+import { faXTwitter, faFacebookF, faInstagram, faTiktok } from "@fortawesome/free-brands-svg-icons";
 
 const footerLinks = {
   Company: [
@@ -58,6 +58,9 @@ export function Footer() {
               </a>
               <a href="https://instagram.com/zeek.you" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-orange-500 hover:text-white transition-all">
                 <FontAwesomeIcon icon={faInstagram} className="w-4 h-4" />
+              </a>
+              <a href="https://www.tiktok.com/@zeek.you" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-orange-500 hover:text-white transition-all">
+                <FontAwesomeIcon icon={faTiktok} className="w-4 h-4" />
               </a>
             </div>
           </div>
