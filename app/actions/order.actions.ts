@@ -192,8 +192,25 @@ async function upsertFlutterwaveCustomer(
   accessToken: string,
   email: string,
   firstName: string,
-  lastName: string
+  lastName: string,
+  userId?: string | null
 ): Promise<string> {
+
+  if(userId){
+    const {data: profile} = await supabaseAdmin
+      .from("profiles")
+      .select("flw_customer_id")
+      .eq("id", userId)
+      .single()
+
+
+    if(profile?.flw_customer_id){
+      return profile.flw_customer_id as string;
+    }
+  }
+  
+
+
   const res = await fetch(`${FLW_BASE_URL}/customers`, {
     method: "POST",
     headers: {
@@ -205,26 +222,41 @@ async function upsertFlutterwaveCustomer(
 
   const data = await res.json();
 
-  if (res.ok && data.status === "success") return data.data.id;
+  let customerId: string
 
-  const isAlreadyExists =
-    data.error?.type === "CUSTOMER_ALREADY_EXISTS" ||
-    data.error?.type === "RESOURCE_CONFLICT" ||
-    Number(data.error?.code) === 10409 ||
-    Number(data.error?.code) === 1203409;
+  if (res.ok && data.status === "success") {
+    customerId = data.data.id
+  }else{
+    const isAlreadyExists =
+      data.error?.type === "CUSTOMER_ALREADY_EXISTS" ||
+      data.error?.type === "RESOURCE_CONFLICT" ||
+      Number(data.error?.code) === 10409 ||
+      Number(data.error?.code) === 1203409;
 
-  if (isAlreadyExists) {
-    const lookupRes = await fetch(
-      `${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    const lookupData = await lookupRes.json();
-    const record = Array.isArray(lookupData.data) ? lookupData.data[0] : lookupData.data;
-    if (!record?.id) throw new Error("Could not retrieve existing customer.");
-    return record.id;
+    if (isAlreadyExists) {
+      const lookupRes = await fetch(
+        `${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      const lookupData = await lookupRes.json();
+      const record = Array.isArray(lookupData.data) ? lookupData.data[0] : lookupData.data;
+      if (!record?.id) throw new Error("Could not retrieve existing customer.");
+      customerId =  record.id;
+    }else{
+      throw new Error(data.error?.message || "Failed to create customer record.");
+    }
   }
 
-  throw new Error(data.error?.message || "Failed to create customer record.");
+
+  if(userId && customerId){
+    await supabaseAdmin
+      .from("profiles")
+      .update({flw_customer_id: customerId})
+      .eq("id", userId)
+  }
+
+  return customerId
+
 }
 
 export async function initCardPayment(
@@ -300,7 +332,7 @@ export async function initCardPayment(
 
     const transactionRef = `FW-${order.id.slice(0, 8)}-${Date.now()}`;
     const accessToken    = await getFlutterwaveToken();
-    const customerId     = await upsertFlutterwaveCustomer(accessToken, email, firstName, lastName);
+    const customerId     = await upsertFlutterwaveCustomer(accessToken, email, firstName, lastName, user?.id ?? null);
 
     const paymentMethodResponse = await fetch(`${FLW_BASE_URL}/payment-methods`, {
       method: "POST",
@@ -623,35 +655,47 @@ export async function initBankTransfer(
     let customerId: string | null = null;
 
     try {
-      const customerRes = await fetch(`${FLW_BASE_URL}/customers`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          name: { first: firstName, last: lastName },
-          phone_number: phone,
-        }),
-      });
-
-      const customerData = await customerRes.json();
-
-      if (customerRes.ok && customerData.status === "success") {
-        customerId = customerData.data.id;
-      } else {
-        const lookupRes = await fetch(
-          `${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
-        const lookupData = await lookupRes.json();
-        const record = Array.isArray(lookupData.data) ? lookupData.data[0] : lookupData.data;
-        if (record?.id) customerId = record.id;
-      }
-    } catch (err) {
-      console.warn("Customer resolution failed, will use inline email:", err);
+      customerId = await upsertFlutterwaveCustomer(
+        accessToken,
+        email,
+        firstName,
+        lastName,
+        user?.id ?? null
+      )
+    }catch(err){
+      console.warn("Customer resolution failed, will use inline email:", err)
     }
+
+    // try {
+    //   const customerRes = await fetch(`${FLW_BASE_URL}/customers`, {
+    //     method: "POST",
+    //     headers: {
+    //       Authorization: `Bearer ${accessToken}`,
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({
+    //       email,
+    //       name: { first: firstName, last: lastName },
+    //       phone_number: phone,
+    //     }),
+    //   });
+
+    //   const customerData = await customerRes.json();
+
+    //   if (customerRes.ok && customerData.status === "success") {
+    //     customerId = customerData.data.id;
+    //   } else {
+    //     const lookupRes = await fetch(
+    //       `${FLW_BASE_URL}/customers?email=${encodeURIComponent(email)}`,
+    //       { headers: { Authorization: `Bearer ${accessToken}` } }
+    //     );
+    //     const lookupData = await lookupRes.json();
+    //     const record = Array.isArray(lookupData.data) ? lookupData.data[0] : lookupData.data;
+    //     if (record?.id) customerId = record.id;
+    //   }
+    // } catch (err) {
+    //   console.warn("Customer resolution failed, will use inline email:", err);
+    // }
 
     const payload: Record<string, any> = {
       reference: transactionRef,
@@ -676,7 +720,7 @@ export async function initBankTransfer(
         "Content-Type": "application/json",
         "X-Trace-Id": randomUUID(),
         "X-Idempotency-Key": transactionRef,
-        "X-Scenario-Key": "scenario:successful"
+        // "X-Scenario-Key": "scenario:successful"
       },
       body: JSON.stringify(payload),
     });

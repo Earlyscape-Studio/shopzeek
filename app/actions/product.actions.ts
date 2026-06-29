@@ -13,6 +13,8 @@ export async function createProduct(formData: FormData) {
 
     const name = formData.get("name") as string;
     const imageUrl = formData.get("image_url") as string;
+    const dealPriceRaw = formData.get("deal_price") as string
+    const dealEndsAtRaw = formData.get("deal_ends_at") as string
     
     // Auto-generate a clean slug for the product URL (e.g., "Bio Oil" -> "bio-oil")
     const slug = name
@@ -29,6 +31,10 @@ export async function createProduct(formData: FormData) {
       category: formData.get("category") as string,
       brand: formData.get("brand") as string,
       is_published: formData.get("is_published") === "on", // HTML checkbox returns "on"
+      is_new: formData.get("is_new") === "on",
+      is_deal_active: true,
+      deal_price: dealPriceRaw ? Number(dealPriceRaw) : null,
+      deal_ends_at: dealEndsAtRaw || null,
       image_urls: imageUrl ? [imageUrl] : [], // Stored as an array based on your schema
     });
 
@@ -36,6 +42,7 @@ export async function createProduct(formData: FormData) {
 
     // Route back to the inventory list once successful
     revalidatePath("/admin/products");
+    revalidatePath("/")
     return {success: true}
   }catch(error: any) {
     console.error("Database Insert Error:", error);
@@ -51,8 +58,8 @@ export async function updateProduct(id: string, formData: FormData) {
 
     const name = formData.get("name") as string;
     const imageUrl = formData.get("image_url") as string;
-    const dealPrice = formData.get("deal_price");
-    const dealEndsAt = formData.get("deal_ends_at");
+    const dealPrice = formData.get("deal_price") as string;
+    const dealEndsAt = formData.get("deal_ends_at") as string;
 
     const updateData: any = {
       name,
@@ -62,6 +69,8 @@ export async function updateProduct(id: string, formData: FormData) {
       category: formData.get("category") as string,
       brand: formData.get("brand") as string,
       is_published: formData.get("is_published") === "on",
+      is_new: formData.get("is_new") === "on",
+      is_deal_active: formData.get("is_deal_active") === "on"
     };
 
     // Only update the image array if a NEW image was actually uploaded
@@ -84,6 +93,8 @@ export async function updateProduct(id: string, formData: FormData) {
     if (error) throw new Error(error.message);
 
     revalidatePath("/admin/products");
+    revalidatePath("/")
+    revalidatePath("/shop")
     return {success: true}
   }catch(error: any){
     console.error("Database Update Error:", error);
@@ -91,6 +102,33 @@ export async function updateProduct(id: string, formData: FormData) {
   }
 }
 
+
+
+export async function toggleProductDealStatus(id: string, activate: boolean){
+  try{
+    const cookieStore = await cookies()
+    const supabase = createClient(cookieStore)
+
+
+    const {error} = await supabase
+     .from("products")
+     .update({is_deal_active: activate})
+     .eq("id",id)
+
+
+     if(error) throw new Error(error.message)
+
+
+
+    revalidatePath("/admin/products")
+    revalidatePath("/")
+    revalidatePath("/shop")
+    return {success: true as const}
+  }catch(error: any){
+    console.error("Toggle deal error:", error)
+    return {success: false as const, error: error.message || "Failed to toggle deal status"}
+  }
+}
 
 export async function deleteProduct(id: string) {
   try {
@@ -159,7 +197,7 @@ export async function getProducts(filters: {
   }
 
 
-  return {success: true, error: null}
+  return {success: true, data: data ?? [], count: count ?? 0}
   
   
 }
