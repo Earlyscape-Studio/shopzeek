@@ -37,9 +37,9 @@ export const DeliveryScheduleEmail = ({
             <Tailwind>
               <Img
                 alt="zeek logo"
-                width={250}
-                height={150}
-                src="https://swjqqxhvicbxqcembkml.supabase.co/storage/v1/object/sign/email%20assets/zeek1.svg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV85ZmMyMThlOS1mZmMzLTQxMTItODlkYy02M2QxNmRkOTU0ZjMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlbWFpbCBhc3NldHMvemVlazEuc3ZnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4NDkwNzEzNCwiZXhwIjoxODE2NDQzMTM0fQ.tRzoJ4BJbBGid_qp8QsDaw4rRP_mPLcmDesV9rYD5fo"
+                width={150}
+                height={100}
+                src="https://swjqqxhvicbxqcembkml.supabase.co/storage/v1/object/public/email%20assets/zeek2.svg"
                 />
             </Tailwind>
           </Heading>
