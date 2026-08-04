@@ -1,14 +1,14 @@
 
 "use client"
 
-import { useEffect, useState, useActionState } from "react"
+// import { useEffect, useState, useActionState } from "react"
 import { useAuthModal } from "@/store/auth-modal.store"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { signUp, signIn } from "@/app/actions/auth.actions"
+// import { Label } from "@/components/ui/label"
+// import { Input } from "@/components/ui/input"
+// import { Button } from "@/components/ui/button"
+// import { signUp, signIn } from "@/app/actions/auth.actions"
 import {
     Dialog,
     DialogContent,
@@ -17,58 +17,82 @@ import {
 } from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
 import { sendWelcomeEmail } from "@/app/actions/email.actions"
-import {toast} from "sonner"
+import { toast } from "sonner"
+import OtpForm from "@/components/auth/OtpForm"
 // import {signInWithEmail, signUpWithEmail} from "@/app/actions/auth.actions"
 
 
 export function AuthModal() {
-    const { isOpen, defaultTab, redirectTo, open, close } = useAuthModal()
+    const { isOpen, defaultTab, redirectTo, close } = useAuthModal()
     const searchParams = useSearchParams()
     const router = useRouter()
     // const [showSuccess, setShowSuccess] = useState(false)
 
-    const [signInState, signInAction, signInPending] = useActionState(signIn, {error: "", success: false})
+    // const [signInState, signInAction, signInPending] = useActionState(signIn, {error: "", success: false})
 
-    const [signUpState, signUpAction, signUpPending] = useActionState(signUp, {error: "", success: false})
+    // const [signUpState, signUpAction, signUpPending] = useActionState(signUp, {error: "", success: false})
 
-    useEffect(() => {
-        const userData = signUpState?.data
+    // useEffect(() => {
+    //     const userData = signUpState?.data
 
-        if (signUpState?.success && userData) {
-            const syncAndClose = async () => {
-                const supabase = createClient();
-                // 1. Force the browser client to read the new server cookie
-                await supabase.auth.getUser(); 
-                
-                // 2. Fire the UI updates
-                toast.success("Account created successfully!");
-                router.refresh();
-                close();
+    //     if (signUpState?.success && userData) {
+    //         const syncAndClose = async () => {
+    //             const supabase = createClient();
+    //             // 1. Force the browser client to read the new server cookie
+    //             await supabase.auth.getUser(); 
 
-                sendWelcomeEmail(
-                    userData.email,
-                    userData.firstName
-                ).catch(err => console.error("Failed to trigger welcome email", err))
-            };
-            syncAndClose()
+    //             // 2. Fire the UI updates
+    //             toast.success("Account created successfully!");
+    //             router.refresh();
+    //             close();
+
+    //             sendWelcomeEmail(
+    //                 userData.email,
+    //                 userData.firstName
+    //             ).catch(err => console.error("Failed to trigger welcome email", err))
+    //         };
+    //         syncAndClose()
+    //     }
+
+    //     if (signInState?.success) {
+    //         const syncAndClose = async () => {
+    //             const supabase = createClient();
+    //             // 1. Force the browser client to read the new server cookie
+    //             await supabase.auth.getUser(); 
+
+    //             // 2. Fire the UI updates
+    //             toast.success("Welcome back! You are signed in.");
+    //             router.refresh();
+    //             close();
+    //         };
+
+    //         syncAndClose()
+    //     }
+    // }, [signInState?.success, signUpState?.success,signUpState?.data, close, router]);
+
+    const handleVerified = async (tabMode: "login" | "signup", { email, firstName }: { email: string, firstName: string }) => {
+        const supabase = createClient()
+        await supabase.auth.getUser()
+
+        toast.success(
+            tabMode === "signup"
+                ? "account created successfully!"
+                :
+                "Welcome back, You are signed in"
+        )
+
+        router.refresh()
+        close()
+
+        if (tabMode === "signup") {
+            sendWelcomeEmail(email, firstName).catch((err) => console.error("Failed to trigger welcome email", err))
         }
 
-        if (signInState?.success) {
-            const syncAndClose = async () => {
-                const supabase = createClient();
-                // 1. Force the browser client to read the new server cookie
-                await supabase.auth.getUser(); 
-                
-                // 2. Fire the UI updates
-                toast.success("Welcome back! You are signed in.");
-                router.refresh();
-                close();
-            };
 
-            syncAndClose()
+        if (redirectTo) {
+            router.push(redirectTo)
         }
-    }, [signInState?.success, signUpState?.success,signUpState?.data, close, router]);
-
+    }
     const handleClose = () => {
         close()
         if (searchParams.get("aut") === "required") {
@@ -101,84 +125,20 @@ export function AuthModal() {
                         </TabsTrigger>
                     </TabsList>
 
-                    {/* Sign In */}
-                    <TabsContent value="signin" className="p-6 space-y-4">
-                        <form action={signInAction} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="signin-email">Email Address</Label>
-                                <Input id="signin-email" name="email" type="email" required />
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="signin-password">Password</Label>
-                                    <button
-                                        type="button"
-                                        className="text-sm text-orange-500 hover:underline"
-                                    >
-                                        Forgot Password
-                                    </button>
-                                </div>
-                                <Input
-                                    id="signin-password"
-                                    name="password"
-                                    type="password"
-                                    required
-                                />
-                            </div>
-                            {signInState?.error && (
-                                <p className="text-sm text-red-500">{signInState.error}</p>
-                            )}
-                            <Button
-                                type="submit"
-                                className="w-full bg-orange-500 hover:bg-orange-600"
-                                disabled={signInPending}
-                            >
-                                {signInPending ? "Signing in..." : "SIGN IN →"}
-                            </Button>
-                        </form>
+                    <TabsContent value="signin" className="p-6">
+                        <OtpForm
+                            mode="login"
+                            embedded
+                            onVerified={(info) => handleVerified("login", info)}
+                        />
                     </TabsContent>
 
-                    {/* Sign Up */}
-                    <TabsContent value="signup" className="p-6 space-y-4">
-                        <form action={signUpAction} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="signup-name">Name</Label>
-                                <Input id="signup-name" name="full_name" type="text" required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="signup-email">Email Address</Label>
-                                <Input id="signup-email" name="email" type="email" required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="signup-password">Password</Label>
-                                <Input
-                                    id="signup-password"
-                                    name="password"
-                                    type="password"
-                                    placeholder="at least 8 characters"
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="signup-confirm">Confirm Password</Label>
-                                <Input
-                                    id="signup-confirm"
-                                    name="confirm_password"
-                                    type="password"
-                                    required
-                                />
-                            </div>
-                            {signUpState?.error && (
-                                <p className="text-sm text-red-500">{signUpState.error}</p>
-                            )}
-                            <Button
-                                type="submit"
-                                className="w-full bg-orange-500 hover:bg-orange-600"
-                                disabled={signUpPending}
-                            >
-                                {signUpPending ? "Creating account..." : "SIGN UP →"}
-                            </Button>
-                        </form>
+                    <TabsContent value="signup" className="p-6">
+                        <OtpForm
+                            mode="signup"
+                            embedded
+                            onVerified={(info) => handleVerified("signup", info)}
+                        />
                     </TabsContent>
                 </Tabs>
             </DialogContent>
