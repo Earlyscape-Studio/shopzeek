@@ -4,10 +4,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 
-export type ResetState = {
-  error: string | null;
-  success: boolean;
-};
+// export type ResetState = {
+//   error: string | null;
+//   success: boolean;
+// };
 
 export type AuthState = {
   error: string;
@@ -17,6 +17,65 @@ export type AuthState = {
     firstName: string
   }
 };
+
+
+export async function requestOtp(
+  prevState: AuthState | undefined,
+  formData: FormData,
+): Promise<AuthState>{
+  const cookieStore = await cookies()
+  const supabase = createClient(cookieStore)
+
+  const rawEmail = formData.get("email") as string;
+  const cleanEmail = rawEmail.trim()
+  const fullName = (formData.get("full_name") as string | null) ?? ""
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: cleanEmail,
+    options: {
+      shouldCreateUser: true,
+      data: fullName ? {full_name: fullName} : undefined
+    }
+  })
+
+
+  if (error) return {error: error.message, success: false}
+
+
+
+  return{
+    error: "",
+    success: true,
+    data: {email: cleanEmail, firstName: fullName}
+  }
+
+
+}
+
+
+export async function verifyOtp(
+  prevState: AuthState | undefined,
+  formData: FormData
+): Promise<AuthState>{
+  const cookieStore = await cookies()
+  const supabase = createClient(cookieStore)
+
+  const rawEmail = formData.get("email") as string
+  const cleanEmail = rawEmail.trim()
+  const token = (formData.get("token") as string).trim()
+
+
+  const {error} = await supabase.auth.verifyOtp({
+    email: cleanEmail,
+    token,
+    type: "email"
+  });
+
+  if (error) return {error: error.message, success: false}
+
+  // redirect("/")
+  return {error: "", success: true  }
+}
 
 export async function signUp(
   prevState: AuthState | undefined,
@@ -48,6 +107,7 @@ export async function signUp(
   };
 }
 
+
 export async function signIn(
   prevState: AuthState | undefined,
   formData: FormData,
@@ -77,48 +137,57 @@ export async function signOut() {
   redirect("/");
 }
 
-export async function sendResetLink(
-  prevState: ResetState | undefined,
-  formData: FormData,
-): Promise<ResetState> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+// export async function sendResetLink(
+//   prevState: ResetState | undefined,
+//   formData: FormData,
+// ): Promise<ResetState> {
+//   const cookieStore = await cookies();
+//   const supabase = createClient(cookieStore);
 
-  const rawEmail = formData.get("email") as string;
-  const cleanEmail = rawEmail.trim();
+//   const rawEmail = formData.get("email") as string;
+//   const cleanEmail = rawEmail.trim();
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+//   const origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-  const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-    redirectTo: `${origin}/update-password`,
-  });
+//   const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+//     redirectTo: `${origin}/update-password`,
+//   });
 
-  // 2. Always return BOTH properties
-  if (error) {
-    return { error: error.message, success: false };
-  }
+//   // 2. Always return BOTH properties
+//   if (error) {
+//     return { error: error.message, success: false };
+//   }
 
-  return { error: null, success: true };
-}
+//   return { error: null, success: true };
+// }
 
-export async function updatePassword(
-  prevState: AuthState | undefined,
-  formData: FormData
-): Promise<AuthState> { // 1. Set the strict return type here
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+// export async function updatePassword(
+//   prevState: AuthState | undefined,
+//   formData: FormData
+// ): Promise<AuthState> { // 1. Set the strict return type here
+//   const cookieStore = await cookies();
+//   const supabase = createClient(cookieStore);
 
-  const password = formData.get("password") as string;
+//   const password = formData.get("password") as string;
 
-  const { error } = await supabase.auth.updateUser({
-    password: password,
-  });
+//   const { error } = await supabase.auth.updateUser({
+//     password: password,
+//   });
 
-  if (error) {
-    // 2. Add success: false to the error return
-    return { error: error.message, success: false };
-  }
+//   if (error) {
+//     // 2. Add success: false to the error return
+//     return { error: error.message, success: false };
+//   }
 
-  // 3. Add success: true to the success return
-  return { error: "", success: true };
-}
+//   // 3. Add success: true to the success return
+//   return { error: "", success: true };
+// }
+
+
+// export async function signOut() {
+//   const cookieStore = await cookies()
+//   const supabase = createClient(cookieStore)
+//   await supabase.auth.signOut()
+//   redirect("/")
+// }
+
