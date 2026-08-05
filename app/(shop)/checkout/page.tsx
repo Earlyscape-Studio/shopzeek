@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Home, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cart.store";
-import { initCardPayment, initBankTransfer, verifyBankTransferPayment } from "@/app/actions/order.actions";
+import { initCardPayment, initBankTransfer, initGlobalPayPayment, verifyBankTransferPayment } from "@/app/actions/order.actions";
 import { encryptCardData } from "@/utils/flutterwave/flutterwave-encrypt";
 import { getDeliveryQuote } from "@/app/actions/logistics.actions";
 import { getLastOrderBillingInfo, type BillingDefaults } from "@/app/actions/address.actions";
@@ -25,7 +25,7 @@ import type { CardFields } from "@/components/shared/checkout/PaymentMethodSelec
 import { PostChargeOverlay, type PostChargeState } from "@/components/shared/checkout/PostChargeOverlay";
 import { detectCardBrand, type CardBrand } from "@/utils/flutterwave/card-utils";
 
-type PaymentMethod = "card" | "bank_transfer";
+type PaymentMethod = "card" | "bank_transfer" | "globalpay";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -191,7 +191,7 @@ export default function CheckoutPage() {
           default:
             toast.error("Unexpected response from payment provider");
         }
-      } else {
+      } else if (paymentMethod === "bank_transfer") {
         const result = await initBankTransfer(
           formData, items, finalTotal, shippingBreakdown, coupon?.code
         );
@@ -209,6 +209,20 @@ export default function CheckoutPage() {
           transactionRef: result.transactionRef,
           virtualAccountId: result.virtualAccountId,
         });
+      } else {
+        // globalpay — hosted checkout, just redirect. Verification happens
+        // when GlobalPay sends the user back to /payment/callback/globalpay.
+        const result = await initGlobalPayPayment(
+          formData, items, finalTotal, shippingBreakdown, coupon?.code
+        );
+
+        if (!result.success) {
+          toast.error(result.error ?? "GlobalPay checkout setup failed");
+          setIsProcessing(false);
+          return;
+        }
+
+        window.location.href = result.redirectUrl!;
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err ?? "Something went wrong.");

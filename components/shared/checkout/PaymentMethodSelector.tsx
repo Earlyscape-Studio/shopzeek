@@ -1,7 +1,7 @@
 "use client"
 
 
-import { CreditCard, Landmark } from "lucide-react"
+import { CreditCard, Landmark, Wallet } from "lucide-react"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -16,7 +16,7 @@ import {
 
 
 
-type PaymentMethod = "card" | "bank_transfer";
+type PaymentMethod = "card" | "bank_transfer" | "globalpay";
 
 export interface CardFields {
   cardNumber: string;
@@ -52,9 +52,12 @@ export function PaymentMethodSelector({
   return (
     <div className="space-y-4">
       {/* Method toggle */}
-      <div className="grid grid-cols-2 gap-3">
-        {(["bank_transfer", "card"] as PaymentMethod[]).map((method) => {
+      <div className="grid grid-cols-3 gap-3">
+        {(["bank_transfer", "card", "globalpay"] as PaymentMethod[]).map((method) => {
           const isSelected = selectedMethod === method;
+          const label =
+            method === "card" ? "Card" : method === "bank_transfer" ? "Bank Transfer" : "GlobalPay";
+          const Icon = method === "card" ? CreditCard : method === "bank_transfer" ? Landmark : Wallet;
           return (
             <button
               key={method}
@@ -69,8 +72,8 @@ export function PaymentMethodSelector({
                 }
               `}
             >
-              {method === "card" ? <CreditCard className="w-5 h-5" /> : <Landmark className="w-5 h-5" />}
-              {method === "card" ? "Card" : "Bank Transfer"}
+              <Icon className="w-5 h-5" />
+              {label}
             </button>
           );
         })}
@@ -164,6 +167,14 @@ export function PaymentMethodSelector({
         <p className="text-xs text-gray-400 leading-relaxed">
           After placing your order, you&apos;ll receive a unique account number to transfer to.
           Your order is confirmed once the transfer clears.
+        </p>
+      )}
+
+      {/* GlobalPay hint */}
+      {selectedMethod === "globalpay" && (
+        <p className="text-xs text-gray-400 leading-relaxed">
+          You&apos;ll be redirected to GlobalPay&apos;s secure checkout to complete your
+          payment via card, transfer, USSD, or QR code.
         </p>
       )}
     </div>

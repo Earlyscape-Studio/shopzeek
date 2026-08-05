@@ -1,7 +1,7 @@
-
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/utils/supabase/admin"; 
 import crypto from "crypto";
+import { triggerOrderEmails } from "@/app/actions/email.actions";
 
 export async function POST(request: Request) {
   try {
@@ -44,24 +44,57 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Missing Order ID" }, { status: 400 });
       }
 
-      const isLive = process.env.NODE_ENV === "production"
-      // console.log(`[${isLive ? "LIVE" : "TEST"} MODE] Processing webhook for Order ${orderId}`)
+      // Idempotency check — don't double-process if we can't find the order.
+      const { data: existingOrder } = await supabaseAdmin
+        .from("orders")
+        .select("id, status, total_amount")
+        .eq("id", orderId)
+        .single();
+
+      if (!existingOrder) {
+        console.warn("Webhook: no order found for id", orderId);
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      // Amount mismatch check (anti-tampering) — mirrors the Flutterwave webhook.
+      if (Number(transaction.amount) < Number(existingOrder.total_amount)) {
+        console.error(
+          `Webhook: amount mismatch for order ${orderId}. Expected ${existingOrder.total_amount}, got ${transaction.amount}`
+        );
+        await supabaseAdmin
+          .from("orders")
+          .update({ status: "payment_flagged" })
+          .eq("id", orderId);
+
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
 
       // ✅ Use the imported supabaseAdmin client (no cookies, service_role)
-      const { error } = await supabaseAdmin
+      const { data: updatedOrder, error } = await supabaseAdmin
         .from("orders")
         .update({
           status: "paid",
+          paid_at: new Date().toISOString(),
           payment_reference: transactionRef,
         })
-        .eq("id", orderId);
+        .eq("id", orderId)
+        .neq("status", "paid") // Only if not already paid — guards against double-processing
+        .select("id");
 
       if (error) {
         console.error("Database update failed:", error);
         return NextResponse.json({ error: "Database update failed" }, { status: 500 });
       }
 
-      // console.log(`Order ${orderId} marked as PAID (ref: ${transactionRef})`);
+      // If we were the one to mark it as paid (not already handled by the
+      // callback page beating us here), trigger the order emails.
+      if (updatedOrder && updatedOrder.length > 0) {
+        try {
+          await triggerOrderEmails(orderId);
+        } catch (emailError) {
+          console.error("Webhook: Failed to send order emails", emailError);
+        }
+      }
     } else {
       // console.log(`Received unhandled event: ${body.event}`);
     }
