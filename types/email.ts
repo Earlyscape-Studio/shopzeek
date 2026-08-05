@@ -19,7 +19,7 @@ export interface OrderEmailPayload {
   email: string;
   customerName: string;
   phone: string;
-  paymentMethod: "card" | "bank_transfer" | "checkout";
+  paymentMethod: "card" | "bank_transfer" | "checkout" | "globalpay";
   totalAmount: number;
   shippingCost: number;
   shippingVat: number;
