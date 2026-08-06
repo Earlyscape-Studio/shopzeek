@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AdminSidebar } from "@/components/shared/admin/adminSidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AdminGlobalSearch } from "@/components/shared/admin/adminGlobalSearch"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
 
@@ -32,16 +33,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <SidebarProvider>
             <AdminSidebar profile={profile} />
             <main className="flex flex-col flex-1 min-h-screen">
-                <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200 sticky top-0 z-10">
+                <header className="flex items-center gap-4 h-16 px-6 bg-white border-b border-gray-200 sticky top-0 z-10">
                     <SidebarTrigger />
                     <Link
                         href="/"
-                        className="ml-4 flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#FF5A00] transition-colors"
+                        className="hidden sm:flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#FF5A00] transition-colors shrink-0"
                     >
                         <ExternalLink size={13} />
                         View Store
                     </Link>
-                    <div className="flex items-center gap-3 ml-auto">
+                    <div className="flex-1 flex justify-center">
+                        <AdminGlobalSearch />
+                    </div>
+                    <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-700 hidden sm:block font-medium">
                             {profile.full_name ?? "Admin"}
                         </span>
