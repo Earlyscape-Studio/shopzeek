@@ -180,7 +180,7 @@ export function PaymentMethodSelector({
                 onChange={(e) =>
                   onCardFieldChange("expiryMonth", e.target.value.replace(/\D/g, "").slice(0, 2))
                 }
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500 "
               />
             </div>
             <div>
@@ -196,7 +196,7 @@ export function PaymentMethodSelector({
                 onChange={(e) =>
                   onCardFieldChange("expiryYear", e.target.value.replace(/\D/g, "").slice(0, 2))
                 }
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500 "
               />
             </div>
             <div>
@@ -212,7 +212,7 @@ export function PaymentMethodSelector({
                 onChange={(e) =>
                   onCardFieldChange("cvv", e.target.value.replace(/\D/g, "").slice(0, 4))
                 }
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
           </div>
