@@ -177,7 +177,9 @@ export function CheckoutOrderSummary({
 
       <p className="text-xs text-center text-gray-400 mt-4">
         Secured by{" "}
-        <span className="font-semibold text-[#F5A623]">Flutterwave</span>
+        <span className="font-semibold text-[#F5A623]">Flutterwave </span>
+        <span>and </span>
+        <span className="font-semibold text-[#d61818]">GlobalPay</span>
       </p>
     </div>
   );

@@ -51,33 +51,90 @@ export function PaymentMethodSelector({
 
   return (
     <div className="space-y-4">
-      {/* Method toggle */}
-      <div className="grid grid-cols-3 gap-3">
-        {(["bank_transfer", "card", "globalpay"] as PaymentMethod[]).map((method) => {
-          const isSelected = selectedMethod === method;
-          const label =
-            method === "card" ? "Card" : method === "bank_transfer" ? "Bank Transfer" : "GlobalPay";
-          const Icon = method === "card" ? CreditCard : method === "bank_transfer" ? Landmark : Wallet;
-          return (
-            <button
-              key={method}
-              // type="button" is critical — prevents this from submitting the parent form
-              type="button"
-              onClick={() => onMethodChange(method)}
-              className={`
-                flex items-center gap-2 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all
-                ${isSelected
-                  ? "border-orange-500 bg-orange-50 text-orange-600"
-                  : "border-gray-200 text-gray-500 hover:border-gray-300"
-                }
-              `}
-            >
-              <Icon className="w-5 h-5" />
-              {label}
-            </button>
-          );
-        })}
+      {/* Flutterwave direct methods — pay with card/transfer details right here */}
+      <div>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+          Pay with flutterwave
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {(["bank_transfer", "card"] as PaymentMethod[]).map((method) => {
+            const isSelected = selectedMethod === method;
+            const label = method === "card" ? "Card" : "Bank Transfer";
+            const Icon = method === "card" ? CreditCard : Landmark;
+            return (
+              <button
+                key={method}
+                // type="button" is critical — prevents this from submitting the parent form
+                type="button"
+                onClick={() => onMethodChange(method)}
+                className={`
+                  flex items-center gap-2 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all
+                  ${isSelected
+                    ? "border-orange-500 bg-orange-50 text-orange-600"
+                    : "border-gray-200 text-gray-500 hover:border-gray-300"
+                  }
+                `}
+              >
+                <Icon className="w-5 h-5" />
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Divider separating the two providers */}
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-gray-200" />
+        <span className="text-xs font-medium text-gray-400">or</span>
+        <div className="h-px flex-1 bg-gray-200" />
+      </div>
+
+      {/* GlobalPay — distinct hosted-checkout provider, not a peer of the fields above */}
+      <button
+        type="button"
+        onClick={() => onMethodChange("globalpay")}
+        className={`
+          w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg border-2 text-left transition-all
+          ${selectedMethod === "globalpay"
+            ? "border-orange-500 bg-orange-50"
+            : "border-gray-200 hover:border-gray-300"
+          }
+        `}
+      >
+        <span className="flex items-center gap-3">
+          <span
+            className={`
+              flex items-center justify-center w-9 h-9 rounded-full shrink-0
+              ${selectedMethod === "globalpay" ? "bg-orange-100 text-orange-600" : "bg-gray-100 text-gray-500"}
+            `}
+          >
+            <Wallet className="w-4.5 h-4.5" />
+          </span>
+          <span>
+            <span
+              className={`block text-sm font-medium ${
+                selectedMethod === "globalpay" ? "text-orange-600" : "text-gray-700"
+              }`}
+            >
+              Pay with GlobalPay
+            </span>
+            <span className="block text-xs text-gray-400">
+              Card, transfer, USSD, or QR — via a secure hosted checkout
+            </span>
+          </span>
+        </span>
+        <span
+          className={`
+            w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center
+            ${selectedMethod === "globalpay" ? "border-orange-500" : "border-gray-300"}
+          `}
+        >
+          {selectedMethod === "globalpay" && (
+            <span className="w-2 h-2 rounded-full bg-orange-500" />
+          )}
+        </span>
+      </button>
 
       {/* Card fields — conditionally rendered */}
       {selectedMethod === "card" && (
@@ -170,13 +227,6 @@ export function PaymentMethodSelector({
         </p>
       )}
 
-      {/* GlobalPay hint */}
-      {selectedMethod === "globalpay" && (
-        <p className="text-xs text-gray-400 leading-relaxed">
-          You&apos;ll be redirected to GlobalPay&apos;s secure checkout to complete your
-          payment via card, transfer, USSD, or QR code.
-        </p>
-      )}
     </div>
   );
 }
