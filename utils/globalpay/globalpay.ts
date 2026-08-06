@@ -1,15 +1,16 @@
-export const GLOBALPAY_BASE_URL = process.env.GLOBALPAY_BASE_URL || "https://api.globalpay.ng"
+export const GLOBALPAY_BASE_URL = process.env.GLOBALPAY_BASE_URL
 
 export function globalpayHeaders () {
-    const secret_key = process.env.GLOBALPAY_SECRET_KEY
+    const publicKey = process.env.GLOBALPAY_API_KEY
 
-    if(!secret_key){
-        throw new Error("missing GLOBALPAY_SECRET_KEY environment variable")
+    if(!publicKey){
+        throw new Error("missing GLOBALPAY_API_KEY environment variable")
     }
 
 
     return {
-        Authorization: `Bearer ${secret_key}`,
+        apiKey: publicKey,
+        language: "en",
         "Content-Type": "application/json"
     }
 }

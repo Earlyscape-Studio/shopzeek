@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { verifyGlobalPayCallback } from "@/app/payment/callback/globalpay/callback.actions";
+import { verifyGlobalPayCallback, finalizeGlobalPayCallback } from "@/app/payment/callback/globalpay/callback.actions";
 import { useCartStore } from "@/store/cart.store";
+
+const MAX_ATTEMPTS = 8;
+const POLL_INTERVAL_MS = 3000; // 3 seconds between each check
 
 type VerificationState =
   | { status: "loading" }
@@ -11,10 +14,11 @@ type VerificationState =
   | { status: "pending" };
 
 export default function GlobalPayCallbackHandler() {
-  const searchParams = useSearchParams();
-  const router       = useRouter();
-  const clearCart    = useCartStore((s) => s.clearCart);
+  const searchParams  = useSearchParams();
+  const router        = useRouter();
+  const clearCart     = useCartStore((s) => s.clearCart);
   const [state, setState] = useState<VerificationState>({ status: "loading" });
+  const attempts      = useRef(0);
 
   useEffect(() => {
     const reference = searchParams.get("reference");
@@ -24,17 +28,43 @@ export default function GlobalPayCallbackHandler() {
       return;
     }
 
-    verifyGlobalPayCallback(reference).then((result) => {
+    let timeout: ReturnType<typeof setTimeout>;
+
+    async function poll() {
+      attempts.current += 1;
+      const result = await verifyGlobalPayCallback(reference!);
+
       if (result.verified) {
-        clearCart().then(() => {
-          router.push(`/order/success?reference=${result.orderId}`);
-        });
-      } else if (result.pending) {
-        setState({ status: "pending" });
-      } else {
-        router.push(`/order/failed?reference=${reference}`);
+        await clearCart();
+        router.push(`/order/success?reference=${result.orderId}`);
+        return;
       }
-    });
+
+      if (!result.pending) {
+        // Definitive failure (not found, flagged, etc.)
+        router.push(`/order/failed?reference=${reference}`);
+        return;
+      }
+
+      if (attempts.current >= MAX_ATTEMPTS) {
+        // Polling exhausted — do one definitive requery before giving up
+        const final = await finalizeGlobalPayCallback(reference!);
+        if (final.verified) {
+          await clearCart();
+          router.push(`/order/success?reference=${final.orderId}`);
+        } else {
+          setState({ status: "pending" }); // genuinely still unknown
+        }
+        return;
+      }
+
+      // Still pending — wait and try again
+      timeout = setTimeout(poll, POLL_INTERVAL_MS);
+    }
+
+    poll();
+
+    return () => clearTimeout(timeout);
   }, [searchParams, router, clearCart]);
 
   if (state.status === "loading") {
@@ -52,8 +82,8 @@ export default function GlobalPayCallbackHandler() {
         <div className="text-yellow-500 text-5xl mb-4">⏳</div>
         <h1 className="text-2xl font-bold mb-2">Payment Processing</h1>
         <p className="text-gray-600 mb-4">
-          Your payment is being processed. You will receive a confirmation email once
-          it&apos;s complete.
+          Your payment is being processed. You&apos;ll receive a confirmation
+          email once it&apos;s complete.
         </p>
         <button
           onClick={() => router.push("/")}

@@ -918,28 +918,39 @@ export async function initGlobalPayPayment(
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 
-      const response = await fetch(
-      `${GLOBALPAY_BASE_URL}/api/paymentgateway/generate-payment-link`,
+     const response = await fetch(
+      `${GLOBALPAY_BASE_URL}/paymentgateway/generate-payment-link`,
       {
         method: "POST",
         headers: globalpayHeaders(),
         body: JSON.stringify({
           amount: Math.round(totalAmount),
-          currency: "NGN",
-          email,
-          merchant_reference: transactionRef,
-          redirect_url: `${siteUrl}/payment/callback/globalpay?reference=${transactionRef}`,
-          description: `Order ${order.id}`,
-          metadata: { orderId: order.id },
+          merchantTransactionReference: transactionRef,
+          redirectUrl: `${siteUrl}/payment/callback/globalpay?reference=${transactionRef}`,
+          customer: {
+            firstName,
+            lastName,
+            currency: "NGN",
+            phoneNumber: phone,
+            address: formatDeliveryAddress(formData),
+            emailAddress: email,
+            paymentFormCustomFields: [
+              { name: "orderId", value: order.id },
+            ],
+          },
         }),
       }
     );
 
-    const gpData = await response.json()
+    // console.log("GlobalPay status:", response.status);
+    // console.log("GlobalPay raw response:", await response.text())
 
-    if(!response.ok || gpData.status !== "success"){
+    const gpData = await response.json()
+    console.log("gpData", gpData)
+
+    if(!response.ok || !gpData.isSuccessful){
       await supabase.from("orders").delete().eq("id", order.id);
-      return { success: false, error: gpData.message || "GlobalPay checkout setup failed" };
+      return { success: false, error: gpData.error ||gpData.successMessage || "GlobalPay checkout setup failed" };
     }
 
     await supabase
@@ -951,7 +962,7 @@ export async function initGlobalPayPayment(
       success: true,
       orderId: order.id,
       transactionRef,
-      redirectUrl: gpData.data.checkout_url,
+      redirectUrl: gpData.data.checkoutUrl,
     };
       
   }catch(err){
@@ -965,24 +976,28 @@ export async function initGlobalPayPayment(
 }
 
 
-export async function verifyGlobalPayTransaction(reference: string){
-    try{
-      const response = await fetch(
-        `${GLOBALPAY_BASE_URL}/api/paymentgateway/verify/${reference}`,
-        { headers: globalpayHeaders() }
-      );
- 
-      if (!response.ok) {
-        console.error("GlobalPay verification request failed:", response.status);
-        return false;
+export async function verifyGlobalPayTransaction(merchantRef: string): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `${GLOBALPAY_BASE_URL}/paymentgateway/query-single-transaction-by-merchant-reference/${merchantRef}`,
+      {
+        method: "GET", // docs say POST but the code sample shows GET — try GET first
+        headers: globalpayHeaders(),
       }
-  
-      const data = await response.json();
-      return data?.data?.status === "successful" || data?.data?.status === "success";
-    }catch(err){
-      console.error("verifyGlobalpayTransactoin threw:", err)
-      return false
-    }
+    );
+
+    if (!response.ok) return false;
+
+    const data = await response.json();
+    
+    return (
+      data?.isSuccessful === true &&
+      data?.data?.transactionStatus?.toLowerCase() === "successful"
+    );
+  } catch (err) {
+    console.error("verifyGlobalPayTransaction threw:", err);
+    return false;
+  }
 }
 
 export async function updateOrderStatus(orderId: string, formData: FormData) {
