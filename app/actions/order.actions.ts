@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { getFlutterwaveToken, FLW_BASE_URL } from "@/utils/flutterwave/flutterwave";
 import type { EncryptedCardData } from "@/utils/flutterwave/flutterwave-encrypt";
+import {GLOBALPAY_BASE_URL, globalpayHeaders} from "@/utils/globalpay/globalpay"
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
@@ -839,6 +840,163 @@ export async function verifyBankTransferPayment(
   } catch (err) {
     console.error("verifyBankTransferPayment threw:", err);
     return { paid: false, pending: true };
+  }
+}
+
+export async function initGlobalPayPayment(
+  formData: FormData,
+  cartItems: any[],
+  totalAmount: number,
+  shippingBreakdown?: ShippingBreakdown,
+  couponCode?: string | null
+) {
+  try{
+    const cookieStore = await cookies()
+    const supabase = await createClient(cookieStore)
+    const {data:{user}} = await supabase.auth.getUser()
+
+    const email     = formData.get("email")     as string;
+    const firstName = formData.get("firstName") as string;
+    const lastName  = formData.get("lastName")  as string;
+    const phone     = ((formData.get("phone") as string) ?? "").replace(/\s+/g, "");
+
+    const validation = await validateOrderTotal(
+      cartItems,
+      couponCode ?? null,
+      totalAmount,
+      shippingBreakdown,
+      user?.id ?? null,
+      email
+    )
+
+    if (!validation.valid) return {success: false, error: validation.error}
+
+
+    const {data: order, error: orderError} = await supabase
+      .from("orders")
+      .insert({
+        user_id: user?.id ?? null,
+        email,
+        customer_name: `${firstName} ${lastName}`,
+        customer_phone: phone,
+        delivery_address: formatDeliveryAddress(formData),
+        status: "pending_payment",
+        payment_method: "globalpay",
+        total_amount: totalAmount,
+        shipping_cost: Math.round(shippingBreakdown?.baseCost ?? 0),
+        shipping_vat:  Math.round(shippingBreakdown?.vat     ?? 0),
+        discount_amount: validation.discount ?? 0,
+        coupon_id: validation.coupon?.id ?? null,
+      })
+      .select()
+      .single()
+
+      if(orderError) return {success: false, error: `Order error: ${orderError.message}`}
+
+
+      const orderItems = cartItems.map((item) => ({
+        order_id: order.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.price
+      }))
+
+      const {error: itemsError} = await supabase.from("order_items").insert(orderItems)
+      if(itemsError){
+        await supabase.from("orders").delete().eq("id", order.id)
+        return {success: false, error: `item Error ${itemsError.message}` }
+      }
+
+      if(user?.id){
+        const addressId = await saveCheckoutAddress(user.id, formData, phone)
+        if(addressId){
+          await supabase.from("orders").update({address_id: addressId}).eq("id", order.id)
+        }
+      }
+
+      const transactionRef = `GP-${order.id.slice(0, 8)}-${Date.now()}`;
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+
+     const response = await fetch(
+      `${GLOBALPAY_BASE_URL}/paymentgateway/generate-payment-link`,
+      {
+        method: "POST",
+        headers: globalpayHeaders(),
+        body: JSON.stringify({
+          amount: Math.round(totalAmount),
+          merchantTransactionReference: transactionRef,
+          redirectUrl: `${siteUrl}/payment/callback/globalpay?reference=${transactionRef}`,
+          customer: {
+            firstName,
+            lastName,
+            currency: "NGN",
+            phoneNumber: phone,
+            address: formatDeliveryAddress(formData),
+            emailAddress: email,
+            paymentFormCustomFields: [
+              { name: "orderId", value: order.id },
+            ],
+          },
+        }),
+      }
+    );
+
+    // console.log("GlobalPay status:", response.status);
+    // console.log("GlobalPay raw response:", await response.text())
+
+    const gpData = await response.json()
+    console.log("gpData", gpData)
+
+    if(!response.ok || !gpData.isSuccessful){
+      await supabase.from("orders").delete().eq("id", order.id);
+      return { success: false, error: gpData.error ||gpData.successMessage || "GlobalPay checkout setup failed" };
+    }
+
+    await supabase
+      .from("orders")
+      .update({ payment_reference: transactionRef })
+      .eq("id", order.id);
+ 
+    return {
+      success: true,
+      orderId: order.id,
+      transactionRef,
+      redirectUrl: gpData.data.checkoutUrl,
+    };
+      
+  }catch(err){
+     console.error("Unexpected error initiating GlobalPay payment:", err);
+     const message = err instanceof Error ? err.message : String(err);
+     return {
+      success: false,
+      error: message || "An unexpected error occurred starting your GlobalPay payment",
+    };
+  }
+}
+
+
+export async function verifyGlobalPayTransaction(merchantRef: string): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `${GLOBALPAY_BASE_URL}/paymentgateway/query-single-transaction-by-merchant-reference/${merchantRef}`,
+      {
+        method: "GET", // docs say POST but the code sample shows GET — try GET first
+        headers: globalpayHeaders(),
+      }
+    );
+
+    if (!response.ok) return false;
+
+    const data = await response.json();
+    
+    return (
+      data?.isSuccessful === true &&
+      data?.data?.transactionStatus?.toLowerCase() === "successful"
+    );
+  } catch (err) {
+    console.error("verifyGlobalPayTransaction threw:", err);
+    return false;
   }
 }
 
