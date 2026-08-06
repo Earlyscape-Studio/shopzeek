@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Package, User, MapPin } from "lucide-react";
+import { ArrowLeft, Package, User, MapPin, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,18 +51,7 @@ export default async function OrderDetailPage({
   const discountAmount = Number(order.discount_amount ?? 0);
   const couponCode = (order as any).coupon?.code ?? null;
 
-  // FIX: the column written by checkout (formatDeliveryAddress) is
-  // `delivery_address`, not `shipping_address`. `shipping_address` doesn't
-  // exist on this table, so the admin page was always showing "No address
-  // on file." even though the customer's billing/shipping info (address,
-  // LGA/city, state, country) was saved correctly.
-  //
-  // The value is stored as newline-separated lines:
-  //   Line 1: Full name
-  //   Line 2: Street address
-  //   Line 3: LGA, City
-  //   Line 4: State
-  //   Line 5: Country
+ 
   const rawAddress: string | null = (order as any).delivery_address ?? null;
   const addressLines = rawAddress
     ? rawAddress.split("\n").filter((line) => line.trim().length > 0)
@@ -89,9 +78,16 @@ export default async function OrderDetailPage({
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="text-sm px-3 py-1 uppercase tracking-wider">
-          {order.status}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" asChild>
+            <a href={`/api/admin/orders/${order.id}/packing-slip`} download>
+              <Download className="w-4 h-4 mr-2" /> Packing Slip
+            </a>
+          </Button>
+          <Badge variant="outline" className="text-sm px-3 py-1 uppercase tracking-wider">
+            {order.status}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
