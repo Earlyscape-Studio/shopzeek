@@ -1,0 +1,27 @@
+import type { MetadataRoute } from "next";
+
+const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: [
+        "/admin",         // admin dashboard — nothing here should be indexed
+        "/checkout",      // has live cart/order state, not a useful landing page
+        "/cart",
+        "/order",         // /order/success, /order/failed — per-user, not indexable
+        "/payment",       // payment callback routes
+        "/api",           // backend routes, not pages
+        "/wishlist",      // user-specific, empty/meaningless without a session
+        "/profile",       // account settings/order history — private, per-user
+        "/login",
+        "/signup",
+        "/forgot-password",
+        "/update-password",
+      ],
+    },
+    sitemap: `${siteUrl}/sitemap.xml`,
+  };
+}

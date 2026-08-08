@@ -96,7 +96,7 @@ const body =  (
             <p className="text-sm text-red-500">{requestState.error}</p>
           )}
 
-          <Button type="submit" className="w-full" disabled={requestPending}>
+          <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 text-white" disabled={requestPending}>
             {requestPending ? "Sending code..." : "Send code"}
           </Button>
         </form>
@@ -147,7 +147,7 @@ const body =  (
             <p className="text-sm text-red-500">{verifyState.error}</p>
           )}
 
-          <Button type="submit" className="w-full" disabled={verifyPending}>
+          <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 text-white" disabled={verifyPending}>
             {verifyPending ? "Verifying..." : "Verify"}
           </Button>
 
