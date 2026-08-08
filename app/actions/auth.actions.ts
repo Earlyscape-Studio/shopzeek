@@ -147,7 +147,7 @@ export async function signOut() {
 //   const rawEmail = formData.get("email") as string;
 //   const cleanEmail = rawEmail.trim();
 
-//   const origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+//   const origin = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 //   const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
 //     redirectTo: `${origin}/update-password`,
