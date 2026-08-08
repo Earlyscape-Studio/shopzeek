@@ -915,7 +915,7 @@ export async function initGlobalPayPayment(
       }
 
       const transactionRef = `GP-${order.id.slice(0, 8)}-${Date.now()}`;
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 
      const response = await fetch(

@@ -8,19 +8,33 @@ import {
   TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { AdminPagination } from "@/components/shared/admin/adminPagination";
 
-export default async function AdminOrdersPage() {
+const PAGE_SIZE = 15;
+
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const currentPage = Math.max(1, Number(pageParam) || 1);
+  const from = (currentPage - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   const cookieStore = await cookies();
-  const supabase    = createClient(cookieStore);
+  const supabase = createClient(cookieStore);
 
-  const { data: rawOrders, error } = await supabase
+  const { data: rawOrders, error, count } = await supabase
     .from("orders")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (error) console.error("Error fetching orders:", error);
 
   const orders = (rawOrders as any[]) || [];
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -154,6 +168,12 @@ export default async function AdminOrdersPage() {
           </TableBody>
         </Table>
       </div>
+
+      <AdminPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        basePath="/admin/orders"
+      />
     </div>
   );
 }
