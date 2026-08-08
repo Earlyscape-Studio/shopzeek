@@ -15,19 +15,34 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { DeleteProductButton } from "@/components/shared/admin/deleteProductButton";
 import { DealToggleButton } from "@/components/shared/admin/dealToggleButton";
+import { AdminPagination } from "@/components/shared/admin/adminPagination";
 
-export default async function AdminProductsPage() {
+const PAGE_SIZE = 15;
+
+export default async function AdminProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const currentPage = Math.max(1, Number(pageParam) || 1);
+  const from = (currentPage - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const { data: products, error } = await supabase
+  const { data: products, error, count } = await supabase
     .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (error) {
     console.error("Error fetching products:", error);
   }
+
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
   return (
     <div className="space-y-8">
@@ -168,6 +183,12 @@ export default async function AdminProductsPage() {
           </TableBody>
         </Table>
       </div>
+
+      <AdminPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        basePath="/admin/products"
+      />
     </div>
   );
 }

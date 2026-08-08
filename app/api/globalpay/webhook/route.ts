@@ -49,10 +49,10 @@ function webhookResponse(success: boolean, description: string) {
 }
 
 export async function POST(request: Request) {
-  const publicKey = process.env.GLOBALPAY_PUBLIC_KEY;
+  const publicKey = process.env.GLOBALPAY_API_KEY;
 
   if (!publicKey) {
-    console.error("Webhook: GLOBALPAY_PUBLIC_KEY not set");
+    console.error("Webhook: GLOBALPAY_API_KEY not set");
     return webhookResponse(false, "Server misconfiguration");
   }
 
