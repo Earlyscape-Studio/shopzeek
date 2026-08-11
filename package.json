@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "cloudflare-build": "opennextjs-cloudflare build",
+    "deploy": "npm run cloudflare-build && wrangler deploy"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.2.0",
@@ -14,6 +16,7 @@
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@fortawesome/react-fontawesome": "^3.3.1",
     "@hookform/resolvers": "^5.4.0",
+    "@opennextjs/cloudflare": "^1.20.2",
     "@radix-ui/react-visually-hidden": "^1.2.4",
     "@react-email/components": "^1.0.12",
     "@react-pdf/renderer": "^4.5.1",
@@ -51,6 +54,7 @@
     "@types/react-dom": "^19",
     "eslint": "^10",
     "eslint-config-next": "^0.2.4",
-    "typescript": "^6"
+    "typescript": "^6",
+    "wrangler": "^4.120.1"
   }
 }
