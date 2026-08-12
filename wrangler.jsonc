@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "main": ".open-next/worker.js",
-  "name": "zeektest",
+  "name": "zeek",
   "compatibility_date": "2026-08-12",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
