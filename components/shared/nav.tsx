@@ -40,11 +40,18 @@ const navLinks = [
     { href: "/contact", label: "Contact" },
 ]
 
-export function Nav() {
+type Profile = { full_name: string | null; role: string } | null
+
+type NavProps = {
+    initialUser: SupabaseUser | null
+    initialProfile: Profile
+}
+
+export function Nav({ initialUser, initialProfile }: NavProps) {
     const [mobileOpen, setMobileOpen] = useState(false)
     const [categoriesOpen, setCategoriesOpen] = useState(false)
-    const [user, setUser] = useState<SupabaseUser | null>(null)
-    const [profile, setProfile] = useState<{ full_name: string | null; role: string } | null>(null)
+    const [user, setUser] = useState<SupabaseUser | null>(initialUser)
+    const [profile, setProfile] = useState<Profile>(initialProfile)
 
     const openAuthModal = useAuthModal((s) => s.open)
     const syncCartWithDB = useCartStore((s) => s.syncWithDB)
@@ -53,6 +60,18 @@ export function Nav() {
     const router = useRouter()
     const supabase = createClient()
 
+    // Source of truth: the server-fetched session, re-derived on every
+    // Server Component render (e.g. after router.refresh() post-login,
+    // or after a redirect() post-logout). This is what actually flips
+    // the avatar without a hard reload.
+    useEffect(() => {
+        setUser(initialUser)
+        setProfile(initialProfile)
+    }, [initialUser, initialProfile])
+
+    // Secondary listener: catches client-driven session changes that
+    // don't go through a Server Action / router.refresh() cycle, e.g.
+    // a token refresh, or the session expiring while the tab is open.
     useEffect(() => {
         const fetchProfile = async (userId: string) => {
             const { data } = await supabase
@@ -62,11 +81,6 @@ export function Nav() {
                 .single()
             setProfile(data)
         }
-
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null)
-            if (session?.user) fetchProfile(session.user.id)
-        })
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (event, session) => {
@@ -82,7 +96,7 @@ export function Nav() {
         )
 
         return () => subscription.unsubscribe()
-    }, [syncCartWithDB, syncWishlistWithDB])
+    }, [supabase, syncCartWithDB, syncWishlistWithDB])
 
     const handleWishlistClick = async () => {
         const { data: { session } } = await supabase.auth.getSession()
