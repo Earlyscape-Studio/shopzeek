@@ -1,0 +1,44 @@
+name: Auto PR from dev
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-prs:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [staging, staging-test]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for existing open PR
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COUNT=$(gh pr list --head dev --base "${{ matrix.target }}" --state open --json number --jq 'length')
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR if none exists
+        if: steps.existing.outputs.count == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --head dev \
+            --base "${{ matrix.target }}" \
+            --title "Sync dev -> ${{ matrix.target }}" \
+            --body "Automated PR opened on push to dev. Review the diff before merging into ${{ matrix.target }}."
+
+      - name: Skip if PR already exists
+        if: steps.existing.outputs.count != '0'
+        run: echo "An open PR from dev into ${{ matrix.target }} already exists — skipping."
