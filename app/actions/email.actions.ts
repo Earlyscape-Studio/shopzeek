@@ -11,6 +11,10 @@ import { OrderEmailPayload, DeliveryEmailPayload, AbandonedCartEmailPayload } fr
 import { WelcomeEmail } from "@/components/emails/welcomeEmail";
 import { supabaseAdmin } from "@/utils/supabase/admin";
 import { incrementCouponUsedCount } from "@/app/actions/coupon.actions";
+import { AdminNewSignupEmail } from "@/components/emails/adminNewSignupEmail";
+
+
+
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = "zeek Orders <hello@zeek.you>";
@@ -301,6 +305,38 @@ export async function sendWelcomeEmail(email: string, firstName: string) {
     return { success: true };
   } catch (error) {
     console.error("Unexpected error in sendWelcomeEmail:", error);
+    return { success: false, error };
+  }
+}
+
+
+export async function sendAdminNewSignupEmail(email: string, fullName: string) {
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: ADMIN_EMAIL,
+      subject: `👋 New Signup — ${fullName || email}`,
+      react: AdminNewSignupEmail({
+        fullName,
+        email,
+        signupDate: new Date().toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }),
+    });
+
+    if (error) {
+      console.error("Failed to send admin new-signup email:", error);
+      return { success: false, error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected error in sendAdminNewSignupEmail:", error);
     return { success: false, error };
   }
 }

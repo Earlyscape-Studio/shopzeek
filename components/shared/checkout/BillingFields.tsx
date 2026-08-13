@@ -177,8 +177,10 @@ export function BillingFields({
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700">LGA</label>
+        <div className="space-y-1.5" id={`${n}lga-field`}>
+          <label className="text-sm font-medium text-gray-700">
+            LGA <span className="text-orange-500">*</span>
+          </label>
           {isLoading ? (
             <LoadingSlot label="Loading" />
           ) : !state ? (
@@ -201,7 +203,11 @@ export function BillingFields({
                 onValueChange={onLgaChange}
                 disabled={lgas.length === 0}
               >
-                <SelectTrigger className="h-11 border-gray-200 rounded-lg">
+                <SelectTrigger
+                  className={`h-11 rounded-lg ${
+                    !lga ? "border-orange-300 ring-1 ring-orange-100" : "border-gray-200"
+                  }`}
+                >
                   <SelectValue placeholder="Select LGA" />
                 </SelectTrigger>
                 <SelectContent className="max-h-64 overflow-y-auto">
@@ -213,6 +219,11 @@ export function BillingFields({
                 </SelectContent>
               </Select>
             </>
+          )}
+          {state && !lga && !isLoading && (
+            <p className="text-xs text-orange-500">
+              Required to calculate shipping and place your order
+            </p>
           )}
         </div>
 
