@@ -16,10 +16,12 @@ import {
     DialogDescription
 } from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
-import { sendWelcomeEmail } from "@/app/actions/email.actions"
 import { toast } from "sonner"
 import OtpForm from "@/components/auth/OtpForm"
+import { sendWelcomeEmail, sendAdminNewSignupEmail } from "@/app/actions/email.actions"
 // import {signInWithEmail, signUpWithEmail} from "@/app/actions/auth.actions"
+
+
 
 
 export function AuthModal() {
@@ -86,6 +88,7 @@ export function AuthModal() {
 
         if (tabMode === "signup") {
             sendWelcomeEmail(email, firstName).catch((err) => console.error("Failed to trigger welcome email", err))
+            sendAdminNewSignupEmail(email, firstName).catch((err) => console.error("Failed to trigger admin new-signup email", err))
         }
 
 
