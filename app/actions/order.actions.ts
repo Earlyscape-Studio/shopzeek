@@ -10,6 +10,7 @@ import { supabaseAdmin } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { validateCoupon } from "./coupon.actions";
 import { triggerOrderEmails, triggerDeliveryEmail } from "@/app/actions/email.actions";
+import { getActivePrice } from "@/utils/deals";
 
 interface ShippingBreakdown {
   baseCost: number;
@@ -28,34 +29,30 @@ async function validateOrderTotal(
   try {
     let recalculatedSubtotal = 0;
     const productIds = cartItems.map((item) => item.product_id);
-
+ 
     const { data: products } = await supabaseAdmin
       .from("products")
-      .select("id, price, deal_price, deal_ends_at")
+      .select("id, price, deal_price, deal_ends_at, is_deal_active")
       .in("id", productIds);
-
+ 
     if (!products || products.length === 0) {
       return { valid: false, error: "Product information could not be verified." };
     }
-
+ 
     for (const item of cartItems) {
       const product = products.find((p) => p.id === item.product_id);
       if (!product) return { valid: false, error: "One or more products in your cart are invalid." };
-
-      const isOnDeal =
-        product.deal_price && product.deal_ends_at && new Date(product.deal_ends_at) > new Date();
-      const activePrice = isOnDeal ? product.deal_price : product.price;
-
-      recalculatedSubtotal += activePrice * item.quantity;
+ 
+      recalculatedSubtotal += getActivePrice(product) * item.quantity;
     }
-
+ 
     let discount = 0;
     let couponData = null;
     if (couponCode) {
       const couponRes = await validateCoupon(couponCode);
       if (couponRes.success && couponRes.coupon) {
         couponData = couponRes.coupon;
-
+ 
         // Per-user coupon check: reject if this logged-in user has already paid
         // with this coupon before.
         if (userId) {
@@ -65,12 +62,12 @@ async function validateOrderTotal(
             .eq("user_id", userId)
             .eq("coupon_id", couponData.id)
             .in("status", ["paid", "processing", "shipped", "delivered"]);
-
+ 
           if ((count ?? 0) > 0) {
             return { valid: false, error: "You have already used this coupon." };
           }
         }
-
+ 
         // Per-email coupon check: catches guest checkouts (no user_id) and
         // logged-in users checking out under an email tied to a prior order.
         // Case-insensitive match since emails are stored as typed.
@@ -81,12 +78,12 @@ async function validateOrderTotal(
             .ilike("email", email.trim())
             .eq("coupon_id", couponData.id)
             .in("status", ["paid", "processing", "shipped", "delivered"]);
-
+ 
           if ((emailCount ?? 0) > 0) {
             return { valid: false, error: "You have already used this coupon." };
           }
         }
-
+ 
         if (couponData.discount_type === "percentage") {
           discount = (recalculatedSubtotal * couponData.discount_value) / 100;
         } else {
@@ -96,12 +93,12 @@ async function validateOrderTotal(
         return { valid: false, error: "Coupon is no longer valid." };
       }
     }
-
+ 
     const shipping =
       shippingBreakdown?.total ??
       (shippingBreakdown?.baseCost ?? 0) + (shippingBreakdown?.vat ?? 0);
     const expectedTotal = Math.max(0, recalculatedSubtotal + shipping - discount);
-
+ 
     if (Math.abs(expectedTotal - providedTotal) > 1) {
       console.error(`Total mismatch: Expected ${expectedTotal}, got ${providedTotal}`);
       return {
@@ -109,7 +106,7 @@ async function validateOrderTotal(
         error: "Price mismatch. Your cart may have updated. Please refresh and try again.",
       };
     }
-
+ 
     return { valid: true, discount, coupon: couponData };
   } catch (err) {
     console.error("Validation Error:", err);
