@@ -2,126 +2,127 @@
 
 
 import { useState, useEffect, useRef } from "react"
-import {useRouter} from "next/navigation"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
-import {Search, Loader2} from "lucide-react"
-import {Input} from "@/components/ui/input"
-import {createClient} from "@/utils/supabase/client"
-import {cn} from "@/lib/utils"
-import type {Product} from "@/types/database"
+import { Search, Loader2 } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { createClient } from "@/utils/supabase/client"
+import { cn } from "@/lib/utils"
+import type { Product } from "@/types/database"
+import { isProductOnDeal, getActivePrice } from "@/utils/deals"
 
 
 
 type ProductSuggestion = Pick<
-Product,
-"id" | "name" | "slug" | "price" | "deal_price" | "deal_ends_at" | "image_urls"
+  Product,
+  "id" | "name" | "slug" | "price" | "deal_price" | "deal_ends_at" | "is_deal_active" | "image_urls"
 >
 
 
 interface SearchBarProps {
-    placeholder?: string
-    className?: string
-    inputClassName?: string
-    onNavigate?: () => void
+  placeholder?: string
+  className?: string
+  inputClassName?: string
+  onNavigate?: () => void
 }
 
 
 
 export function SearchBar({
-    placeholder = "Search brands, Products & Categories...",
-    className,
-    inputClassName,
-    onNavigate
+  placeholder = "Search brands, Products & Categories...",
+  className,
+  inputClassName,
+  onNavigate
 }: SearchBarProps) {
-    const [query, setQuery] = useState("")
-    const [results, setResults] = useState<ProductSuggestion[]>([])
-    const [isOpen, setIsOpen] = useState(false)
-    const [isLoading, setIsLoading] = useState(false)
+  const [query, setQuery] = useState("")
+  const [results, setResults] = useState<ProductSuggestion[]>([])
+  const [isOpen, setIsOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
-    const containerRef = useRef<HTMLDivElement>(null)
-    const router = useRouter()
-    const supabase = createClient()
-
-
-
-    useEffect(() => {
-        const trimmed = query.trim()
-
-
-        if (trimmed.length < 2){
-            setResults([])
-            setIsLoading(false)
-            return
-        }
-
-
-        setIsLoading(true)
-
-
-        const timeout = setTimeout(async () => {
-            const {data, error} = await supabase
-            .from("products")
-            .select("id, name, slug, price, deal_price, deal_ends_at, image_urls")
-            .eq("is_published", true)
-            .ilike("name", `%${trimmed}%`)
-            .limit(6)
-
-
-            if (!error) setResults((data as ProductSuggestion[]) ?? [])
-            setIsLoading(false)
-        }, 3000)
-
-        return () => clearTimeout(timeout)
-    }, [query])
+  const containerRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const supabase = createClient()
 
 
 
-    useEffect(() => {
-        function handleClickOutside(e: MouseEvent){
-            if(containerRef.current && !containerRef.current.contains(e.target as Node)){
-                setIsOpen(false)
-            }
-        }
-
-        document.addEventListener("mousedown", handleClickOutside)
-        return () => document.removeEventListener("mousedown", handleClickOutside)
-    }, [])
+  useEffect(() => {
+    const trimmed = query.trim()
 
 
-    const goToShopSearch = (term: string) => {
-        const trimmed = term.trim()
+    if (trimmed.length < 2) {
+      setResults([])
+      setIsLoading(false)
+      return
+    }
 
-        if(!trimmed) return
 
+    setIsLoading(true)
+
+
+    const timeout = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, slug, price, deal_price, deal_ends_at, is_deal_active, image_urls")
+        .eq("is_published", true)
+        .ilike("name", `%${trimmed}%`)
+        .limit(6)
+
+
+      if (!error) setResults((data as ProductSuggestion[]) ?? [])
+      setIsLoading(false)
+    }, 3000)
+
+    return () => clearTimeout(timeout)
+  }, [query])
+
+
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false)
-        onNavigate?.()
-        router.push(`/shop?search=${encodeURIComponent(trimmed)}`)
+      }
     }
 
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if(e.key === "Enter"){
-            e.preventDefault()
-            goToShopSearch(query)
-        }else if (e.key === "Escape"){
-            setIsOpen(false)
-        }
+
+  const goToShopSearch = (term: string) => {
+    const trimmed = term.trim()
+
+    if (!trimmed) return
+
+    setIsOpen(false)
+    onNavigate?.()
+    router.push(`/shop?search=${encodeURIComponent(trimmed)}`)
+  }
+
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      goToShopSearch(query)
+    } else if (e.key === "Escape") {
+      setIsOpen(false)
     }
+  }
 
 
-    const handleSelectProduct = (product: ProductSuggestion) => {
-        setQuery("")
-        setIsOpen(false)
-        onNavigate?.()
-        router.push(`/shop?search=${encodeURIComponent(product.name ?? "")}`)
-    }
+  const handleSelectProduct = (product: ProductSuggestion) => {
+    setQuery("")
+    setIsOpen(false)
+    onNavigate?.()
+    router.push(`/shop?search=${encodeURIComponent(product.name ?? "")}`)
+  }
 
 
-    const showDropdown = isOpen && query.trim().length >= 2
+  const showDropdown = isOpen && query.trim().length >= 2
 
 
-    return (
-         <div ref={containerRef} className={cn("relative w-full", className)}>
+  return (
+    <div ref={containerRef} className={cn("relative w-full", className)}>
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none z-10" />
       <Input
         value={query}
@@ -137,7 +138,7 @@ export function SearchBar({
           inputClassName
         )}
       />
- 
+
       {showDropdown && (
         <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden max-h-[60vh] overflow-y-auto">
           {isLoading ? (
@@ -148,12 +149,9 @@ export function SearchBar({
             <>
               <ul className="divide-y divide-gray-50">
                 {results.map((product) => {
-                  const isOnDeal =
-                    !!product.deal_price &&
-                    !!product.deal_ends_at &&
-                    new Date(product.deal_ends_at) > new Date();
-                  const activePrice = isOnDeal ? product.deal_price! : product.price;
- 
+                  const isOnDeal = isProductOnDeal(product);
+                  const activePrice = getActivePrice(product);
+
                   return (
                     <li key={product.id}>
                       <button
@@ -199,5 +197,5 @@ export function SearchBar({
         </div>
       )}
     </div>
-    )
+  )
 }
