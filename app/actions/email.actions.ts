@@ -9,6 +9,7 @@ import { DeliveryScheduleEmail } from "@/components/emails/deliveryScheduleEmail
 import { AbandonedCartEmail } from "@/components/emails/abandonedCartEmail";
 import { OrderEmailPayload, DeliveryEmailPayload, AbandonedCartEmailPayload } from "@/types/email";
 import { WelcomeEmail } from "@/components/emails/welcomeEmail";
+import type { ReactElement } from "react"
 import { supabaseAdmin } from "@/utils/supabase/admin";
 import { incrementCouponUsedCount } from "@/app/actions/coupon.actions";
 import { AdminNewSignupEmail } from "@/components/emails/adminNewSignupEmail";
@@ -19,6 +20,7 @@ import { AdminNewSignupEmail } from "@/components/emails/adminNewSignupEmail";
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = "zeek Orders <hello@zeek.you>";
 const ADMIN_EMAIL = "zaygay@zeek.you";
+const ADMIN_EMAIL_FALLBACK = process.env.ADMIN_EMAIL_FALLBACK
 
 export async function sendAbandonedCartEmail(payload: AbandonedCartEmailPayload) {
   try {
@@ -281,7 +283,11 @@ export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
     if (customerRes.error) console.error("Customer email error:", customerRes.error);
     if (adminRes.error)    console.error("Admin email error:", adminRes.error);
 
-    return { success: !customerRes.error };
+    return {
+      success: !customerRes.error && !adminRes.error,
+      customerError: customerRes.error ?? null,
+      adminError: adminRes.error ?? null,
+    };
   } catch (err) {
     console.error("Unexpected error sending emails:", err);
     return { success: false, error: err };

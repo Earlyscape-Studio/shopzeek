@@ -29,28 +29,27 @@ export async function requestOtp(
   const rawEmail = formData.get("email") as string;
   const cleanEmail = rawEmail.trim()
   const fullName = (formData.get("full_name") as string | null) ?? ""
+  const marketingOptIn = formData.get("marketing_opt_in") === "true"
 
   const { error } = await supabase.auth.signInWithOtp({
     email: cleanEmail,
     options: {
       shouldCreateUser: true,
-      data: fullName ? {full_name: fullName} : undefined
+      data: fullName
+        ? { full_name: fullName, marketing_opt_in: marketingOptIn }
+        : { marketing_opt_in: marketingOptIn }
     }
   })
 
-
   if (error) return {error: error.message, success: false}
-
-
 
   return{
     error: "",
     success: true,
     data: {email: cleanEmail, firstName: fullName}
   }
-
-
 }
+
 
 
 export async function verifyOtp(

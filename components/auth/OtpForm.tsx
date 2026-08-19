@@ -92,6 +92,21 @@ const body =  (
             <Input id="email" name="email" type="email" required />
           </div>
 
+          {mode === "signup" && (
+            <div className="flex items-start gap-2">
+              <input
+                id="marketing_opt_in"
+                name="marketing_opt_in"
+                type="checkbox"
+                value="true"
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+              />
+              <Label htmlFor="marketing_opt_in" className="text-sm font-normal text-muted-foreground">
+                Send me updates and offers by email
+              </Label>
+            </div>
+          )}
+
           {requestState?.error && (
             <p className="text-sm text-red-500">{requestState.error}</p>
           )}
