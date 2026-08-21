@@ -26,10 +26,18 @@ export async function requestOtp(
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
 
+  const mode = formData.get("mode") as string | null
   const rawEmail = formData.get("email") as string;
   const cleanEmail = rawEmail.trim()
-  const fullName = (formData.get("full_name") as string | null) ?? ""
+  const fullName = ((formData.get("full_name") as string | null) ?? "").trim()
   const marketingOptIn = formData.get("marketing_opt_in") === "true"
+
+  // The "full name + email" signup flow requires a full name — this can't
+  // rely on the client-side `required` attribute alone, since a form can be
+  // submitted with just whitespace or bypassed entirely.
+  if (mode === "signup" && !fullName) {
+    return { error: "Please enter your full name.", success: false }
+  }
 
   const { error } = await supabase.auth.signInWithOtp({
     email: cleanEmail,

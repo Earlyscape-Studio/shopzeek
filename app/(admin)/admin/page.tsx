@@ -1,5 +1,4 @@
 import { createClient } from "@/utils/supabase/server";
-import { supabaseAdmin } from "@/utils/supabase/admin";
 import { cookies } from "next/headers";
 import { DollarSign, ShoppingBag, PackageSearch, ArrowUpRight, UserPlus } from "lucide-react";
 import Link from "next/link";
@@ -25,27 +24,6 @@ export default async function AdminDashboardPage() {
     .from("profiles")
     .select("*", { count: "exact", head: true })
     .gte("created_at", sevenDaysAgo.toISOString());
-
-  // Recent signups — name/created_at come from `profiles`; email isn't a
-  // profiles column, it lives in Supabase auth.users, so it needs the
-  // service-role client.
-  const { data: recentSignupProfiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, created_at")
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  const recentSignups = await Promise.all(
-    (recentSignupProfiles ?? []).map(async (profile) => {
-      const { data } = await supabaseAdmin.auth.admin.getUserById(profile.id);
-      return {
-        id: profile.id,
-        fullName: profile.full_name,
-        createdAt: profile.created_at,
-        email: data.user?.email ?? null,
-      };
-    })
-  );
 
   const { data: orders } = await supabase
     .from("orders")
@@ -87,7 +65,6 @@ export default async function AdminDashboardPage() {
             <CardTitle className="text-sm font-medium text-gray-500">
               Total Revenue
             </CardTitle>
-            {/* <DollarSign className="h-4 w-4 text-gray-400" /> */}
             <p className="text-gray-300">₦</p>
           </CardHeader>
           <CardContent>
@@ -170,7 +147,6 @@ export default async function AdminDashboardPage() {
                       <span className="font-medium text-gray-900 text-sm">
                         {order.customer_name || "Guest User"}
                       </span>
-                      {/* FIX: was order.customer_email — column is email */}
                       {order.email && (
                         <span className="text-xs text-gray-400">{order.email}</span>
                       )}
@@ -204,49 +180,6 @@ export default async function AdminDashboardPage() {
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center text-gray-500">
                   No orders found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Recent Signups</h2>
-        </div>
-
-        <Table>
-          <TableHeader className="bg-gray-50">
-            <TableRow>
-              <TableHead className="font-semibold text-gray-600">Name</TableHead>
-              <TableHead className="font-semibold text-gray-600">Email</TableHead>
-              <TableHead className="text-right font-semibold text-gray-600">Signed Up</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {recentSignups.length > 0 ? (
-              recentSignups.map((signup) => (
-                <TableRow key={signup.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium text-gray-900 text-sm">
-                    {signup.fullName || "—"}
-                  </TableCell>
-                  <TableCell className="text-gray-500 text-sm">
-                    {signup.email || "—"}
-                  </TableCell>
-                  <TableCell className="text-right text-gray-500 text-sm">
-                    {new Date(signup.createdAt).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={3} className="h-24 text-center text-gray-500">
-                  No signups found.
                 </TableCell>
               </TableRow>
             )}
