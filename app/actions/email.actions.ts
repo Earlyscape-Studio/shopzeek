@@ -245,7 +245,7 @@ export async function triggerOrderEmails(orderId: string) {
  
 export async function sendOrderEmails(orderDetails: OrderEmailPayload) {
   try {
-    const shippingTotal = (orderDetails.shippingCost ?? 0) + (orderDetails.shippingVat ?? 0);
+    const shippingTotal = orderDetails.shippingCost ?? 0;
  
     // Build the same data shape used by the order-success download button so
     // the emailed PDF and the one customers can download look identical.
