@@ -97,6 +97,8 @@ export async function getDeliveryQuote(
 
         const data = await response.json()
 
+        console.log("get delivery quote data", data)
+
         if (!response.ok || data.status !== "Success") {
             throw new Error(data.description || "Failed to fetch shipping quote")
         }
@@ -105,7 +107,12 @@ export async function getDeliveryQuote(
             success: true,
             price: data.totalCost,
             breakdown: {
+                // NOTE: totalCost = cost.cost + surcharge.totalAmount — vat.vatAmount
+                // is NOT additive on top of that (it appears to already be folded
+                // into cost.cost, or is disclosed separately by Fez without being
+                // charged again). Don't reconstruct the total from baseCost + vat.
                 baseCost: data.cost?.cost ?? 0,
+                surcharge: data.surcharge?.totalAmount ?? 0,
                 vat: data.vat?.vatAmount ?? 0,
                 total: data.totalCost
             },

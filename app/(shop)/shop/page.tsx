@@ -8,6 +8,7 @@ import { ShopFilters } from "@/components/shared/shop/shopFilters";
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -27,6 +28,23 @@ type SearchParams = Promise<{
 }>;
 
 const PAGE_SIZE = 9;
+
+// Builds a bounded set of page numbers to render: first, last, current ± 1,
+// with an ellipsis marker wherever there's a gap. Keeps the pagination row
+// a fixed max width regardless of how many total pages exist.
+function buildPageWindow(current: number, total: number): (number | "...")[] {
+  const pages = new Set<number>([1, total, current - 1, current, current + 1]);
+  const sorted = [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
+
+  const result: (number | "...")[] = [];
+  let previous = 0;
+  for (const p of sorted) {
+    if (previous && p - previous > 1) result.push("...");
+    result.push(p);
+    previous = p;
+  }
+  return result;
+}
 
 export default async function ShopPage(props: {
   searchParams: SearchParams;
@@ -81,6 +99,7 @@ export default async function ShopPage(props: {
   const uniqueCategories = [...new Set(categories?.map((c) => c.category))];
   const uniqueBrands = [...new Set(brands?.map((b) => b.brand))];
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
+  const pageWindow = buildPageWindow(page, totalPages);
 
   const createPageURL = (pageNumber: number) => {
     const params = new URLSearchParams();
@@ -143,8 +162,8 @@ export default async function ShopPage(props: {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="mt-auto pt-16 pb-8 flex justify-center">
-                  <Pagination>
-                    <PaginationContent className="gap-2">
+                  <Pagination className="w-auto max-w-full">
+                    <PaginationContent className="gap-2 flex-wrap justify-center">
 
                       {/* Previous Button */}
                       <PaginationItem>
@@ -155,15 +174,18 @@ export default async function ShopPage(props: {
                         />
                       </PaginationItem>
 
-                      {/* Page Numbers */}
-                      {Array.from({ length: totalPages }).map((_, i) => {
-                        const p = i + 1;
-                        return (
+                      {/* Page Numbers (windowed: first, last, current ± 1, with ellipsis) */}
+                      {pageWindow.map((p, i) =>
+                        p === "..." ? (
+                          <PaginationItem key={`ellipsis-${i}`}>
+                            <PaginationEllipsis className="h-10 w-6" />
+                          </PaginationItem>
+                        ) : (
                           <PaginationItem key={p}>
                             <PaginationLink
                               href={createPageURL(p)}
                               isActive={page === p}
-                              className={`rounded-full h-10 w-10 border flex items-center justify-center font-mono text-sm ${page === p
+                              className={`rounded-full h-10 w-10 border flex items-center justify-center font-mono text-sm shrink-0 ${page === p
                                 ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-600 hover:text-white"
                                 : "border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500"
                                 }`}
@@ -171,8 +193,8 @@ export default async function ShopPage(props: {
                               {String(p).padStart(2, "0")}
                             </PaginationLink>
                           </PaginationItem>
-                        );
-                      })}
+                        )
+                      )}
 
                       {/* Next Button */}
                       <PaginationItem>

@@ -1,39 +1,11 @@
-import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem,
   SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import lgasData from "@/data/nigeria-lgas.json";
 
-const LGAS_URL =
-  "https://temikeezy.github.io/nigeria-geojson-data/data/lgas.json";
-
-let _cachedData: Record<string, string[]> | null = null;
-let _inflightRequest: Promise<Record<string, string[]>> | null = null;
-
-async function getLgasData(): Promise<Record<string, string[]>> {
-  if (_cachedData) return _cachedData;
-
-  if (!_inflightRequest) {
-    _inflightRequest = fetch(LGAS_URL)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to fetch LGAs data: ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        _cachedData = data;
-        return data;
-      })
-      .catch((err) => {
-        _inflightRequest = null;
-        throw err;
-      });
-  }
-
-  return _inflightRequest;
-}
-
+const states = Object.keys(lgasData).sort();
 
 interface DefaultValues {
   full_name?: string | null
@@ -63,25 +35,7 @@ export function BillingFields({
   defaultValues
 }: Props) {
   const n = namePrefix;
-  const [lgasData, setLgasData] = useState<Record<string, string[]>>(_cachedData ?? {});
-  const [isLoading, setIsLoading]   = useState(!_cachedData);
-  const [fetchError, setFetchError] = useState(false);
-
-  useEffect(() => {
-    if (_cachedData) return;
-    getLgasData()
-      .then((data) => {
-        setLgasData(data);
-        setIsLoading(false);
-      })
-      .catch(() => {
-        setIsLoading(false);
-        setFetchError(true);
-      });
-  }, []);
-
-  const states = Object.keys(lgasData).sort();
-  const lgas: string[] = state ? (lgasData[state] ?? []) : [];
+  const lgas: string[] = state ? ((lgasData as Record<string, string[]>)[state] ?? []) : [];
 
   const handleStateChange = (value: string) => {
     onStateChange(value);
@@ -146,62 +100,39 @@ export function BillingFields({
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-gray-700">State</label>
-          {isLoading ? (
-            <LoadingSlot label="Loading states..." />
-          ) : fetchError ? (
-            <Input
-              name={`${n}state`}
-              value={state}
-              onChange={(e) => handleStateChange(e.target.value)}
-              placeholder="Enter state"
-              className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
-              required
-            />
-          ) : (
-            <>
-              
-              <input type="hidden" name={`${n}state`} value={state} />
-              <Select value={state} onValueChange={handleStateChange}>
-                <SelectTrigger className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
-                  <SelectValue placeholder="Select state" />
-                </SelectTrigger>
-                <SelectContent>
-                  {states.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
-          )}
+          <input type="hidden" name={`${n}state`} value={state} />
+          <Select value={state} onValueChange={handleStateChange}>
+            <SelectTrigger className="h-11 border-gray-200 rounded-lg focus:ring-orange-500">
+              <SelectValue placeholder="Select state" />
+            </SelectTrigger>
+            <SelectContent>
+              {states.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700">LGA</label>
-          {isLoading ? (
-            <LoadingSlot label="Loading" />
-          ) : !state ? (
+        <div className="space-y-1.5" id={`${n}lga-field`}>
+          <label className="text-sm font-medium text-gray-700">
+            LGA <span className="text-orange-500">*</span>
+          </label>
+          {!state ? (
             <DisabledSlot label="Select a state first" />
-          ) : fetchError ? (
-            <Input
-              name={`${n}lga`}
-              value={lga}
-              onChange={(e) => onLgaChange(e.target.value)}
-              className="h-11 border-gray-200 rounded-lg focus-visible:ring-orange-500"
-              required
-              placeholder="Enter LGA"
-            />
           ) : (
             <>
-              {/* FIX: same pattern — hidden input owns the name, Select drives UI only */}
               <input type="hidden" name={`${n}lga`} value={lga} />
               <Select
                 value={lga}
                 onValueChange={onLgaChange}
                 disabled={lgas.length === 0}
               >
-                <SelectTrigger className="h-11 border-gray-200 rounded-lg">
+                <SelectTrigger
+                  className={`h-11 rounded-lg ${!lga ? "border-orange-300 ring-1 ring-orange-100" : "border-gray-200"
+                    }`}
+                >
                   <SelectValue placeholder="Select LGA" />
                 </SelectTrigger>
                 <SelectContent className="max-h-64 overflow-y-auto">
@@ -213,6 +144,11 @@ export function BillingFields({
                 </SelectContent>
               </Select>
             </>
+          )}
+          {state && !lga && (
+            <p className="text-xs text-orange-500">
+              Required to calculate shipping and place your order
+            </p>
           )}
         </div>
 
@@ -260,15 +196,6 @@ export function BillingFields({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function LoadingSlot({ label }: { label: string }) {
-  return (
-    <div className="h-11 border border-gray-200 rounded-lg bg-gray-50 flex items-center px-3 gap-2 text-sm text-gray-400">
-      <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-      {label}
     </div>
   );
 }

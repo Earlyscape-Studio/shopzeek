@@ -9,6 +9,11 @@ import {faGoogle} from "@fortawesome/free-brands-svg-icons"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import {toast} from "sonner"
 
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -27,6 +32,7 @@ export default function OtpForm({ mode, onVerified, embedded = false, oauthError
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("")
   const [cooldown, setCooldown] = useState(0);
+  const [otp, setOtp] = useState("");
 
   const [requestState, requestAction, requestPending] = useActionState(
     requestOtp,
@@ -45,6 +51,7 @@ export default function OtpForm({ mode, onVerified, embedded = false, oauthError
       setFirstName(requestState.data.firstName ?? "")
       setStep("code");
       setCooldown(RESEND_COOLDOWN_SECONDS);
+      setOtp("");
     }
   }, [requestState]);
 
@@ -80,6 +87,8 @@ const body =  (
 
       {step === "email" && (
         <form action={requestAction} className="space-y-4">
+          <input type="hidden" name="mode" value={mode} />
+
           {mode === "signup" && (
             <div className="space-y-2">
               <Label htmlFor="full_name">Full Name</Label>
@@ -91,6 +100,21 @@ const body =  (
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" required />
           </div>
+
+          {mode === "signup" && (
+            <div className="flex items-start gap-2">
+              <input
+                id="marketing_opt_in"
+                name="marketing_opt_in"
+                type="checkbox"
+                value="true"
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+              />
+              <Label htmlFor="marketing_opt_in" className="text-sm font-normal text-muted-foreground">
+                Send me updates and offers by email
+              </Label>
+            </div>
+          )}
 
           {requestState?.error && (
             <p className="text-sm text-red-500">{requestState.error}</p>
@@ -125,29 +149,44 @@ const body =  (
       {step === "code" && (
         <form action={verifyAction} className="space-y-4">
           <input type="hidden" name="email" value={email} />
+          <input type="hidden" name="token" value={otp} />
 
           <p className="text-sm text-muted-foreground">
             Enter the 8-digit code sent to <span className="font-medium">{email}</span>
           </p>
 
           <div className="space-y-2">
-            <Label htmlFor="token">Code</Label>
-            <Input
-              id="token"
-              name="token"
-              type="text"
+            <Label>Code</Label>
+            <InputOTP
+              maxLength={8}
+              value={otp}
+              onChange={setOtp}
               inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={8}
-              required
-            />
+              containerClassName="justify-between"
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+                <InputOTPSlot index={6} />
+                <InputOTPSlot index={7} />
+              </InputOTPGroup>
+            </InputOTP>
           </div>
 
           {verifyState?.error && (
             <p className="text-sm text-red-500">{verifyState.error}</p>
           )}
 
-          <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 text-white" disabled={verifyPending}>
+          <Button
+            type="submit"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+            disabled={verifyPending || otp.length < 8}
+          >
             {verifyPending ? "Verifying..." : "Verify"}
           </Button>
 
@@ -159,6 +198,8 @@ const body =  (
               onClick={() => {
                 const fd = new FormData();
                 fd.set("email", email);
+                fd.set("mode", mode);
+                fd.set("full_name", firstName);
                 requestAction(fd);
               }}
             >
@@ -168,7 +209,10 @@ const body =  (
             <button
               type="button"
               className="underline"
-              onClick={() => setStep("email")}
+              onClick={() => {
+                setOtp("");
+                setStep("email");
+              }}
             >
               Use a different email
             </button>
