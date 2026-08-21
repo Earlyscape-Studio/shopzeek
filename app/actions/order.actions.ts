@@ -15,6 +15,7 @@ import { getActivePrice } from "@/utils/deals";
 interface ShippingBreakdown {
   baseCost: number;
   vat: number;
+  surcharge?: number;
   total?: number;
 }
 
@@ -96,7 +97,7 @@ async function validateOrderTotal(
  
     const shipping =
       shippingBreakdown?.total ??
-      (shippingBreakdown?.baseCost ?? 0) + (shippingBreakdown?.vat ?? 0);
+      (shippingBreakdown?.baseCost ?? 0) + (shippingBreakdown?.surcharge ?? 0);
     const expectedTotal = Math.max(0, recalculatedSubtotal + shipping - discount);
  
     if (Math.abs(expectedTotal - providedTotal) > 1) {
@@ -298,8 +299,8 @@ export async function initCardPayment(
         status: "pending_payment",
         payment_method: "card",
         total_amount: totalAmount,
-        shipping_cost: Math.round(shippingBreakdown?.baseCost ?? 0),
-        shipping_vat:  Math.round(shippingBreakdown?.vat     ?? 0),
+        shipping_cost: Math.round(shippingBreakdown?.total ?? shippingBreakdown?.baseCost ?? 0),
+        shipping_vat:  Math.round(shippingBreakdown?.vat     ?? 0),,
         discount_amount: validation.discount ?? 0,
         coupon_id: validation.coupon?.id ?? null,
       })
@@ -617,7 +618,7 @@ export async function initBankTransfer(
         status: "pending_payment",
         payment_method: "bank_transfer",
         total_amount: totalAmount,
-        shipping_cost: Math.round(shippingBreakdown?.baseCost ?? 0),
+        shipping_cost: Math.round(shippingBreakdown?.total ?? shippingBreakdown?.baseCost ?? 0),
         shipping_vat:  Math.round(shippingBreakdown?.vat     ?? 0),
         discount_amount: validation.discount ?? 0,
         coupon_id: validation.coupon?.id ?? null,
@@ -880,7 +881,7 @@ export async function initGlobalPayPayment(
         status: "pending_payment",
         payment_method: "globalpay",
         total_amount: totalAmount,
-        shipping_cost: Math.round(shippingBreakdown?.baseCost ?? 0),
+        shipping_cost: Math.round(shippingBreakdown?.total ?? shippingBreakdown?.baseCost ?? 0),
         shipping_vat:  Math.round(shippingBreakdown?.vat     ?? 0),
         discount_amount: validation.discount ?? 0,
         coupon_id: validation.coupon?.id ?? null,
