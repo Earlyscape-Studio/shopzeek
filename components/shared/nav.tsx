@@ -27,7 +27,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { signOut } from "@/app/actions/auth.actions"
@@ -36,11 +36,10 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 const navLinks = [
     { href: "/", label: "Home" },
     { href: "/shop", label: "Shop" },
-    // { href: "/blog", label: "Blog" },
     { href: "/contact", label: "Contact" },
 ]
 
-type Profile = { full_name: string | null; role: string } | null
+type Profile = { full_name: string | null; role: string; avatar_url: string | null } | null
 
 type NavProps = {
     initialUser: SupabaseUser | null
@@ -60,23 +59,16 @@ export function Nav({ initialUser, initialProfile }: NavProps) {
     const router = useRouter()
     const supabase = createClient()
 
-    // Source of truth: the server-fetched session, re-derived on every
-    // Server Component render (e.g. after router.refresh() post-login,
-    // or after a redirect() post-logout). This is what actually flips
-    // the avatar without a hard reload.
     useEffect(() => {
         setUser(initialUser)
         setProfile(initialProfile)
     }, [initialUser, initialProfile])
 
-    // Secondary listener: catches client-driven session changes that
-    // don't go through a Server Action / router.refresh() cycle, e.g.
-    // a token refresh, or the session expiring while the tab is open.
     useEffect(() => {
         const fetchProfile = async (userId: string) => {
             const { data } = await supabase
                 .from("profiles")
-                .select("full_name, role")
+                .select("full_name, role, avatar_url")
                 .eq("id", userId)
                 .single()
             setProfile(data)
@@ -119,20 +111,6 @@ export function Nav({ initialUser, initialProfile }: NavProps) {
     return (
         <header className="bg-white border-b border-gray-100 sticky top-0 z-40 flex flex-col">
 
-            {/* Announcement bar */}
-            {/* <div className="bg-[#FF5A00] text-white text-xs font-medium py-2 w-full flex items-center justify-center gap-2">
-                <span className="bg-white text-black px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide">
-                    Special
-                </span>
-                <span>Get 10% DISCOUNT for first order</span>
-                <Link
-                    href="/signup"
-                    className="italic underline underline-offset-2 hover:text-orange-100 transition-colors"
-                >
-                    Register Now
-                </Link>
-            </div> */}
-
             {/* Main navbar */}
             <div className="max-w-7xl w-full mx-auto px-4 flex items-center gap-4 h-16">
 
@@ -172,6 +150,7 @@ export function Nav({ initialUser, initialProfile }: NavProps) {
                             <DropdownMenuTrigger asChild>
                                 <button className="hidden sm:flex items-center gap-2 rounded-full hover:opacity-80 transition-opacity focus:outline-none">
                                     <Avatar className="h-8 w-8">
+                                        <AvatarImage src={profile?.avatar_url ?? undefined} alt={profile?.full_name ?? "Account"} />
                                         <AvatarFallback className="bg-orange-100 text-orange-600 text-xs font-semibold">
                                             {initials}
                                         </AvatarFallback>
@@ -185,7 +164,7 @@ export function Nav({ initialUser, initialProfile }: NavProps) {
                             <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem asChild>
                                     <Link href="/profile" className="flex items-center gap-2">
-                                        <User2  className="h-4 w-4 text-gray-400" />
+                                        <User2 className="h-4 w-4 text-gray-400" />
                                         Profile
                                     </Link>
                                 </DropdownMenuItem>
@@ -348,6 +327,7 @@ export function Nav({ initialUser, initialProfile }: NavProps) {
                                         {/* User info strip */}
                                         <div className="flex items-center gap-3 py-4 border-b border-gray-100">
                                             <Avatar className="h-9 w-9">
+                                                <AvatarImage src={profile?.avatar_url ?? undefined} alt={profile?.full_name ?? "Account"} />
                                                 <AvatarFallback className="bg-orange-100 text-orange-600 text-xs font-semibold">
                                                     {initials}
                                                 </AvatarFallback>
@@ -367,7 +347,7 @@ export function Nav({ initialUser, initialProfile }: NavProps) {
                                                 href="/profile"
                                                 className="flex items-center gap-3 h-14 text-base font-medium text-gray-700 border-b border-gray-50 hover:text-[#FF5A00] transition-colors"
                                             >
-                                                <User2  className="h-4 w-4 text-gray-400" />
+                                                <User2 className="h-4 w-4 text-gray-400" />
                                                 Profile
                                             </Link>
                                         </DrawerClose>
