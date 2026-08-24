@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from '@/components/ui/sonner'
 import { AuthCartSync } from "@/components/shared/shop/authCartSync";
+import { StoreHydration } from "@/components/shared/shop/storeHydration";
 
 
 
@@ -33,6 +34,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className={cn("w-full overflow-x-hidden", soraSans.className)}>
+        <StoreHydration />
         <AuthCartSync />
         {children}
         <Toaster richColors position="top-center" />

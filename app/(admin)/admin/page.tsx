@@ -32,9 +32,11 @@ export default async function AdminDashboardPage() {
   const totalOrders = orders?.length || 0;
 
   const totalRevenue =
-    orders
-      ?.filter((o) => o.status === "paid" || o.status === "delivered")
-      .reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
+  orders
+    ?.filter((o) =>
+      ["paid", "processing", "shipped", "delivered"].includes(o.status)
+    )
+    .reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
 
   const { data: recentOrders } = await supabase
     .from("orders")
