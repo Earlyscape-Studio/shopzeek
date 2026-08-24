@@ -204,6 +204,6 @@ export const useCartStore = create<CartStore>()(
 
       removeCoupon: () => set({ coupon: null }),
     }),
-    { name: "zeek-cart" }
+    { name: "zeek-cart", skipHydration: true }
   )
 );
