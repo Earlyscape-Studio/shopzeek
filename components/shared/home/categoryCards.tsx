@@ -22,7 +22,7 @@ const categories = [
     desc: "Discover your signature scent with our best selling fragrances",
     href: "/shop?category=Fragrances",
     bg: "bg-[#FDECEE]",
-    image: "/fragrance_img.jpg",
+    image: "/fragrance_img.png",
   },
 ];
 
@@ -57,6 +57,7 @@ export function CategoryCards() {
                 src={image} 
                 alt={title.replace("\n", " ")}
                 fill
+                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                 className="object-contain object-bottom group-hover:scale-105 transition-transform duration-500"
               />
             </div>

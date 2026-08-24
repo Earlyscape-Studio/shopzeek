@@ -16,7 +16,7 @@ export function AuthCartSync() {
         if (event === "SIGNED_IN" && session) {
           syncWithDB();
         }
-        if (event === "SIGNED_OUT" && session) {
+        if (event === "SIGNED_OUT") {
           resetForSignout();
         }
       }
