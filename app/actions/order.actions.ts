@@ -300,7 +300,7 @@ export async function initCardPayment(
         payment_method: "card",
         total_amount: totalAmount,
         shipping_cost: Math.round(shippingBreakdown?.total ?? shippingBreakdown?.baseCost ?? 0),
-        shipping_vat:  Math.round(shippingBreakdown?.vat     ?? 0),,
+        shipping_vat:  Math.round(shippingBreakdown?.vat     ?? 0),
         discount_amount: validation.discount ?? 0,
         coupon_id: validation.coupon?.id ?? null,
       })
