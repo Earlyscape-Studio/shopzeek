@@ -99,6 +99,11 @@ export function Nav({ initialUser, initialProfile }: NavProps) {
         }
     }
 
+    const handleSignOut = async () => {
+        await supabase.auth.signOut()
+        await signOut()
+    }
+
     const initials = profile?.full_name
         ?.split(" ")
         .map((n) => n[0])
@@ -196,7 +201,7 @@ export function Nav({ initialUser, initialProfile }: NavProps) {
 
                                 <DropdownMenuItem asChild>
                                     <button
-                                        onClick={signOut}
+                                        onClick={handleSignOut}
                                         type="submit"
                                         className="flex items-center gap-2 w-full text-red-500 hover:text-red-600"
                                     >
@@ -386,7 +391,7 @@ export function Nav({ initialUser, initialProfile }: NavProps) {
                                         <button
                                             onClick={() => {
                                                 setMobileOpen(false)
-                                                signOut()
+                                                handleSignOut()
                                             }}
                                             className="flex items-center gap-3 h-14 text-base font-medium text-red-500 text-left"
                                         >

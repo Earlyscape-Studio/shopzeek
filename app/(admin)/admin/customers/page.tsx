@@ -43,7 +43,7 @@ export default async function CustomersPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
         <p className="text-gray-500 mt-1">
-          Everyone who has signed up to Shop Zeek.
+          Everyone who has signed up to Zeek.
         </p>
       </div>
 
