@@ -24,9 +24,9 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
         profile = data
     }
 
-    return (
+   return (
         <div className="flex flex-col min-h-screen">
-            <AnnouncementBar />
+            {!user && <AnnouncementBar />}
             <Nav initialUser={user} initialProfile={profile} />
             <Suspense fallback={null}>
                 <AuthModal />
