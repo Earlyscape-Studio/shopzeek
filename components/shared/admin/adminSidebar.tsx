@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button"
 import { Profile } from "@/types/database"
+import { createClient } from "@/utils/supabase/client"
 import { signOut } from "@/app/actions/auth.actions"
 
 
@@ -39,6 +40,12 @@ interface Props {
 export function AdminSidebar({ profile }: Props) {
     const pathname = usePathname()
     const router = useRouter()
+    const supabase = createClient()
+
+    const handleSignOut = async () => {
+        await supabase.auth.signOut()
+        await signOut()
+    }
 
     const isActive = (href: string, exact?: boolean) => exact ? pathname === href : pathname.startsWith(href)
 
@@ -91,7 +98,7 @@ export function AdminSidebar({ profile }: Props) {
                         View Store
                     </Link>
                 </Button>
-                <form action={signOut}>
+                <form action={handleSignOut}>
                     <Button
                         type="submit"
                         variant="ghost"
