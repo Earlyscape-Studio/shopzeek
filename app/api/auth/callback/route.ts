@@ -3,17 +3,32 @@ import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { sendWelcomeEmail, sendAdminNewSignupEmail } from "@/app/actions/email.actions";
 
-// New-signup detection: Supabase doesn't expose a "first sign-in" flag, but
-// on a brand new account `created_at` and `last_sign_in_at` are set within
-// the same request — on every later login `last_sign_in_at` moves forward
-// while `created_at` stays fixed, so a small gap between the two is a
-// reliable enough signal that this is the account's first sign-in.
 const NEW_USER_WINDOW_MS = 10_000;
 
+function resolveOrigin(request: NextRequest): string {
+
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+
+  // Fallback: reconstruct from forwarded headers, which proxies set even
+  // when they don't rewrite the raw Host on the request itself.
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
+
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+
+  return new URL(request.url).origin;
+}
+
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
+  const origin = resolveOrigin(request);
 
   if (code) {
     const cookieStore = await cookies();
@@ -27,8 +42,7 @@ export async function GET(request: NextRequest) {
         const metadata = user.user_metadata ?? {};
         const avatarUrl = (metadata.avatar_url as string | undefined) ?? (metadata.picture as string | undefined) ?? null;
 
-        // Google avatar always wins for the navbar badge — keep the
-        // profile row in sync with whatever Google is currently serving.
+       
         if (avatarUrl) {
           await supabase
             .from("profiles")
@@ -56,6 +70,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // No code, or the exchange failed — send them back to login with an error flag.
   return NextResponse.redirect(`${origin}/login?error=oauth`);
 }
