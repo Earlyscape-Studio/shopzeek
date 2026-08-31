@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ["m0c7hdhv-3000.eun1.devtunnels.ms", "localhost:3000"],
+      allowedOrigins: ["zeek.you", "localhost:3000"],
     },
   },
 };

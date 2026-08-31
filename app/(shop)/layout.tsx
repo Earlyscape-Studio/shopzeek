@@ -13,20 +13,20 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    let profile: { full_name: string | null; role: string } | null = null
+    let profile: { full_name: string | null; role: string; avatar_url: string | null } | null = null
 
     if (user) {
         const { data } = await supabase
             .from("profiles")
-            .select("full_name, role")
+            .select("full_name, role, avatar_url")
             .eq("id", user.id)
             .single()
         profile = data
     }
 
-    return (
+   return (
         <div className="flex flex-col min-h-screen">
-            <AnnouncementBar />
+            {!user && <AnnouncementBar />}
             <Nav initialUser={user} initialProfile={profile} />
             <Suspense fallback={null}>
                 <AuthModal />

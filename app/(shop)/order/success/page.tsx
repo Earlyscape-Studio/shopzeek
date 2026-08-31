@@ -86,7 +86,7 @@ export default async function OrderSuccessPage({
       quantity: item.quantity,
       price: Number(item.unit_price),
     })),
-    shippingCost: Number(order.shipping_cost ?? 0) + Number(order.shipping_vat ?? 0),
+    shippingCost: Number(order.shipping_cost ?? 0),
     discountAmount: Number(order.discount_amount ?? 0),
     couponCode: (order.coupon as any)?.code ?? null,
     totalAmount: Number(order.total_amount),

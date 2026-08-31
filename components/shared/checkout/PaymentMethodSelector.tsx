@@ -90,50 +90,31 @@ export function PaymentMethodSelector({
         <div className="h-px flex-1 bg-gray-200" />
       </div>
 
-      {/* GlobalPay — distinct hosted-checkout provider, not a peer of the fields above */}
+      {/* GlobalPay — temporarily disabled, being fixed */}
       <button
         type="button"
-        onClick={() => onMethodChange("globalpay")}
-        className={`
-          w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg border-2 text-left transition-all
-          ${selectedMethod === "globalpay"
-            ? "border-orange-500 bg-orange-50"
-            : "border-gray-200 hover:border-gray-300"
-          }
-        `}
+        disabled
+        aria-disabled="true"
+        title="GlobalPay is temporarily unavailable"
+        className="
+          w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-lg border-2 text-left
+          border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed
+        "
       >
         <span className="flex items-center gap-3">
-          <span
-            className={`
-              flex items-center justify-center w-9 h-9 rounded-full shrink-0
-              ${selectedMethod === "globalpay" ? "bg-orange-100 text-orange-600" : "bg-gray-100 text-gray-500"}
-            `}
-          >
+          <span className="flex items-center justify-center w-9 h-9 rounded-full shrink-0 bg-gray-100 text-gray-400">
             <Wallet className="w-4.5 h-4.5" />
           </span>
           <span>
-            <span
-              className={`block text-sm font-medium ${
-                selectedMethod === "globalpay" ? "text-orange-600" : "text-gray-700"
-              }`}
-            >
+            <span className="block text-sm font-medium text-gray-500">
               Pay with GlobalPay
             </span>
             <span className="block text-xs text-gray-400">
-              Card, transfer, USSD, or QR — via a secure hosted checkout
+              Temporarily unavailable — please use card or bank transfer
             </span>
           </span>
         </span>
-        <span
-          className={`
-            w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center
-            ${selectedMethod === "globalpay" ? "border-orange-500" : "border-gray-300"}
-          `}
-        >
-          {selectedMethod === "globalpay" && (
-            <span className="w-2 h-2 rounded-full bg-orange-500" />
-          )}
-        </span>
+        <span className="w-4 h-4 rounded-full border-2 shrink-0 border-gray-300" />
       </button>
 
       {/* Card fields — conditionally rendered */}

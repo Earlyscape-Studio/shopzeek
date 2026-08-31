@@ -11,6 +11,7 @@ import { createClient } from "@/utils/supabase/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { proseMarkdownComponents } from "@/components/shared/admin/markdownComponents";
+import { isProductOnDeal, getActivePrice } from "@/utils/deals";
 
 export function ProductInfo({ product, avgRating, totalReviews }: any) {
   const [quantity, setQuantity] = useState(1);
@@ -24,13 +25,8 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
   const supabase = createClient();
   const router = useRouter();
 
-  const isOnDeal =
-    product.deal_price &&
-    product.deal_ends_at &&
-    new Date(product.deal_ends_at) > new Date() &&
-    product.is_deal_active !== false;
-
-  const activePrice = isOnDeal ? product.deal_price : product.price;
+  const isOnDeal = isProductOnDeal(product);
+  const activePrice = getActivePrice(product);
 
   const processAddToCart = async () => {
     await addItem({
@@ -141,11 +137,10 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
         <Button
           onClick={handleAddToCart}
           disabled={added}
-          className={`flex-1 h-14 text-sm font-bold uppercase tracking-widest gap-2 rounded-md transition-all ${
-            added
+          className={`flex-1 h-14 text-sm font-bold uppercase tracking-widest gap-2 rounded-md transition-all ${added
               ? "bg-green-600 hover:bg-green-700 text-white"
               : "bg-[#FF5A00] hover:bg-orange-600 text-white"
-          }`}
+            }`}
         >
           {added ? (
             <>
@@ -167,11 +162,10 @@ export function ProductInfo({ product, avgRating, totalReviews }: any) {
         <Button
           onClick={handleAddToWishlist}
           variant="outline"
-          className={`h-14 w-14 border-[#FF5A00] rounded-md shrink-0 p-0 transition-colors ${
-            isWishlisted
+          className={`h-14 w-14 border-[#FF5A00] rounded-md shrink-0 p-0 transition-colors ${isWishlisted
               ? "bg-[#FF5A00] text-white hover:bg-orange-600"
               : "bg-white text-[#FF5A00] hover:bg-orange-50"
-          }`}
+            }`}
         >
           <Heart size={24} fill={isWishlisted ? "currentColor" : "none"} />
         </Button>

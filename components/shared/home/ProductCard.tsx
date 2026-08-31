@@ -10,6 +10,7 @@ import type { Product } from "@/types/database";
 import { createClient } from "@/utils/supabase/client";
 import { useWishlistStore } from "@/store/wishlist.store";
 import { useAuthModal } from "@/store/auth-modal.store";
+import { isProductOnDeal, getActivePrice } from "@/utils/deals";
 
 type Props = { product: Product };
 
@@ -21,15 +22,9 @@ export function ProductCard({ product }: Props) {
     useWishlistStore();
   const isWishlisted = isInWishlist(product.id);
 
-  // is_deal_active defaults to true for backward compat (undefined = not yet migrated)
-  const isOnDeal =
-    product.deal_price &&
-    product.deal_ends_at &&
-    new Date(product.deal_ends_at) > new Date() &&
-    product.is_deal_active !== false;
-
+  const isOnDeal = isProductOnDeal(product);
   const imageBgColor = isOnDeal ? "bg-[#FFEBE3]" : "bg-[#F3F4F6]";
-  const activePrice = isOnDeal ? (product.deal_price ?? product.price) : product.price;
+  const activePrice = getActivePrice(product);
 
   const percentOff =
     isOnDeal && product.deal_price

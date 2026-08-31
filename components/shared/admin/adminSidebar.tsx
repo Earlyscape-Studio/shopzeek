@@ -1,9 +1,8 @@
 "use client"
 
-
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, ShoppingCart, Package, Tag, Home, ArrowLeft } from "lucide-react"
+import { LayoutDashboard, ShoppingCart, Package, Tag, Home, ArrowLeft, Users } from "lucide-react"
 import {
     Sidebar,
     SidebarContent,
@@ -18,11 +17,13 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button"
 import { Profile } from "@/types/database"
+import { createClient } from "@/utils/supabase/client"
 import { signOut } from "@/app/actions/auth.actions"
 
 
 const navLinks = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { href: "/admin/customers", label: "Customers", icon: Users },
     { href: "/admin/products", label: "Products", icon: Package },
     { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
     { href: "/admin/coupons", label: "Coupons", icon: Tag }
@@ -39,6 +40,12 @@ interface Props {
 export function AdminSidebar({ profile }: Props) {
     const pathname = usePathname()
     const router = useRouter()
+    const supabase = createClient()
+
+    const handleSignOut = async () => {
+        await supabase.auth.signOut()
+        await signOut()
+    }
 
     const isActive = (href: string, exact?: boolean) => exact ? pathname === href : pathname.startsWith(href)
 
@@ -91,7 +98,7 @@ export function AdminSidebar({ profile }: Props) {
                         View Store
                     </Link>
                 </Button>
-                <form action={signOut}>
+                <form action={handleSignOut}>
                     <Button
                         type="submit"
                         variant="ghost"

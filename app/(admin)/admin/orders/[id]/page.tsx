@@ -47,7 +47,7 @@ export default async function OrderDetailPage({
     (sum, item) => sum + Number(item.unit_price) * item.quantity,
     0
   );
-  const shippingTotal = Number(order.shipping_cost ?? 0) + Number(order.shipping_vat ?? 0);
+  const shippingTotal = Number(order.shipping_cost ?? 0);
   const discountAmount = Number(order.discount_amount ?? 0);
   const couponCode = (order as any).coupon?.code ?? null;
 

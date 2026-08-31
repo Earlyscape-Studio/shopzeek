@@ -144,6 +144,8 @@ export default function CheckoutPage() {
           ? "Please select an LGA for your shipping address before placing your order."
           : "Please select your LGA before placing your order."
       );
+      const fieldId = showAlternateShipping ? "ship_lga-field" : "lga-field";
+      document.getElementById(fieldId)?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -447,6 +449,7 @@ export default function CheckoutPage() {
               total={finalTotal}
               isProcessing={isProcessing}
               coupon={coupon}
+              lgaSelected={!!(showAlternateShipping ? selectedShipLga : selectedLga)}
             />
           </div>
         </form>

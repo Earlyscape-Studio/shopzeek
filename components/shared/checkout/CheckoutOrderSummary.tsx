@@ -1,4 +1,4 @@
-// components/storefront/checkout/CheckoutOrderSummary.tsx
+
 import Image from "next/image";
 import { ArrowRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ type Props = {
   total: number;
   isProcessing: boolean;
   coupon?: CartState["coupon"]
+  lgaSelected: boolean;
 };
 
 export function CheckoutOrderSummary({
@@ -33,6 +34,7 @@ export function CheckoutOrderSummary({
   total,
   isProcessing,
   coupon,
+  lgaSelected,
 }: Props) {
 
   let discount = 0;
@@ -134,7 +136,7 @@ export function CheckoutOrderSummary({
         <div className="flex justify-between text-gray-500">
           <span>Discount</span>
           <span className="font-semibold text-green-600">
-             {discount > 0 ? `-₦${discount.toLocaleString()}` : "₦0.00"}
+            {discount > 0 ? `-₦${discount.toLocaleString()}` : "₦0.00"}
           </span>
         </div>
 
@@ -161,9 +163,15 @@ export function CheckoutOrderSummary({
         </span>
       </div>
 
+      {!lgaSelected && (
+        <p className="text-xs text-center text-orange-500 mt-4">
+          Select your LGA above to enable checkout
+        </p>
+      )}
+
       <Button
         type="submit"
-        disabled={isProcessing || items.length === 0}
+        disabled={isProcessing || items.length === 0 || !lgaSelected}
         className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold uppercase tracking-widest h-13 rounded-lg mt-6 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
       >
         {isProcessing ? (
